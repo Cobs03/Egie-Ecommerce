@@ -1,0 +1,80 @@
+.main-footer {
+    background-color: #000;
+    /* Background color */
+    color: #fff;
+    /* Text color */
+    padding: 20px 0;
+    /* Padding for spacing */
+    text-align: center;
+    /* Center align text */
+    margin-top: 2rem;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-around;
+    /* Space around items */
+    flex-wrap: wrap;
+    /* Allow wrapping for smaller screens */
+}
+
+.footer-logo img {
+    width: 350px;
+
+}
+
+.footer-links,
+.footer-contact,
+.footer-follow,
+.footer-payment {
+    margin: 10px;
+    /* Space between sections */
+}
+
+.footer-links h4,
+.footer-contact h4,
+.footer-follow h4,
+.footer-payment h4 {
+    margin-bottom: 10px;
+    /* Space below each heading */
+}
+
+.footer-links ul {
+    list-style-type: none;
+    padding: 0;
+    /* Remove default padding */
+}
+
+.footer-links ul li {
+    margin: 5px 0;
+    /* Space between list items */
+}
+
+.footer-links ul li a {
+    color: #fff;
+    /* Link color */
+    text-decoration: none;
+    /* Remove underline */
+}
+
+.footer-links ul li a:hover {
+    text-decoration: underline;
+    /* Underline on hover */
+}
+
+.footer-bottom {
+    margin-top: 20px;
+    /* Space above bottom text */
+}
+
+.footer-bottom a {
+    color: #fff;
+    /* Link color for bottom text */
+    text-decoration: none;
+    /* Remove underline */
+}
+
+.footer-bottom a:hover {
+    text-decoration: underline;
+    /* Underline on hover */
+}

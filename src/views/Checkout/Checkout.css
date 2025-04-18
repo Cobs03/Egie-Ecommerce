@@ -1,0 +1,13 @@
+.checkout-contain {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 20px;
+
+}
+
+.checkout-bottom {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}

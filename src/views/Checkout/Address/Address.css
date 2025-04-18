@@ -1,0 +1,52 @@
+.checkout-container {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+.checkout-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.address-section {
+    border: 1px solid #ccc;
+    padding: 15px;
+}
+
+.delivery-address {
+    color: #d45d00;
+    /* orange color */
+    font-size: 18px;
+}
+
+.address-details {
+    margin-top: 10px;
+}
+
+.name {
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.address {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.default-address {
+    background-color: #efefef;
+    border: none;
+    color: #333;
+    padding: 5px 10px;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.change-button {
+    background-color: #007bff;
+    /* blue color */
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    cursor: pointer;
+}

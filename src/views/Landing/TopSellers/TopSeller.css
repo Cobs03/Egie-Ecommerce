@@ -1,0 +1,61 @@
+.top-sellers {
+    background-color: #f0f0f0;
+    padding: 20px;
+    text-align: center;
+}
+
+.card-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin: 10px;
+    padding: 15px;
+    width: 200px;
+    height: 300px;
+    /* Reduced width for smaller cards */
+}
+
+.image-placeholder {
+    width: 100%;
+    height: 100px;
+    /* Placeholder height */
+    background-color: #e0e0e0;
+    margin-bottom: 10px;
+}
+
+.button-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.buy-button,
+.cart-button {
+    background-color: #e0e0e0;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.see-all {
+    margin-top: 20px;
+    background-color: black;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.arrow {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+}

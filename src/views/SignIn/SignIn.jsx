@@ -14,7 +14,7 @@ const SignIn = () => {
             <h2>Create an Account</h2>
             <input type="text" placeholder="Username" />
             <input type="email" placeholder="Email" />
-            <input type="password" placeholder="Password" />
+            <input type="password" placeholder="Password" /> 
             <p className="terms">
               By creating an account, you agree to our{" "}
               <a href="#">Terms of Use</a> and <a href="#">Privacy Policy</a>.

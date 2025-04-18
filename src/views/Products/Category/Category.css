@@ -1,0 +1,41 @@
+.categories-container {
+    text-align: left;
+    padding: 20px;
+    background-color: #f4f4f4;
+    width: 80%;
+    position: absolute;
+    right: 0rem;
+    top: 8rem;
+}
+
+.categories-title {
+    color: #003366;
+    /* Blue color for the title */
+    margin-bottom: 15px;
+}
+
+.category-list {
+    display: flex;
+    gap: 10px;
+    /* Space between each category item */
+}
+
+.category-item {
+    background-color: #ffffff;
+    /* White background for each item */
+    padding: 10px;
+
+    /* Light border */
+    border-radius: 5px;
+    /* Rounded corners */
+    flex: 1;
+    /* Equal width for all items */
+    text-align: center;
+    cursor: pointer;
+}
+
+.category-image img {
+    max-width: 100%;
+    /* Responsive image */
+    height: auto;
+}

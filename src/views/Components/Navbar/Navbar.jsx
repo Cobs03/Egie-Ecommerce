@@ -8,11 +8,12 @@ import { FaSearch } from "react-icons/fa";
 import { FaShoppingCart } from "react-icons/fa";
 import { IoBookmark } from "react-icons/io5";
 import { CgProfile } from "react-icons/cg";
+import { IoNotifications } from "react-icons/io5";
 
 
 const Navbar = ({isAuth}) => {
 
-  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(true);
 
   return (
     <div className={`navbar ${isAuth ? "auth-navbar" : "main-navbar"}`}>
@@ -55,17 +56,21 @@ const Navbar = ({isAuth}) => {
                 />
               </div>
               <div className="nav-links">
-                <a href="#">Home</a>
+                <Link to="/" href="#">
+                  Home
+                </Link>
                 <div className="dropdown">
                   <button className="dropbtn">Products</button>
                   <div className="dropdown-content">
                     <a href="#">Desktops</a>
                     <a href="#">Laptops</a>
+                    <Link to="/products" href="#">
+                      All Products
+                    </Link>
                   </div>
                 </div>
-                <a href="#">Desktops</a>
-                <a href="#">Laptops</a>
                 <a href="#">System Builder</a>
+                <a href="#">Contact Us</a>
               </div>
               <div className="search">
                 <input type="text" placeholder="Search" />
@@ -86,6 +91,9 @@ const Navbar = ({isAuth}) => {
                     <button className="sign-up">
                       <FaShoppingCart className="cart" />
                     </button>
+                    <button className="sign-up">
+                      <IoNotifications />
+                    </button>
                     <button className="profile">
                       <CgProfile className="profile-pic" />
                     </button>
@@ -97,7 +105,7 @@ const Navbar = ({isAuth}) => {
                     </Link>
                     <Link to="/auth">
                       <button className="sign-up">Sign Up</button>
-                    </Link> 
+                    </Link>
                   </>
                 )}
               </div>
