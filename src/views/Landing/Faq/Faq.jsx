@@ -1,17 +1,12 @@
 import { useState } from "react";
-import "./Faq.css";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const Faq = () => {
-  const [openIndexes, setOpenIndexes] = useState([]);
-
-  const toggleFAQ = (index) => {
-    if (openIndexes.includes(index)) {
-      setOpenIndexes(openIndexes.filter((i) => i !== index));
-    } else {
-      setOpenIndexes([...openIndexes, index]);
-    }
-  };
-
   const faqs = [
     {
       question: "Do you offer warranties on your products?",
@@ -36,21 +31,27 @@ const Faq = () => {
   ];
 
   return (
-    <div className="faqs-container">
-      <h1>FAQs</h1>
-      {faqs.map((faq, index) => (
-        
-        <div key={index} className="faq">
-            <hr />
-          <h3 onClick={() => toggleFAQ(index)} style={{ cursor: "pointer" }}>
-            {faq.question}
-          </h3>
-          {openIndexes.includes(index) && <p>{faq.answer}</p>}
-        </div>
-      ))}
-      <div className="contact">
-        <h2>Still have questions?</h2>
-        <button className="contact-btn">Contact Us</button>
+    <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6">
+      <h1 className="text-3xl font-semibold text-center mb-6">FAQs</h1>
+
+      <Accordion type="single" collapsible>
+        {faqs.map((faq, index) => (
+          <AccordionItem key={index} value={`item-${index}`}>
+            <AccordionTrigger className="text-left p-4 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition duration-200">
+              {faq.question}
+            </AccordionTrigger>
+            <AccordionContent className="p-4 bg-gray-50 text-gray-600 rounded-md">
+              {faq.answer}
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+
+      <div className="mt-8 text-center">
+        <h2 className="text-xl font-semibold mb-4">Still have questions?</h2>
+        <button className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300">
+          Contact Us
+        </button>
       </div>
     </div>
   );

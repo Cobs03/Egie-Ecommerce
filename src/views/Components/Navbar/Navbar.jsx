@@ -163,13 +163,13 @@ const Navbar = ({isAuth}) => {
                 </div>
                 <ul className="flex flex-col p-4 md:p-0 mt-4 font-medium border border-gray-100 rounded-lg  md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0">
                   <li>
-                    <a
+                    <Link to="/"
                       href="#"
                       className="block py-2 px-3 bg-blue-700 rounded-sm md:text-[#3e80349b] md:p-0 hover:text-black md:bg-[#F3F7F6]"
                       aria-current="page"
                     >
                       Home
-                    </a>
+                    </Link>
                   </li>
 
                   <li>
@@ -209,12 +209,12 @@ const Navbar = ({isAuth}) => {
                           <ul className="space-y-2">
                             {section.items.map((item, idx) => (
                               <li key={idx}>
-                                <a
+                                <Link to="/products"
                                   href="#"
                                   className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-500"
                                 >
                                   {item}
-                                </a>
+                                </Link>
                               </li>
                             ))}
                           </ul>

@@ -13,8 +13,8 @@ const Landing = () => {
         <>
             <Banner />
             <Feature />
-            <BuildLaps />
-            <BuildLaps/>
+            <BuildLaps set="one"/>
+            <BuildLaps set="two" />
             <Brands />
             <NewArrivals />
             <TopSeller />

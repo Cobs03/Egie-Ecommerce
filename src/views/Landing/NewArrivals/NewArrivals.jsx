@@ -18,7 +18,7 @@ const NewArrivals = () => {
     ];
     return (
       <div className="new-arrivals">
-        <h2>New Arrivals</h2>
+        <h2 className="text-2xl">New Arrivals</h2>
         <div className="products-grid">
           {products.map((product, index) => (
             <div
@@ -26,9 +26,19 @@ const NewArrivals = () => {
               key={index}
               onClick={() => setSelectedProduct(product)}
             >
-              <h3>{product.name}</h3>
-              <p>${product.price}</p>
-              <button>Shop Now</button>
+              <div className="img">
+                <img
+                  src={`https://via.placeholder.com/150?text=${product.name}`}
+                  alt={product.name}
+                  className="product-image"
+                />
+              </div>
+
+              <div className="product-desc">
+                <h3>{product.name}</h3>
+                <p>${product.price}</p>
+                <button>Shop Now</button>
+              </div>
             </div>
           ))}
         </div>
