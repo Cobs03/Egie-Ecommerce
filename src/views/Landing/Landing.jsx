@@ -1,11 +1,11 @@
 import React from "react";
-import Banner from "./Banner/Banner";
-import Feature from "./FeaturedProd/Feature";
-import BuildLaps from "./BuildLaps/BuildLaps";
-import Brands from "./Brands/Brands";
-import NewArrivals from "./NewArrivals/NewArrivals";
-import TopSeller from "./TopSellers/TopSeller";
-import Faq from "./Faq/Faq";
+import Banner from "./Landing Components/Banner";
+import Feature from "./Landing Components/Feature";
+import BuildLaps from "./Landing Components/BuildLaps";
+import Brands from "./Landing Components/Brands";
+import NewArrivals from "./Landing Components/NewArrivals";
+import TopSeller from "./Landing Components/TopSeller";
+import Faq from "./Landing Components/Faq";
 
 const Landing = () => {
 
