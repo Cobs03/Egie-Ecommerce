@@ -72,7 +72,7 @@ const ProductModal = ({ product, onClose }) => {
       >
         {/* Close Button */}
         <button
-          className="absolute top-2 right-2 text-3xl text-gray-600 hover:text-gray-800 transition"
+          className="absolute top-2 right-2 text-3xl text-gray-600 hover:text-gray-800 transition mt-10"
           onClick={onClose}
         >
           <IoCloseCircleOutline />
@@ -80,7 +80,7 @@ const ProductModal = ({ product, onClose }) => {
 
         <div className="flex flex-col md:flex-row gap-6">
           {/* Image Slider */}
-          <div className="w-full md:w-1/3">
+          <div className="w-full md:w-1/3 mt-15">
             <Slider
               asNavFor={nav2}
               ref={(slider) => (sliderRef1.current = slider)}
@@ -137,20 +137,19 @@ const ProductModal = ({ product, onClose }) => {
               <span className="cursor-pointer hover:underline">Report</span>
             </div>
 
-            <div className="text-2xl font-bold text-green-700 mb-4">
-              ₱15,009 - ₱21,741
-            </div>
+            <div className="flex flex-row gap-7">
+              <div className="text-2xl font-bold text-green-700 mb-4">
+                ₱15,009 - ₱21,741
+              </div>
 
-            {/* Wishlist & Share */}
-            <div className="flex items-center mb-4 gap-4">
-
-
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">Share:</span>
-                <FaFacebookMessenger className="text-xl hover:text-green-500 cursor-pointer" />
-                <FaFacebook className="text-xl hover:text-green-500 cursor-pointer" />
-                <AiFillInstagram className="text-2xl hover:text-green-500 cursor-pointer" />
-                <FaXTwitter className="text-2xl hover:text-green-500 cursor-pointer" />
+              <div className="flex items-center mb-4 gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600">Share:</span>
+                  <FaFacebookMessenger className="text-xl hover:text-green-500 cursor-pointer" />
+                  <FaFacebook className="text-xl hover:text-green-500 cursor-pointer" />
+                  <AiFillInstagram className="text-2xl hover:text-green-500 cursor-pointer" />
+                  <FaXTwitter className="text-2xl hover:text-green-500 cursor-pointer" />
+                </div>
               </div>
             </div>
 
@@ -184,7 +183,7 @@ const ProductModal = ({ product, onClose }) => {
             </div>
 
             {/* Quantity */}
-            <div className="mb-6 flex flex-row gap-2">
+            <div className="mb-2 flex flex-row gap-2">
               <label className="block font-medium mb-2">Quantity</label>
               <div className="flex items-center gap-3">
                 <button

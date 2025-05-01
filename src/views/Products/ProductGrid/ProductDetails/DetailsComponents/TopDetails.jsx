@@ -68,7 +68,7 @@ useEffect(() => {
     <>
       <div className="flex md:flex-row gap-6 w-[88%] ml-19 mt-10 bg-white p-4 rounded-lg shadow-md pl-7">
         {/* Image Slider */}
-        <div className="w-full md:w-1/3 mt-15">
+        <div className="w-full md:w-1/3 mt-15\">
           <Slider
             asNavFor={nav2}
             ref={(slider) => (sliderRef1.current = slider)}
