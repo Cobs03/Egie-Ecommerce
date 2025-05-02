@@ -80,14 +80,7 @@ const Navbar = ({isAuth}) => {
     <div className={`navbar ${isAuth ? "auth-navbar" : "main-navbar"}`}>
       {isAuth ? (
         <div className="auth-header ">
-          <div className="auth-Navbar h-20 bg-black flex justify-center">
-            <div className="auth-logo h-[250px] w-[250px]">
-              <img
-                src="https://i.ibb.co/Cpx2BBt5/egie-removebg-preview-1.png"
-                alt="EGIE Game Shop"
-              />
-            </div>
-          </div>
+
         </div>
       ) : (
         <div className="main-header">
