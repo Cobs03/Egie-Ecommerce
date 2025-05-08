@@ -72,7 +72,7 @@ const ProductModal = ({ product, onClose }) => {
       >
         {/* Close Button */}
         <button
-          className="absolute top-2 right-2 text-3xl text-gray-600 hover:text-gray-800 transition mt-10"
+          className="cursor-pointer absolute top-2 right-2 text-3xl text-gray-600 hover:text-gray-800 transition mt-10"
           onClick={onClose}
         >
           <IoCloseCircleOutline />
@@ -231,6 +231,7 @@ const ProductModal = ({ product, onClose }) => {
               >
                 Add To Cart
               </Link>
+              
               <Link
                 to="/cart"
                 className="flex-1 bg-green-400 text-black font-medium py-2 rounded hover:bg-green-900 hover:text-white transition text-center"

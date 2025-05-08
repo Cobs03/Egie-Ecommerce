@@ -1,4 +1,8 @@
 import React from "react";
+import { FaFacebook } from "react-icons/fa";
+import { FaInstagram } from "react-icons/fa";
+import { RiMastercardFill } from "react-icons/ri";
+import { FaCcVisa } from "react-icons/fa";
 
 const Footer = ({ isAuth }) => {
   return (
@@ -59,14 +63,14 @@ const Footer = ({ isAuth }) => {
             {/* Socials */}
             <div className="mb-6">
               <h4 className="mb-3 font-semibold text-lg">Follow Us:</h4>
-              <div className="flex flex-col space-y-1">
+              <div className="flex flex-row gap-2 space-y-1">
                 <a
                   href="https://facebook.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:underline"
                 >
-                  Facebook
+                  <FaFacebook className="text-white hover:text-green-500 text-2xl" />
                 </a>
                 <a
                   href="https://instagram.com"
@@ -74,7 +78,7 @@ const Footer = ({ isAuth }) => {
                   rel="noopener noreferrer"
                   className="hover:underline"
                 >
-                  Instagram
+                  <FaInstagram className="text-white hover:text-green-500 text-2xl" />
                 </a>
               </div>
             </div>
@@ -82,13 +86,10 @@ const Footer = ({ isAuth }) => {
             {/* Payments */}
             <div className="mb-6">
               <h4 className="mb-3 font-semibold text-lg">We accept:</h4>
-              <div className="flex space-x-2 justify-center sm:justify-start">
-                <img
-                  src="path_to_mastercard_logo.png"
-                  alt="Mastercard"
-                  className="h-6"
-                />
-                <img src="path_to_visa_logo.png" alt="Visa" className="h-6" />
+              <div className="flex flex-row space-x-2 justify-center sm:justify-start">
+                <RiMastercardFill className="text-3xl" />
+
+                <FaCcVisa className="text-3xl" />
               </div>
             </div>
           </div>

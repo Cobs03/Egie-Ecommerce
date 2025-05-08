@@ -10,6 +10,10 @@ import ProductDetails from './views/Products/ProductGrid/ProductDetails/ProductD
 import Cart from './views/Cart/Cart';
 import Checkout from './views/Checkout/Checkout';
 import ThankYou from './views/Checkout/Thankyou';
+import ScrollToTop from './views/Components/ScrollToTop/ScrollToTop';
+import SystemBuild from './views/SystemBuild/SystemBuild';
+import ContactUs from './views/ContactUs/ContactUs';
+import Notification from './views/Notifications/Notification';
 
 import { Toaster } from "sonner";
 
@@ -33,16 +37,19 @@ const Main = () => {
   return (
     <>
       <Navbar isAuth={isAuthPage} />
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<SignUp />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/products" element={<Products />} />
-        <Route path="/products/details/:id" element={<ProductDetails  />} />
+        <Route path="/products/details/:id" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/thankyou" element={<ThankYou />} />
-        {/* Add more routes as needed */}
+        <Route path="/buildpc" element={<SystemBuild />} />
+        <Route path="/contactus" element={<ContactUs />} />
+        <Route path="/notification" element={<Notification />} />
       </Routes>
       <Footer isAuth={isAuthPage} />
       <Toaster richColors position="bottom-right" />

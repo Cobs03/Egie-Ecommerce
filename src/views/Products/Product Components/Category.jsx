@@ -1,4 +1,5 @@
-import Reach from "react";
+import React from "react";
+import {components} from "../../Data/components" 
 
 import {
   Carousel,
@@ -9,50 +10,45 @@ import {
 } from "@/components/ui/carousel";
 
 
-const Category = () => {
-
-    const products = [
-      { name: "Cooling System", imageUrl: "/cooling-system.png" },
-      { name: "Processor", imageUrl: "/processor.png" },
-      { name: "Mother Board", imageUrl: "/mother-board.png" },
-      { name: "Memory (RAM)", imageUrl: "/memory.png" },
-      { name: "Storage (SSD)", imageUrl: "/storage.png" },
-      { name: "Graphics Card", imageUrl: "/graphics-card.png" },
-      { name: "Power Supply", imageUrl: "/power-supply.png" },
-      { name: "Cabinet (Case)", imageUrl: "/cabinet.png" },
-    ];
-
-
-    return (
-      <div className="categories-container mt-20 ml-70">
-        <Carousel>
-          <CarouselContent>
-            {products.map((product, index) => (
-              <CarouselItem
-                key={index}
-                className="flex justify-center basis-1/6.5 width-1/6.5"
+const Category = ({ selectedCategory, setSelectedCategory }) => {
+  return (
+    <div className="categories-container mt-4 w-[98%]">
+      <Carousel>
+        <CarouselContent>
+          {components.map((product, index) => (
+            <CarouselItem
+              key={index}
+              className="flex justify-center basis-1/6.5 width-16.5"
+            >
+              <div
+                onClick={() => setSelectedCategory(product.type)} // 🟢 click to filter
+                className={`bg-white border rounded-lg text-center p-1 transition-shadow duration-300 hover:shadow-lg flex flex-row cursor-pointer ${
+                  selectedCategory === product.type
+                    ? "border-green-500"
+                    : "border-gray-300"
+                }`}
               >
-                <div className="bg-white border border-gray-300 rounded-lg text-center p-1 transition-shadow duration-300 hover:shadow-lg flex flex-row">
-                  <div className="h-15 w-20 bg-gray-300">
-                    <img
-                      src={product.imageUrl}
-                      alt={product.name}
-                      className="max-w-full h-auto"
-                    />
-                  </div>
-                  <div className="mt-4 mx-4 font-bold">
-                    <p className="text-sm mb-2 select-none">{product.name}</p>
-
-                  </div>
+                {" "}
+                <div className="h-15 w-20 bg-gray-300">
+                  <img
+                    src={product.imageUrl}
+                    alt={product.type}
+                    className="max-w-full h-auto select-none"
+                    draggable="false"
+                  />
                 </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious />
-          <CarouselNext />
-        </Carousel>
-      </div>
-    );
-}
+                <div className="mt-4 mx-4 font-bold">
+                  <p className="text-sm mb-2 select-none">{product.type}</p>
+                </div>
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <CarouselPrevious />
+        <CarouselNext />
+      </Carousel>
+    </div>
+  );
+};
 
 export default Category;    

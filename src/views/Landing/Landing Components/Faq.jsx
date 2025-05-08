@@ -31,7 +31,7 @@ const Faq = () => {
   ];
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6">
+    <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6 mb-4">
       <h1 className="text-3xl font-semibold text-center mb-6">FAQs</h1>
 
       <Accordion type="single" collapsible>

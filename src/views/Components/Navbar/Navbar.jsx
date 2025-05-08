@@ -8,6 +8,9 @@ import { FaShoppingCart } from "react-icons/fa";
 import { FaSquareFacebook } from "react-icons/fa6";
 import { FaInstagram } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { FaBookmark } from "react-icons/fa";
+
 
 const categorizedParts = [
   {
@@ -54,10 +57,22 @@ const categorizedParts = [
 
 
 
+
+
 const Navbar = ({isAuth}) => {
+  const [cartCount, setCartCount] = useState(2); // example
+  const [notificationCount, setNotificationCount] = useState(3); // example
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [isSignedIn, setIsSignedIn] = useState(true);
   const navigate = useNavigate();
+
+    const location = useLocation();
+  const isProductsActive = location.pathname.startsWith("/products");
+
+
+  const isActive = (path) => location.pathname === path;
+
 
   const handleSignOut = () => {
     // Optional: clear any user session data, tokens, etc.
@@ -67,21 +82,19 @@ const Navbar = ({isAuth}) => {
     navigate("/signin"); // Redirect to Sign In page
   };
 
-    const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
-    const handleSearch = () => {
-      if (searchQuery.trim()) {
-        // Replace this with your actual search logic
-        alert(`Searching for: ${searchQuery}`);
-      }
-    };
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      // Replace this with your actual search logic
+      alert(`Searching for: ${searchQuery}`);
+    }
+  };
 
   return (
     <div className={`navbar ${isAuth ? "auth-navbar" : "main-navbar"}`}>
       {isAuth ? (
-        <div className="auth-header ">
-
-        </div>
+        <div className="auth-header "></div>
       ) : (
         <div className="main-header">
           <nav className="bg-[#F3F7F6] border-gray-200 ">
@@ -113,7 +126,6 @@ const Navbar = ({isAuth}) => {
               {/* LOGO */}
               <Link
                 to="/"
-                href=""
                 className="flex items-center space-x-3 rtl:space-x-reverse"
               >
                 <img
@@ -130,7 +142,7 @@ const Navbar = ({isAuth}) => {
               >
                 {/* Search bar for mobile */}
                 <div className="relative mt-3 md:hidden">
-                  {/* <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                  <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
                     <svg
                       className="w-4 h-4 text-gray-500 dark:text-gray-400"
                       aria-hidden="true"
@@ -146,7 +158,7 @@ const Navbar = ({isAuth}) => {
                         d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
                       />
                     </svg>
-                  </div> */}
+                  </div>
                   <input
                     type="text"
                     id="search-navbar"
@@ -158,8 +170,11 @@ const Navbar = ({isAuth}) => {
                   <li>
                     <Link
                       to="/"
-                      href="#"
-                      className="block py-2 px-3 bg-blue-700 rounded-sm md:text-[#3e80349b] md:p-0 hover:text-black md:bg-[#F3F7F6]"
+                      className={`block py-2 px-3 rounded-sm md:p-0 ${
+                        isActive("/")
+                          ? "text-blue-700 font-semibold"
+                          : "text-gray-900"
+                      } hover:text-black`}
                       aria-current="page"
                     >
                       Home
@@ -170,7 +185,12 @@ const Navbar = ({isAuth}) => {
                     <button
                       id="mega-menu-dropdown-button"
                       data-dropdown-toggle="mega-menu-dropdown"
-                      className="flex items-center justify-between w-full py-2 px-3 font-medium text-gray-900 border-b border-gray-100 md:w-auto hover:bg-gray-50 md:hover:bg-transparent md:border-0 md:hover:text-blue-600 md:p-0 md:bg-[#F3F7F6]"
+                      onClick={() => setIsDropdownOpen((prev) => !prev)}
+                      className={`flex items-center justify-between w-full py-2 px-3 font-medium border-b border-gray-100 md:w-auto md:border-0 md:p-0 cursor-pointer md:bg-[#F3F7F6] ${
+                        isProductsActive
+                          ? "text-blue-700 font-semibold"
+                          : "text-gray-900 hover:text-black"
+                      }`}
                     >
                       Products{" "}
                       <svg
@@ -182,9 +202,9 @@ const Navbar = ({isAuth}) => {
                       >
                         <path
                           stroke="currentColor"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
                           d="m1 1 4 4 4-4"
                         />
                       </svg>
@@ -192,7 +212,9 @@ const Navbar = ({isAuth}) => {
 
                     <div
                       id="mega-menu-dropdown"
-                      className="absolute z-1000 hidden grid w-auto grid-cols-2 text-sm bg-white border border-gray-100 rounded-lg shadow-md dark:border-gray-700 md:grid-cols-3 dark:bg-gray-700"
+                      className={`absolute z-50 ${
+                        isDropdownOpen ? "grid" : "hidden"
+                      } w-auto grid-cols-2 text-sm bg-white border border-gray-100 rounded-lg shadow-md dark:border-gray-700 md:grid-cols-3 dark:bg-gray-700 `}
                     >
                       {categorizedParts.map((section, index) => (
                         <div
@@ -205,7 +227,7 @@ const Navbar = ({isAuth}) => {
                               <li key={idx}>
                                 <Link
                                   to="/products"
-                                  href="#"
+                                  onClick={() => setIsDropdownOpen(false)}
                                   className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-500"
                                 >
                                   {item}
@@ -218,20 +240,28 @@ const Navbar = ({isAuth}) => {
                     </div>
                   </li>
                   <li>
-                    <a
-                      href="#"
-                      className="block py-2 px-3 text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:bg-[#F3F7F6]"
+                    <Link
+                      to="/buildpc"
+                      className={`block py-2 px-3 rounded-sm md:p-0 ${
+                        isActive("/buildpc")
+                          ? "text-blue-700 font-semibold"
+                          : "text-gray-900"
+                      } hover:text-black`}
                     >
                       PC Build
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a
-                      href="#"
-                      className="block py-2 px-3 text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:bg-[#F3F7F6]"
+                    <Link
+                      to="/contactus"
+                      className={`block py-2 px-3 rounded-sm md:p-0 ${
+                        isActive("/contactus")
+                          ? "text-blue-700 font-semibold"
+                          : "text-gray-900"
+                      } hover:text-black`}
                     >
                       Contact Us
-                    </a>
+                    </Link>
                   </li>
                 </ul>
               </div>
@@ -293,19 +323,42 @@ const Navbar = ({isAuth}) => {
                   {isSignedIn ? (
                     <>
                       <Link
+                        to="/wishlist"
+                        className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-teal-300 to-lime-300 group-hover:from-teal-300 group-hover:to-lime-300 "
+                      >
+                        <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">
+                          <FaBookmark />
+                        </span>
+                      </Link>
+
+                      <Link
                         to="/cart"
-                        className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-teal-300 to-lime-300 group-hover:from-teal-300 group-hover:to-lime-300 "
+                        className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-teal-300 to-lime-300 group-hover:from-teal-300 group-hover:to-lime-300 "
                       >
                         <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">
                           <FaShoppingCart className="cart" />
                         </span>
+                        {cartCount > 0 && (
+                          <span className="absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                            {cartCount}
+                          </span>
+                        )}
                       </Link>
 
-                      <button className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-teal-300 to-lime-300 group-hover:from-teal-300 group-hover:to-lime-300 ">
+                      <Link
+                        to="/notification"
+                        className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-teal-300 to-lime-300 group-hover:from-teal-300 group-hover:to-lime-300 "
+                      >
                         <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">
                           <IoNotifications />
                         </span>
-                      </button>
+                        {notificationCount > 0 && (
+                          <span className="absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                            {notificationCount}
+                          </span>
+                        )}
+                      </Link>
+
                       {/* <!-- Dropdown menu --> */}
                       <div
                         className="z-50 hidden my-4 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow-sm dark:bg-gray-700 dark:divide-gray-600"
@@ -321,34 +374,14 @@ const Navbar = ({isAuth}) => {
                         </div>
                         <ul className="py-2" aria-labelledby="user-menu-button">
                           <li>
-                            <a
-                              href="#"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
-                            >
-                              Dashboard
-                            </a>
-                          </li>
-                          <li>
-                            <a
-                              href="#"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
-                            >
-                              Settings
-                            </a>
-                          </li>
-                          <li>
-                            <a
-                              href="#"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
-                            >
-                              Earnings
+                            <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">
+                              My Settings
                             </a>
                           </li>
                           <li>
                             <button
                               onClick={handleSignOut}
-                              href="#"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
+                              className="w-full text-left cursor-pointer block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
                             >
                               Sign out
                             </button>

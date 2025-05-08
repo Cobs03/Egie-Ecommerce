@@ -132,7 +132,7 @@ const SignIn = () => {
             <div className="flex justify-center">
               <p className="mt-4 text-sm">
                 Already have an account?{" "}
-                <Link to="/auth" className="text-blue-400 underline">
+                <Link to="/signin" className="text-blue-400 underline">
                   Log In
                 </Link>
               </p>
