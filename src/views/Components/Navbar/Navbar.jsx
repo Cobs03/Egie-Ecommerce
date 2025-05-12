@@ -373,10 +373,16 @@ const Navbar = ({isAuth}) => {
                           </span>
                         </div>
                         <ul className="py-2" aria-labelledby="user-menu-button">
+                          
                           <li>
-                            <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">
+                            <button className="text-left cursor-pointer w-full block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">
                               My Settings
-                            </a>
+                            </button>
+                          </li>
+                          <li>
+                            <Link to="/purchases" className="text-left cursor-pointer w-full block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">
+                              My Purchases
+                            </Link>
                           </li>
                           <li>
                             <button

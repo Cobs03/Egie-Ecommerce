@@ -1,7 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import { components } from "../../Data/components"; 
+
 
 const SearchFill = ({ filters, onChange }) => {
-  const brands = ["Intel", "AMD", "NVIDIA", "Corsair"];
+  // 🔍 Extract unique brands from components
+  const allBrands = useMemo(() => {
+    const brandSet = new Set();
+    components.forEach((component) => {
+      component.products.forEach((product) => {
+        brandSet.add(product.brand);
+      });
+    });
+    return Array.from(brandSet);
+  }, []);
+
   const discounts = ["10% Off", "20% Off", "30% Off", "50% Off"];
 
   const [min, setMin] = useState("");
@@ -9,6 +21,7 @@ const SearchFill = ({ filters, onChange }) => {
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [selectedDiscounts, setSelectedDiscounts] = useState([]);
   const [selectedRating, setSelectedRating] = useState(null);
+    const [showAllBrands, setShowAllBrands] = useState(false); // ✅
 
   const applyPrice = () => {
     onChange({
@@ -87,29 +100,39 @@ const SearchFill = ({ filters, onChange }) => {
       <hr className="border-t-2 border-black my-4" />
 
       {/* Brand Filter */}
-      <div className="mb-6 w-full">
-        <label className="block mb-2 font-medium">Brand</label>
-        <ul>
-          {brands.map((brand) => (
-            <li key={brand} className="flex items-center">
-              <input
-                type="checkbox"
-                id={`brand-${brand}`}
-                value={brand}
-                checked={selectedBrands.includes(brand)}
-                onChange={() => toggleBrand(brand)}
-                className="text-blue-600 accent-blue-600"
-              />
-              <label
-                htmlFor={`brand-${brand}`}
-                className="text-sm text-gray-700 ml-2"
-              >
-                {brand}
-              </label>
-            </li>
-          ))}
-        </ul>
-      </div>
+        <div className="mb-6 w-full">
+    <label className="block mb-2 font-medium">Brand</label>
+    <ul>
+      {(showAllBrands ? allBrands : allBrands.slice(0, 4)).map((brand) => (
+        <li key={brand} className="flex items-center">
+          <input
+            type="checkbox"
+            id={`brand-${brand}`}
+            value={brand}
+            checked={selectedBrands.includes(brand)}
+            onChange={() => toggleBrand(brand)}
+            className="text-blue-600 accent-blue-600"
+          />
+          <label
+            htmlFor={`brand-${brand}`}
+            className="text-sm text-gray-700 ml-2"
+          >
+            {brand}
+          </label>
+        </li>
+      ))}
+    </ul>
+
+    {/* Show more/less toggle */}
+    {allBrands.length > 4 && (
+      <button
+        onClick={() => setShowAllBrands(!showAllBrands)}
+        className="text-blue-600 text-sm mt-2 cursor-pointer"
+      >
+        {showAllBrands ? "See less" : "See all brands"}
+      </button>
+    )}
+  </div>
 
       <hr className="border-t-2 border-black my-4" />
 

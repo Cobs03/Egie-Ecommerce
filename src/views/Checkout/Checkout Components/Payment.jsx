@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { FaCcVisa } from "react-icons/fa";
+import { RiMastercardFill } from "react-icons/ri";
 
 const Payment = () => {
   const [selectedPayment, setSelectedPayment] = useState("cod");
@@ -12,40 +14,40 @@ const Payment = () => {
       </p>
 
       <div className="mb-4 space-y-3">
-        <label className="flex items-center">
+        <label className="flex items-center gap-2">
           <input
             type="radio"
             name="payment"
             value="cod"
             checked={selectedPayment === "cod"}
             onChange={() => setSelectedPayment("cod")}
-            className="mr-2 accent-green-500 flex-1/7"
+            className="w-4 h-4 accent-green-500"
           />
-          <span className="font-medium flex-6/7 ml-2">Cash on Delivery (COD)</span>
+          <span className="font-medium">Cash on Delivery (COD)</span>
         </label>
 
-        <label className="flex items-center">
+        <label className="flex items-center gap-2">
           <input
             type="radio"
             name="payment"
             value="gcash"
             checked={selectedPayment === "gcash"}
             onChange={() => setSelectedPayment("gcash")}
-            className="mr-2 accent-green-500 flex-1/7"
+            className="w-4 h-4 accent-green-500"
           />
-          <span className="font-medium flex-6/7 ml-2">GCash</span>
+          <span className="font-medium">GCash</span>
         </label>
 
-        <label className="flex items-center">
+        <label className="flex items-center gap-2">
           <input
             type="radio"
             name="payment"
             value="card"
             checked={selectedPayment === "card"}
             onChange={() => setSelectedPayment("card")}
-            className="mr-2 accent-green-500 flex-1/7"
+            className="w-4 h-4 accent-green-500"
           />
-          <span className="font-medium flex-6/7 ml-2">Credit/Debit Card</span>
+          <span className="font-medium">Credit/Debit Card</span>
         </label>
       </div>
 
@@ -76,11 +78,9 @@ const Payment = () => {
           />
         </div>
       )}
-
       <div className="flex space-x-2 mb-4">
-        <img src="/visa.png" alt="Visa" className="h-6 w-10" />
-        <img src="/mastercard.png" alt="MasterCard" className="h-6 w-10" />
-        <img src="/paypal.png" alt="PayPal" className="h-6 w-10" />
+        <FaCcVisa size={22} />
+        <RiMastercardFill size={22} />
       </div>
 
       <Link

@@ -14,6 +14,8 @@ import ScrollToTop from './views/Components/ScrollToTop/ScrollToTop';
 import SystemBuild from './views/SystemBuild/SystemBuild';
 import ContactUs from './views/ContactUs/ContactUs';
 import Notification from './views/Notifications/Notification';
+import Purchases from './views/Purchases/Purchases';
+import OrderDetails from './views/Purchases/Purchase Components/OrderDetails';
 
 import { Toaster } from "sonner";
 
@@ -50,6 +52,8 @@ const Main = () => {
         <Route path="/buildpc" element={<SystemBuild />} />
         <Route path="/contactus" element={<ContactUs />} />
         <Route path="/notification" element={<Notification />} />
+        <Route path="/purchases" element={<Purchases />} />
+        <Route path="/purchases/details/:id" element={<OrderDetails />} />
       </Routes>
       <Footer isAuth={isAuthPage} />
       <Toaster richColors position="bottom-right" />

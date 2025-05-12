@@ -2,9 +2,9 @@ import React from "react";
 
 const ContactUs = () => {
   return (
-    <div className="flex">
+    <div className="flex justify-center items-center mt-4 mx-10 mb-4">
       {/* Left Section */}
-      <div className="w-1/2 p-8 bg-gray-100">
+      <div className="w-1/2 p-8 bg-gray-100 rounded-md">
         <h2 className="text-2xl font-bold mb-4">Get in touch</h2>
         <p className="mb-4">
           Use our contact for all information requests or contact us directly
@@ -56,7 +56,7 @@ const ContactUs = () => {
       </div>
 
       {/* Right Section */}
-      <div className="w-1/2 p-8 bg-gray-200">
+      <div className="w-1/2 p-8 bg-gray-200 rounded-md">
         <h2 className="text-2xl font-bold mb-4">
           Get started with a free quotation
         </h2>
@@ -114,7 +114,7 @@ const ContactUs = () => {
           </div>
           <button
             type="submit"
-            className="w-full bg-green-600 text-white font-bold py-2 rounded-md hover:bg-green-700 transition duration-200"
+            className="cursor-pointer w-full bg-green-600 text-white font-bold py-2 rounded-md hover:bg-green-700 transition duration-200"
           >
             Submit your request
           </button>

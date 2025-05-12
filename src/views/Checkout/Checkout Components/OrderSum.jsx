@@ -1,5 +1,6 @@
 import React from "react";
 
+
 const OrderSum = () => {
   const products = [
     {
@@ -25,8 +26,20 @@ const OrderSum = () => {
 
   return (
     <div className=" p-5 border rounded-lg shadow-lg w-full bg-white">
-      <h2 className="text-lg font-bold mb-4">Order Summary</h2>
+      <div className="flex justify-between">
+        <h2 className="text-lg font-bold mb-2">Order Summary</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Order ID: #EGIE-
+          {Math.random().toString(36).substring(2, 8).toUpperCase()}
+        </p>
+      </div>
 
+      <p className="text-sm text-red-500 mt-4 bg-red-100 p-2 rounded-md border border-red-500">
+        Currently, refunds are not supported. Please review your order carefully
+        before purchase.
+      </p>
+
+      <hr className="my-4 stroke-black" />
       <div className="space-y-4">
         {products.map((item, index) => (
           <div key={index} className="flex items-center">
