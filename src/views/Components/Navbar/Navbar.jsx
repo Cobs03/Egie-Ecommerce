@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import {Link} from "react-router-dom";
+import { Link } from "react-router-dom";
 import "../../../../src/index.css";
 import "flowbite";
 import { IoNotifications } from "react-icons/io5";
@@ -11,68 +11,17 @@ import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { FaBookmark } from "react-icons/fa";
 
-
-const categorizedParts = [
-  {
-    category: "Core Components",
-    items: [
-      "Processor",
-      "Motherboard",
-      "RAM",
-      "Storage 1",
-      "Storage 2",
-      "Storage 3",
-      "GPU",
-      "PSU",
-    ],
-  },
-  {
-    category: "Case & Cooling",
-    items: [
-      "Case",
-      "Fan",
-      "Extra (AIO)",
-      "Extra (Fan)",
-    ],
-  },
-  {
-    category: "Peripherals",
-    items: [
-      "Monitor",
-      "Keyboard",
-      "Mouse",
-      "Headset / Speaker",
-      "Extra (Webcam)",
-    ],
-  },
-  {
-    category: "Miscellaneous",
-    items: [
-      "Extra",
-      "Extra",
-      "Extra",
-    ],
-  },
-];
-
-
-
-
-
-const Navbar = ({isAuth}) => {
+const Navbar = ({ isAuth }) => {
   const [cartCount, setCartCount] = useState(2); // example
   const [notificationCount, setNotificationCount] = useState(3); // example
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [isSignedIn, setIsSignedIn] = useState(true);
   const navigate = useNavigate();
 
-    const location = useLocation();
+  const location = useLocation();
   const isProductsActive = location.pathname.startsWith("/products");
 
-
   const isActive = (path) => location.pathname === path;
-
 
   const handleSignOut = () => {
     // Optional: clear any user session data, tokens, etc.
@@ -97,7 +46,7 @@ const Navbar = ({isAuth}) => {
         <div className="auth-header "></div>
       ) : (
         <div className="main-header">
-          <nav className="bg-[#F3F7F6] border-gray-200 ">
+          <nav className="bg-black border-gray-200 fixed w-full top-0 z-50">
             {/* UPPER NAVBAR */}
             <div className="hidden md:block  bg-[#111] text-white text-sm px-5">
               <div className="flex flex-row md:flex-row lg:flex-row md:order-1 justify-between items-center">
@@ -137,7 +86,7 @@ const Navbar = ({isAuth}) => {
 
               {/* MAIN LINKS */}
               <div
-                className="items-center justify-between hidden w-full md:flex md:w-auto md:order-2 sm:order-5 md:bg-[#F3F7F6]"
+                className="items-center justify-between hidden w-full md:flex md:w-auto md:order-2 sm:order-5 bg-black"
                 id="navbar-user"
               >
                 {/* Search bar for mobile */}
@@ -172,9 +121,9 @@ const Navbar = ({isAuth}) => {
                       to="/"
                       className={`block py-2 px-3 rounded-sm md:p-0 ${
                         isActive("/")
-                          ? "text-blue-700 font-semibold"
-                          : "text-gray-900"
-                      } hover:text-black`}
+                          ? "text-blue-400 font-semibold"
+                          : "text-white"
+                      } hover:text-gray-300`}
                       aria-current="page"
                     >
                       Home
@@ -182,71 +131,27 @@ const Navbar = ({isAuth}) => {
                   </li>
 
                   <li>
-                    <button
-                      id="mega-menu-dropdown-button"
-                      data-dropdown-toggle="mega-menu-dropdown"
-                      onClick={() => setIsDropdownOpen((prev) => !prev)}
-                      className={`flex items-center justify-between w-full py-2 px-3 font-medium border-b border-gray-100 md:w-auto md:border-0 md:p-0 cursor-pointer md:bg-[#F3F7F6] ${
-                        isProductsActive
-                          ? "text-blue-700 font-semibold"
-                          : "text-gray-900 hover:text-black"
-                      }`}
+                    <Link
+                      to="/products"
+                      className={`block py-2 px-3 rounded-sm md:p-0 ${
+                        isActive("/products")
+                          ? "text-blue-400 font-semibold"
+                          : "text-white"
+                      } hover:text-gray-300`}
+                      aria-current="page"
                     >
-                      Products{" "}
-                      <svg
-                        className="w-2.5 h-2.5 ms-3"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 10 6"
-                      >
-                        <path
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="m1 1 4 4 4-4"
-                        />
-                      </svg>
-                    </button>
-
-                    <div
-                      id="mega-menu-dropdown"
-                      className={`absolute z-50 ${
-                        isDropdownOpen ? "grid" : "hidden"
-                      } w-auto grid-cols-2 text-sm bg-white border border-gray-100 rounded-lg shadow-md dark:border-gray-700 md:grid-cols-3 dark:bg-gray-700 `}
-                    >
-                      {categorizedParts.map((section, index) => (
-                        <div
-                          key={index}
-                          className="p-4 text-gray-900 dark:text-white"
-                        >
-                          <h3 className="font-bold mb-2">{section.category}</h3>
-                          <ul className="space-y-2">
-                            {section.items.map((item, idx) => (
-                              <li key={idx}>
-                                <Link
-                                  to="/products"
-                                  onClick={() => setIsDropdownOpen(false)}
-                                  className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-500"
-                                >
-                                  {item}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
+                      All Products
+                    </Link>
                   </li>
+
                   <li>
                     <Link
                       to="/buildpc"
                       className={`block py-2 px-3 rounded-sm md:p-0 ${
                         isActive("/buildpc")
-                          ? "text-blue-700 font-semibold"
-                          : "text-gray-900"
-                      } hover:text-black`}
+                          ? "text-blue-400 font-semibold"
+                          : "text-white"
+                      } hover:text-gray-300`}
                     >
                       PC Build
                     </Link>
@@ -256,9 +161,9 @@ const Navbar = ({isAuth}) => {
                       to="/contactus"
                       className={`block py-2 px-3 rounded-sm md:p-0 ${
                         isActive("/contactus")
-                          ? "text-blue-700 font-semibold"
-                          : "text-gray-900"
-                      } hover:text-black`}
+                          ? "text-blue-400 font-semibold"
+                          : "text-white"
+                      } hover:text-gray-300`}
                     >
                       Contact Us
                     </Link>
@@ -373,14 +278,16 @@ const Navbar = ({isAuth}) => {
                           </span>
                         </div>
                         <ul className="py-2" aria-labelledby="user-menu-button">
-                          
                           <li>
                             <button className="text-left cursor-pointer w-full block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">
                               My Settings
                             </button>
                           </li>
                           <li>
-                            <Link to="/purchases" className="text-left cursor-pointer w-full block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">
+                            <Link
+                              to="/purchases"
+                              className="text-left cursor-pointer w-full block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
+                            >
                               My Purchases
                             </Link>
                           </li>
