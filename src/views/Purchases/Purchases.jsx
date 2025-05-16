@@ -83,11 +83,7 @@ const Purchases = () => {
           </p>
         )}
       </div>
-      <div className="mt-6 text-right px-4 md:px-10">
-        <span className="text-green-600 font-semibold">
-          ₱{orderTotal.toLocaleString()}
-        </span>
-      </div>
+
     </div>
   );
 };
