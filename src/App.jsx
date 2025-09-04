@@ -21,6 +21,8 @@ import ContactUs from "./views/ContactUs/ContactUs";
 import Notification from "./views/Notifications/Notification";
 import Purchases from "./views/Purchases/Purchases";
 import OrderDetails from "./views/Purchases/Purchase Components/OrderDetails";
+import LoadingSpinner from "./components/LoadingSpinner";
+import AIChatBox from "./components/AIChatBox";
 
 import { Toaster } from "sonner";
 
@@ -42,15 +44,28 @@ const Main = () => {
 
   return (
     <>
-      {!isAuthPage && <Navbar isAuth={isAuthPage} />}
+      <LoadingSpinner />
+      {!isAuthPage && (
+        <Navbar
+          className="fixed top-0 left-0 right-0 z-[500]"
+          isAuth={isAuthPage}
+        />
+      )}
       <ScrollToTop />
-      <main className={!isAuthPage ? "pt-[70px]" : ""}>
+      <main className={!isAuthPage ? "container-responsive" : ""}>
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route
+            path="/"
+            element={
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+                <Landing />
+              </div>
+            }
+          />
           <Route
             path="/auth"
             element={
-              <div className="">
+              <div className="container-responsive">
                 <SignUp />
               </div>
             }
@@ -58,7 +73,7 @@ const Main = () => {
           <Route
             path="/signin"
             element={
-              <div className="">
+              <div className="container-responsive">
                 <SignIn />
               </div>
             }
@@ -66,15 +81,15 @@ const Main = () => {
           <Route
             path="/products"
             element={
-              <div className="pt-[20px]">
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
                 <Products />
               </div>
             }
           />
           <Route
-            path="/products/details/:id"
+            path="/products/details"
             element={
-              <div className="pt-[20px]">
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
                 <ProductDetails />
               </div>
             }
@@ -82,7 +97,7 @@ const Main = () => {
           <Route
             path="/cart"
             element={
-              <div className="pt-[20px]">
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
                 <Cart />
               </div>
             }
@@ -90,7 +105,7 @@ const Main = () => {
           <Route
             path="/checkout"
             element={
-              <div className="pt-[20px]">
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
                 <Checkout />
               </div>
             }
@@ -98,7 +113,7 @@ const Main = () => {
           <Route
             path="/thankyou"
             element={
-              <div className="pt-[20px]">
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
                 <ThankYou />
               </div>
             }
@@ -106,7 +121,7 @@ const Main = () => {
           <Route
             path="/buildpc"
             element={
-              <div className="pt-[20px]">
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
                 <SystemBuild />
               </div>
             }
@@ -114,7 +129,7 @@ const Main = () => {
           <Route
             path="/contactus"
             element={
-              <div className="pt-[20px]">
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
                 <ContactUs />
               </div>
             }
@@ -122,7 +137,7 @@ const Main = () => {
           <Route
             path="/notification"
             element={
-              <div className="pt-[20px]">
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
                 <Notification />
               </div>
             }
@@ -130,7 +145,7 @@ const Main = () => {
           <Route
             path="/purchases"
             element={
-              <div className="pt-[20px]">
+              <div className="pt-[20px] container-responsive">
                 <Purchases />
               </div>
             }
@@ -138,7 +153,7 @@ const Main = () => {
           <Route
             path="/purchases/details/:id"
             element={
-              <div className="pt-[20px]">
+              <div className="pt-[20px] container-responsive">
                 <OrderDetails />
               </div>
             }
@@ -146,6 +161,7 @@ const Main = () => {
         </Routes>
       </main>
       <Footer isAuth={isAuthPage} />
+      <AIChatBox />
       <Toaster richColors position="bottom-right" />
     </>
   );

@@ -10,6 +10,9 @@ const ContactUs = () => {
           Use our contact for all information requests or contact us directly
           using the contact information below.
         </p>
+        <div>
+          
+        </div>
         <p className="mb-4">
           Feel free to get in touch with us via email or phone
         </p>
@@ -120,6 +123,7 @@ const ContactUs = () => {
           </button>
         </form>
       </div>
+      
     </div>
   );
 };

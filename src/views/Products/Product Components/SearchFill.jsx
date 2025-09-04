@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { components } from "../../Data/components"; 
-
+import { components } from "../../Data/components";
 
 const SearchFill = ({ filters, onChange }) => {
   // 🔍 Extract unique brands from components
@@ -14,14 +13,14 @@ const SearchFill = ({ filters, onChange }) => {
     return Array.from(brandSet);
   }, []);
 
-  const discounts = ["10% Off", "20% Off", "30% Off", "50% Off"];
+  const discounts = ["Christmas Sale", "Seasons", "Top", "Anniversary"];
 
-  const [min, setMin] = useState("");
-  const [max, setMax] = useState("");
+  const [min, setMin] = useState("500");
+  const [max, setMax] = useState("5500");
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [selectedDiscounts, setSelectedDiscounts] = useState([]);
   const [selectedRating, setSelectedRating] = useState(null);
-    const [showAllBrands, setShowAllBrands] = useState(false); // ✅
+  const [showAllBrands, setShowAllBrands] = useState(false);
 
   const applyPrice = () => {
     onChange({
@@ -52,8 +51,8 @@ const SearchFill = ({ filters, onChange }) => {
   };
 
   const clearAll = () => {
-    setMin("");
-    setMax("");
+    setMin("500");
+    setMax("5500");
     setSelectedBrands([]);
     setSelectedDiscounts([]);
     setSelectedRating(null);
@@ -67,130 +66,123 @@ const SearchFill = ({ filters, onChange }) => {
   };
 
   return (
-    <div className="bg-gray-100 p-5 border border-gray-300 rounded-md shadow-md w-full mt-4 ml-4">
-      <h2 className="text-2xl mb-4">Search Filter</h2>
-      <hr className="border-t-2 border-black my-4" />
+    <div className=" text-white p-6 h-full">
+      <h2 className="text-2xl font-bold mb-6 text-white">Search Filter</h2>
 
       {/* Price Range */}
-      <div className="mb-6">
-        <label className="block mb-2 font-medium">By Price Range</label>
-        <div className="flex justify-between gap-2">
-          <input
-            type="number"
-            placeholder="Min"
-            value={min}
-            onChange={(e) => setMin(e.target.value)}
-            className="w-1/2 p-2 rounded border border-gray-300"
-          />
-          <input
-            type="number"
-            placeholder="Max"
-            value={max}
-            onChange={(e) => setMax(e.target.value)}
-            className="w-1/2 p-2 rounded border border-gray-300"
-          />
+      <div className="mb-8">
+        <label className="block mb-4 font-semibold text-white">
+          By Price Range
+        </label>
+        <div className="flex justify-between gap-3 mb-4">
+          <div className="flex-1">
+            <label className="block text-sm text-gray-300 mb-1">Min</label>
+            <input
+              type="number"
+              placeholder="P 500"
+              value={min}
+              onChange={(e) => setMin(e.target.value)}
+              className="w-full p-3 rounded border border-gray-600 bg-black bg-opacity-50 text-white placeholder-gray-400 focus:border-green-500 focus:outline-none backdrop-blur-sm"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm text-gray-300 mb-1">Max</label>
+            <input
+              type="number"
+              placeholder="P 5,500"
+              value={max}
+              onChange={(e) => setMax(e.target.value)}
+              className="w-full p-3 rounded border border-gray-600 bg-black bg-opacity-50 text-white placeholder-gray-400 focus:border-green-500 focus:outline-none backdrop-blur-sm"
+            />
+          </div>
         </div>
         <button
-          className="mt-3 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-800"
+          className="w-full bg-green-500 text-white py-3 rounded font-semibold hover:bg-green-600 transition-colors"
           onClick={applyPrice}
         >
           APPLY
         </button>
       </div>
-      <hr className="border-t-2 border-black my-4" />
 
       {/* Brand Filter */}
-        <div className="mb-6 w-full">
-    <label className="block mb-2 font-medium">Brand</label>
-    <ul>
-      {(showAllBrands ? allBrands : allBrands.slice(0, 4)).map((brand) => (
-        <li key={brand} className="flex items-center">
-          <input
-            type="checkbox"
-            id={`brand-${brand}`}
-            value={brand}
-            checked={selectedBrands.includes(brand)}
-            onChange={() => toggleBrand(brand)}
-            className="text-blue-600 accent-blue-600"
-          />
-          <label
-            htmlFor={`brand-${brand}`}
-            className="text-sm text-gray-700 ml-2"
-          >
-            {brand}
-          </label>
-        </li>
-      ))}
-    </ul>
-
-    {/* Show more/less toggle */}
-    {allBrands.length > 4 && (
-      <button
-        onClick={() => setShowAllBrands(!showAllBrands)}
-        className="text-blue-600 text-sm mt-2 cursor-pointer"
-      >
-        {showAllBrands ? "See less" : "See all brands"}
-      </button>
-    )}
-  </div>
-
-      <hr className="border-t-2 border-black my-4" />
+      <div className="mb-8">
+        <label className="block mb-4 font-semibold text-white">By Brand</label>
+        <div className="space-y-3">
+          {allBrands.slice(0, 4).map((brand) => (
+            <label key={brand} className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                value={brand}
+                checked={selectedBrands.includes(brand)}
+                onChange={() => toggleBrand(brand)}
+                className="w-4 h-4 text-green-500 bg-black bg-opacity-50 border-gray-600 rounded focus:ring-green-500 focus:ring-2"
+              />
+              <span className="ml-3 text-gray-300">{brand}</span>
+            </label>
+          ))}
+        </div>
+      </div>
 
       {/* Rating Filter */}
-      <div className="mb-6">
-        <label className="block mb-2 font-medium">Rating</label>
-        <div className="flex flex-col space-y-2">
+      <div className="mb-8">
+        <label className="block mb-4 font-semibold text-white">By Rate</label>
+        <div className="space-y-3">
           {[5, 4, 3, 2, 1].map((rating) => (
             <button
               key={rating}
-              className={`flex items-center space-x-1 ${
+              className={`flex items-center space-x-2 w-full p-2 rounded transition-colors ${
                 selectedRating === rating
-                  ? "bg-yellow-400 text-yellow-900"
-                  : "text-yellow-400 hover:bg-yellow-400 hover:text-yellow-900"
-              } cursor-pointer p-2 transition duration-200 rounded-2xl`}
+                  ? "bg-green-500 text-white"
+                  : "text-yellow-400 hover:bg-black hover:bg-opacity-30"
+              }`}
               onClick={() => applyRating(rating)}
             >
-              {Array.from({ length: rating }, (_, i) => (
-                <span key={i}>&#9733;</span>
-              ))}
-              <span className="text-sm text-gray-700 ml-2">and up</span>
+              <div className="flex">
+                {Array.from({ length: rating }, (_, i) => (
+                  <span key={i} className="text-yellow-400">
+                    ★
+                  </span>
+                ))}
+                {Array.from({ length: 5 - rating }, (_, i) => (
+                  <span key={i + rating} className="text-gray-600">
+                    ☆
+                  </span>
+                ))}
+              </div>
+              <span className="text-sm">and up</span>
             </button>
           ))}
         </div>
       </div>
 
-      <hr className="border-t-2 border-black my-4" />
-
       {/* Discount Filter */}
-      <div className="mb-2">
-        <label className="block mb-2 font-medium">Discount</label>
-        <ul className="space-y-2 mb-3">
+      <div className="mb-8">
+        <label className="block mb-4 font-semibold text-white">
+          By Discounts & Promos
+        </label>
+        <div className="space-y-3">
           {discounts.map((discount) => (
-            <li key={discount} className="flex items-center space-x-2">
+            <label key={discount} className="flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                id={`discount-${discount}`}
                 value={discount}
                 checked={selectedDiscounts.includes(discount)}
                 onChange={() => toggleDiscount(discount)}
-                className="text-blue-600 accent-blue-600"
+                className="w-4 h-4 text-green-500 bg-black bg-opacity-50 border-gray-600 rounded focus:ring-green-500 focus:ring-2"
               />
-              <label
-                htmlFor={`discount-${discount}`}
-                className="text-sm text-gray-700"
-              >
-                {discount}
-              </label>
-            </li>
+              <span className="ml-3 text-gray-300">{discount}</span>
+            </label>
           ))}
-        </ul>
-        <button
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-800"
-          onClick={clearAll}
-        >
-          CLEAR ALL
-        </button>
+        </div>
       </div>
+
+      {/* Clear All Button */}
+      <button
+        className="w-full bg-green-500 text-white py-3 rounded font-semibold hover:bg-green-600 transition-colors mb-6"
+        onClick={clearAll}
+      >
+        CLEAR ALL
+      </button>
     </div>
   );
 };

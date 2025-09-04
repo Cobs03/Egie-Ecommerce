@@ -1,5 +1,5 @@
 import React from "react";
-import Banner from "./Landing Components/Banner";
+import LandingBanner from "./Landing Components/Banner";
 import Feature from "./Landing Components/Feature";
 import BuildLaps from "./Landing Components/BuildLaps";
 import Brands from "./Landing Components/Brands";
@@ -8,19 +8,20 @@ import TopSeller from "./Landing Components/TopSeller";
 import Faq from "./Landing Components/Faq";
 
 const Landing = () => {
-
-    return (
-        <>
-            <Banner />
-            <Feature />
-            <BuildLaps set="one"/>
-            <BuildLaps set="two" />
-            <Brands />
-            <NewArrivals />
-            <TopSeller />
-            <Faq />
-        </>
-    )
-}
+  return (
+    <>
+      <div className="container-responsive landing-page">
+        <LandingBanner />
+        <Feature />
+        <BuildLaps set="one" />
+        <BuildLaps set="two" />
+        <Brands />
+        <NewArrivals />
+        <TopSeller />
+        <Faq />
+      </div>
+    </>
+  );
+};
 
 export default Landing;

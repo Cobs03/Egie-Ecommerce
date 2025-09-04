@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
@@ -15,23 +15,85 @@ import {
 import { IoBookmark, IoCloseCircleOutline } from "react-icons/io5";
 import { AiFillInstagram } from "react-icons/ai";
 import { FaXTwitter } from "react-icons/fa6";
-
 import { toast } from "sonner";
 
-const ProductModal = ({ product, onClose }) => {
+const BundleModal = ({ product, onClose }) => {
+  const navigate = useNavigate();
   const [currentImage, setCurrentImage] = useState(0);
-  const [selectedVariation, setSelectedVariation] = useState("83A10024US");
-  const images = [
-    "image1.jpg",
-    "image2.jpg",
-    "image3.jpg",
-    "image4.jpg",
-    "image5.jpg",
-    "image6.jpg",
-    "image7.jpg",
+  const [selectedFilter, setSelectedFilter] = useState("All");
+  
+  // Bundle and product-specific images
+  const bundleImages = [
+    "/images/bundle.png",
+    "/images/bundle.png",
+    "/images/bundle.png",
+    "/images/bundle.png",
+  ];
+  
+  const mouseImages = [
+    "/images/products/mouse1.png",
+    "/images/products/mouse2.png",
+    "/images/products/mouse3.png",
+    "/images/products/mouse4.png",
+  ];
+  
+  const keyboardImages = [
+    "/images/products/keyboard1.png",
+    "/images/products/keyboard2.png",
+    "/images/products/keyboard3.png",
+    "/images/products/keyboard4.png",
+  ];
+  
+  const cpuImages = [
+    "/images/products/cpu1.png",
+    "/images/products/cpu2.png",
+    "/images/products/cpu3.png",
+    "/images/products/cpu4.png",
   ];
 
-  const variations = ["83A10024US", "83A1002MMX", "83A1A021KR", "83A1A019PH"];
+  // Get current images based on selected filter
+  const getCurrentImages = () => {
+    switch(selectedFilter) {
+      case "Mouse":
+        return mouseImages;
+      case "Keyboard":
+        return keyboardImages;
+      case "CPU":
+        return cpuImages;
+      default:
+        return bundleImages;
+    }
+  };
+
+  // Get background color based on selected filter
+  const getContainerBackgroundColor = () => {
+    switch(selectedFilter) {
+      case "Mouse":
+        return "bg-blue-100";
+      case "Keyboard":
+        return "bg-green-100";
+      case "CPU":
+        return "bg-purple-100";
+      default:
+        return "bg-white";
+    }
+  };
+
+  // Get thumbnail background color based on selected filter
+  const getThumbnailBackgroundColor = () => {
+    switch(selectedFilter) {
+      case "Mouse":
+        return "bg-blue-50";
+      case "Keyboard":
+        return "bg-green-50";
+      case "CPU":
+        return "bg-purple-50";
+      default:
+        return "bg-white";
+    }
+  };
+
+  const filterOptions = ["All", "Mouse", "Keyboard", "CPU"];
 
   const [nav1, setNav1] = useState(null);
   const [nav2, setNav2] = useState(null);
@@ -42,6 +104,35 @@ const ProductModal = ({ product, onClose }) => {
     setNav1(sliderRef1.current);
     setNav2(sliderRef2.current);
   }, []);
+
+  // Reset currentImage when filter changes
+  useEffect(() => {
+    setCurrentImage(0);
+    // If sliders are initialized, go to first slide
+    if (sliderRef1.current) {
+      sliderRef1.current.slickGoTo(0);
+    }
+    if (sliderRef2.current) {
+      sliderRef2.current.slickGoTo(0);
+    }
+  }, [selectedFilter]);
+
+  // Function to handle viewing selected product
+  const handleViewSelectedProduct = () => {
+    // Make sure selectedFilter is not empty
+    const category = selectedFilter || "All";
+
+    // Create the target URL with the query parameter
+    const targetUrl = `/products/details?category=${encodeURIComponent(category)}`;
+
+    // Close the modal first
+    onClose();
+
+    // Use a slight delay to ensure the modal closing doesn't interfere
+    setTimeout(() => {
+      navigate(targetUrl);
+    }, 100);
+  };
 
   const CustomNextArrow = ({ onClick }) => (
     <div
@@ -80,6 +171,11 @@ const ProductModal = ({ product, onClose }) => {
   const stockStatus = product?.stockStatus || "In Stock";
   const [quantity, setQuantity] = useState(1);
 
+  // Get current images based on the filter
+  const currentImages = getCurrentImages();
+  const containerBgColor = getContainerBackgroundColor();
+  const thumbnailBgColor = getThumbnailBackgroundColor();
+
   return (
     <div
       className="fixed inset-0 bg-black/80 flex items-center justify-center z-[999]"
@@ -117,14 +213,14 @@ const ProductModal = ({ product, onClose }) => {
                 slidesToShow={1}
                 slidesToScroll={1}
               >
-                {images.map((image, index) => (
+                {currentImages.map((image, index) => (
                   <div
                     key={index}
-                    className="bg-white rounded-lg p-4 h-[400px] flex items-center justify-center"
+                    className={`${containerBgColor} rounded-lg p-4 h-[400px] flex items-center justify-center`}
                   >
                     <img
                       src={image}
-                      alt={`Product ${index + 1}`}
+                      alt={`${selectedFilter} ${index + 1}`}
                       className="object-contain max-h-full max-w-full"
                     />
                   </div>
@@ -147,9 +243,9 @@ const ProductModal = ({ product, onClose }) => {
                 speed={500}
                 className="thumbnail-slider"
               >
-                {images.map((image, index) => (
+                {currentImages.map((image, index) => (
                   <div key={index} className="px-1">
-                    <div className="bg-white rounded-lg p-2 h-20 flex items-center justify-center cursor-pointer hover:opacity-80 transition">
+                    <div className={`${thumbnailBgColor} rounded-lg p-2 h-20 flex items-center justify-center cursor-pointer hover:opacity-80 transition`}>
                       <img
                         src={image}
                         alt={`Thumbnail ${index + 1}`}
@@ -160,13 +256,17 @@ const ProductModal = ({ product, onClose }) => {
                 ))}
               </Slider>
             </div>
+            
+            {/* Selected Product Indicator */}
+            <div className={`mt-4 text-center ${selectedFilter !== "All" ? "text-white" : "text-green-500"} bg-zinc-800 py-2 px-4 rounded`}>
+              Viewing: <span className="font-semibold text-green-500">{selectedFilter}</span> Images
+            </div>
           </div>
 
-          {/* Product Details */}
+          {/* Bundle Details */}
           <div className="w-full lg:w-1/2 bg-black p-4 rounded-lg">
             <h1 className="text-xl font-semibold mb-2 text-white">
-              HP IRU 15.6" FHD Intel Core i5- 1335U/8GB DDR4/512GB M.2 SSD
-              Laptop MN
+              CHRISTMAS BUNDLE
             </h1>
 
             <div className="flex justify-between text-sm text-gray-400 mb-4">
@@ -180,30 +280,36 @@ const ProductModal = ({ product, onClose }) => {
             </div>
 
             <div className="mb-4">
-              <span className="text-green-500 font-semibold">
-                Available: In Stock
+              <span className="text-white font-semibold">
+                Available: <span className="text-green-500">In Stock</span>
               </span>
             </div>
 
-            {/* Variations */}
+            {/* Products in the Bundle */}
             <div className="mb-6">
               <label className="block font-medium mb-3 text-white">
-                Variation
+                Products in the Bundle
               </label>
               <div className="flex gap-2 flex-wrap">
-                {variations.map((variation) => (
+                {filterOptions.map((option) => (
                   <button
-                    key={variation}
-                    onClick={() => setSelectedVariation(variation)}
+                    key={option}
+                    onClick={() => setSelectedFilter(option)}
                     className={`border px-4 py-2 rounded text-sm transition cursor-pointer ${
-                      selectedVariation === variation
+                      selectedFilter === option
                         ? "border-green-500 bg-green-500 text-white"
                         : "border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
                     }`}
                   >
-                    {variation}
+                    {option}
                   </button>
                 ))}
+                <button
+                  onClick={handleViewSelectedProduct}
+                  className="flex gap-1 border border-white px-4 py-2 rounded text-sm transition cursor-pointer text-white hover:bg-white hover:text-gray-800"
+                >
+                  View Selected Product <FaArrowRight className="h-full" />
+                </button>
               </div>
             </div>
 
@@ -236,18 +342,20 @@ const ProductModal = ({ product, onClose }) => {
                   +
                 </button>
                 <span className="text-sm text-gray-400">
-                  {stock} pieces available
+                  1404 pieces available
                 </span>
               </div>
             </div>
 
             {/* View More Details */}
-            <Link
-              to={`/products/details?type=product&id=${product?.id || ''}`}
-              className="block text-blue-400 hover:underline mb-6 text-sm cursor-pointer text-center"
-            >
-              VIEW MORE DETAILS
-            </Link>
+            <div className="text-center mb-6">
+              <Link
+                to={`/products/details?type=bundle&id=${product?.id || 'bundle-1'}`}
+                className="text-blue-400 hover:underline text-sm cursor-pointer"
+              >
+                VIEW MORE DETAILS
+              </Link>
+            </div>
 
             {/* Action Buttons */}
             <div className="flex gap-3">
@@ -260,17 +368,6 @@ const ProductModal = ({ product, onClose }) => {
                 className="flex-1 bg-green-500 text-white font-medium py-3 rounded hover:bg-green-600 transition text-center cursor-pointer"
               >
                 Add To Cart
-              </button>
-
-              <button
-                onClick={() => {
-                  toast.success("Added to compare!", {
-                    description: "Product added to comparison list.",
-                  });
-                }}
-                className="flex-1 bg-blue-500 text-white font-medium py-3 rounded hover:bg-blue-600 transition text-center cursor-pointer"
-              >
-                Compare
               </button>
 
               <Link
@@ -287,4 +384,4 @@ const ProductModal = ({ product, onClose }) => {
   );
 };
 
-export default ProductModal;
+export default BundleModal;

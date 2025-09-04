@@ -2,14 +2,36 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import "../../../../src/index.css";
 import "flowbite";
-import { IoNotifications } from "react-icons/io5";
-import { IoBookmark } from "react-icons/io5";
+import { IoIosNotifications } from "react-icons/io";
 import { FaShoppingCart } from "react-icons/fa";
 import { FaSquareFacebook } from "react-icons/fa6";
-import { FaInstagram } from "react-icons/fa6";
+import { AiFillInstagram } from "react-icons/ai";
+
+import { FaCodeCompare } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
-import { FaBookmark } from "react-icons/fa";
+
+import { FaTiktok } from "react-icons/fa";
+import {
+  NavigationMenu,
+  NavigationMenuList,
+  NavigationMenuItem,
+  NavigationMenuTrigger,
+  NavigationMenuContent,
+} from "@/components/ui/navigation-menu";
+import {
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+import DropdownComponent from "@/components/ui/dropdown";
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown";
+import { User, HelpCenter } from "@/components/ui/dropdown";
 
 const Navbar = ({ isAuth }) => {
   const [cartCount, setCartCount] = useState(2); // example
@@ -32,6 +54,10 @@ const Navbar = ({ isAuth }) => {
   };
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchBar, setShowSearchBar] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showProfileAccordion, setShowProfileAccordion] = useState(false);
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
@@ -46,331 +72,498 @@ const Navbar = ({ isAuth }) => {
         <div className="auth-header "></div>
       ) : (
         <div className="main-header">
-          <nav className="bg-black border-gray-200 fixed w-full top-0 z-50">
-            {/* UPPER NAVBAR */}
-            <div className="hidden md:block  bg-[#111] text-white text-sm px-5">
-              <div className="flex flex-row md:flex-row lg:flex-row md:order-1 justify-between items-center">
-                <div className="leading-loose">
-                  Mon-Sunday 8:00 AM - 5:30 PM
-                </div>
-                <div className="">
-                  Visit our showroom at 1234 Street Address City Address, 1234{" "}
-                  <a href="#">Contact Us</a>
-                </div>
-                <div className="">Call Us: +639151855519</div>
-
-                <div className="flex gap-2 text-2xl ">
-                  <a href="https://www.facebook.com/EGIEGameShop/">
-                    <FaSquareFacebook className=" hover:text-[#4AA3E8]" />
-                  </a>
-                  <a href="https://www.instagram.com/egie_gameshop/">
-                    <FaInstagram className="instagram-icon hover:text-[#4AA3E8]" />
-                  </a>
-                </div>
+          <nav className="bg-gradient-to-r from-green-200 to-green-300 border-gray-200 w-full min-w-[320px] md:min-w-[768px] lg:min-w-[1024px] xl:min-w-[1280px] fixed top-0 left-0 right-0 z-[500] ">
+            {/* UPPER NAVBAR - Desktop */}
+            <div className="hidden md:flex bg-gradient-to-r from-green-100 to-green-300 text-black px-5 py-1 justify-around items-center w-full h-10">
+              <div className="text-[10px] font-bold">
+                Mon–Sunday: 8:00 AM – 5:30 PM
+              </div>
+              <div className="text-center text-[12px] font-bold items-center gap-1 md:gap-2">
+                Visit our showroom in 1234 Street Address City Address, 1234{" "}
+                <a
+                  href="#"
+                  className="underline text-gray-700 hover:text-black ml-1"
+                >
+                  Contact Us
+                </a>
+              </div>
+              <div className="text-center text-[10px] font-bold">
+                <span>Call Us: +639151855519</span>
+              </div>
+              <div className="flex items-center gap-2 md:gap-4 text-base md:text-lg font-bold">
+                <a
+                  href="https://www.facebook.com/EGIEGameShop/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FaSquareFacebook className="text-lg md:text-xl hover:text-[#4AA3E8]" />
+                </a>
+                <a
+                  href="https://www.instagram.com/egie_gameshop/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <AiFillInstagram className="text-xl md:text-2xl hover:text-[#4AA3E8]" />
+                </a>
+                <a href="#" className="text-lg md:text-xl">
+                  <FaTiktok className="text-lg md:text-xl hover:text-[#4AA3E8]" />
+                </a>
               </div>
             </div>
 
             {/* BOTTOM NAVBAR */}
-            <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto bg-transparent">
-              {/* LOGO */}
-              <Link
-                to="/"
-                className="flex items-center space-x-3 rtl:space-x-reverse"
-              >
-                <img
-                  src="https://i.ibb.co/Cpx2BBt5/egie-removebg-preview-1.png"
-                  className="h-15"
-                  alt="EGIE Logo"
-                />
-              </Link>
-
-              {/* MAIN LINKS */}
-              <div
-                className="items-center justify-between hidden w-full md:flex md:w-auto md:order-2 sm:order-5 bg-black"
-                id="navbar-user"
-              >
-                {/* Search bar for mobile */}
-                <div className="relative mt-3 md:hidden">
-                  <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
-                    <svg
-                      className="w-4 h-4 text-gray-500 dark:text-gray-400"
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        stroke="currentColor"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
-                      />
-                    </svg>
-                  </div>
-                  <input
-                    type="text"
-                    id="search-navbar"
-                    className="block w-full p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Search..."
-                  />
-                </div>
-                <ul className="flex flex-col p-4 md:p-0 mt-4 font-medium border border-gray-100 rounded-lg  md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0">
-                  <li>
+            <div className="w-full flex items-center justify-between bg-black py-2 px-8">
+              {/* LEFT LINKS - Hidden on mobile */}
+              <NavigationMenu className="hidden md:flex flex-1">
+                <NavigationMenuList>
+                  <NavigationMenuItem>
                     <Link
                       to="/"
-                      className={`block py-2 px-3 rounded-sm md:p-0 ${
+                      className={`text-shadow-white transition px-2 md:px-4 py-2 text-xs md:text-sm whitespace-nowrap ${
                         isActive("/")
-                          ? "text-blue-400 font-semibold"
-                          : "text-white"
-                      } hover:text-gray-300`}
-                      aria-current="page"
+                          ? "text-green-400 font-semibold"
+                          : "text-white hover:text-green-400"
+                      }`}
                     >
                       Home
                     </Link>
-                  </li>
-
-                  <li>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
                     <Link
                       to="/products"
-                      className={`block py-2 px-3 rounded-sm md:p-0 ${
+                      className={`text-shadow-white transition px-2 md:px-4 py-2 text-xs md:text-sm whitespace-nowrap ${
                         isActive("/products")
-                          ? "text-blue-400 font-semibold"
-                          : "text-white"
-                      } hover:text-gray-300`}
-                      aria-current="page"
+                          ? "text-green-400 font-semibold"
+                          : "text-white hover:text-green-400"
+                      }`}
                     >
                       All Products
                     </Link>
-                  </li>
-
-                  <li>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
                     <Link
                       to="/buildpc"
-                      className={`block py-2 px-3 rounded-sm md:p-0 ${
+                      className={`text-shadow-white transition px-2 md:px-4 py-2 text-xs md:text-sm whitespace-nowrap ${
                         isActive("/buildpc")
-                          ? "text-blue-400 font-semibold"
-                          : "text-white"
-                      } hover:text-gray-300`}
+                          ? "text-green-400 font-semibold"
+                          : "text-white hover:text-green-400"
+                      }`}
                     >
                       PC Build
                     </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/contactus"
-                      className={`block py-2 px-3 rounded-sm md:p-0 ${
-                        isActive("/contactus")
-                          ? "text-blue-400 font-semibold"
-                          : "text-white"
-                      } hover:text-gray-300`}
-                    >
-                      Contact Us
-                    </Link>
-                  </li>
-                </ul>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
+
+              {/* LOGO CENTERED */}
+              <div className="flex-1 flex justify-center md:flex-1 max-md:justify-start">
+                <Link to="/">
+                  <img
+                    src="https://i.ibb.co/tp4Bkfzs/egie-removebg-preview-1.png"
+                    alt="EGIE logo"
+                    border="0"
+                  />
+                </Link>
               </div>
 
-              {/* RIGHT */}
-              <div className="flex flex-wrap items-center justify-between md:order-3 mx-5 ">
-                <div className="flex items-center md:order-2">
-                  {/* Small Screen Search Button */}
-                  <button
-                    type="button"
-                    data-collapse-toggle="navbar-user"
-                    aria-controls="navbar-search"
-                    aria-expanded="false"
-                    className="md:hidden text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5 me-1"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 20 20"
+              {/* RIGHT: Search + Auth Buttons */}
+              <div className="flex items-center gap-4 ">
+                {/* Search Icon Button */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className=" transition flex items-center cursor-pointer justify-center w-10 h-10 rounded-full bg-white text-black border border-gray-300 hover:bg-gray-100 focus:outline-none"
+                        aria-label="Search"
+                        onClick={() => setShowSearchBar((prev) => !prev)}
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle cx="11" cy="11" r="8" />
+                          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="bottom"
+                      className="bg-white text-black border border-gray-200 shadow z-[9999]"
                     >
-                      <path
-                        stroke="currentColor"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
-                      />
-                    </svg>
-                    <span className="sr-only">Search</span>
-                  </button>
-
-                  <div
-                    className=" relative hidden md:block w-100 mx-5"
-                    id="navbar-search"
-                  >
-                    {/* <div className="relative inset-y-0 start-0 flex items-center ps-3 pointer-events-cursor">
-                      <svg className=" w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-                      </svg>
-
-                    </div> */}
-                    <input
-                      type="text"
-                      id="search-navbar"
-                      className="block w-full p-2 pl-10 text-sm text-gray-900 border border-gray-300 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 rounded-xl"
-                      placeholder="Search..."
-                    />
-                  </div>
-                </div>
-
-                {/* BUTTONS */}
-                <div
-                  className={`flex md:order-3 mx-4  auth-buttons ${
-                    isSignedIn ? "signed-in" : "signed-out"
-                  }`}
-                >
-                  {isSignedIn ? (
-                    <>
-                      <Link
-                        to="/wishlist"
-                        className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-teal-300 to-lime-300 group-hover:from-teal-300 group-hover:to-lime-300 "
-                      >
-                        <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">
-                          <FaBookmark />
-                        </span>
-                      </Link>
-
-                      <Link
-                        to="/cart"
-                        className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-teal-300 to-lime-300 group-hover:from-teal-300 group-hover:to-lime-300 "
-                      >
-                        <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">
-                          <FaShoppingCart className="cart" />
-                        </span>
-                        {cartCount > 0 && (
-                          <span className="absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
-                            {cartCount}
-                          </span>
-                        )}
-                      </Link>
-
-                      <Link
-                        to="/notification"
-                        className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-teal-300 to-lime-300 group-hover:from-teal-300 group-hover:to-lime-300 "
-                      >
-                        <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">
-                          <IoNotifications />
-                        </span>
-                        {notificationCount > 0 && (
-                          <span className="absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
-                            {notificationCount}
-                          </span>
-                        )}
-                      </Link>
-
-                      {/* <!-- Dropdown menu --> */}
-                      <div
-                        className="z-50 hidden my-4 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow-sm dark:bg-gray-700 dark:divide-gray-600"
-                        id="user-dropdown"
-                      >
-                        <div className="px-4 py-3">
-                          <span className="block text-sm text-gray-900 dark:text-white">
-                            Bonnie Green
-                          </span>
-                          <span className="block text-sm  text-gray-500 truncate dark:text-gray-400">
-                            name@flowbite.com
-                          </span>
-                        </div>
-                        <ul className="py-2" aria-labelledby="user-menu-button">
-                          <li>
-                            <button className="text-left cursor-pointer w-full block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">
-                              My Settings
-                            </button>
-                          </li>
-                          <li>
-                            <Link
-                              to="/purchases"
-                              className="text-left cursor-pointer w-full block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
-                            >
-                              My Purchases
-                            </Link>
-                          </li>
-                          <li>
+                      Search
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                {isSignedIn ? (
+                  <div className="flex items-center gap-8">
+                    <div className="flex items-center gap-8 max-md:hidden">
+                      {/* Notification Icon - Hidden on mobile */}
+                      <TooltipProvider className="md:hidden">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
                             <button
-                              onClick={handleSignOut}
-                              className="w-full text-left cursor-pointer block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
+                              className="relative focus:outline-none"
+                              aria-label="Notifications"
                             >
-                              Sign out
+                              <IoIosNotifications className="text-2xl sm:text-3xl md:text-4xl text-lime-400 hover:text-lime-500 transition cursor-pointer" />
                             </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Link
-                        to="/signin"
-                        className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-teal-300 to-lime-300 group-hover:from-teal-300 group-hover:to-lime-300 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-lime-800"
-                      >
-                        <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">
-                          Sign In
-                        </span>
-                      </Link>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="bottom"
+                            className="bg-white text-black border border-gray-200 shadow z-[9999]"
+                          >
+                            Notifications
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      {/* Cart Icon - Hidden on mobile */}
+                      <TooltipProvider className="md:hidden">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Link to="/cart" className="relative focus:outline-none" aria-label="Cart">
+                              <FaShoppingCart className="text-xl sm:text-2xl md:text-3xl text-lime-400 hover:text-lime-500 transition cursor-pointer" />
+                            </Link>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="bottom"
+                            className="bg-white text-black border border-gray-200 shadow z-[9999]"
+                          >
+                            Cart
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      {/* Compare Icon - Hidden on mobile */}
+                      <TooltipProvider className="md:hidden">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              className="relative focus:outline-none"
+                              aria-label="Compare"
+                            >
+                              <FaCodeCompare className="text-xl sm:text-2xl md:text-3xl text-lime-400 hover:text-lime-500 transition cursor-pointer" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="bottom"
+                            className="bg-white text-black border border-gray-200 shadow z-[9999]"
+                          >
+                            Compare
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
 
-                      <Link
-                        to="/auth"
-                        className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-teal-300 to-lime-300 group-hover:from-teal-300 group-hover:to-lime-300 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-lime-800"
+                    <div className="flex items-center gap-8">
+                      {/* Profile Menu using custom Dropdown */}
+                      <DropdownMenu
+                        trigger={
+                          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white text-black border border-gray-300 hover:bg-gray-100 cursor-pointer max-md:hidden">
+                            <img
+                              src="https://randomuser.me/api/portraits/men/32.jpg"
+                              alt="Profile"
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          </div>
+                        }
                       >
-                        <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">
-                          Sign Up
-                        </span>
-                      </Link>
-                    </>
+                        <DropdownMenuItem
+                          onClick={() => console.log("Profile clicked")}
+                          active={true}
+                        >
+                          <User className="mr-3 h-5 w-5 text-zinc-500" />
+                          <span>Profile</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => navigate("/purchases")}
+                        >
+                          <svg
+                            className="mr-3 h-5 w-5 text-zinc-500"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span>My Purchases</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/settings")}>
+                          <svg
+                            className="mr-3 h-5 w-5 text-zinc-500"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <span>Settings</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => console.log("Help Center clicked")}
+                        >
+                          <HelpCenter className="mr-3 h-5 w-5 text-zinc-500" />
+                          <span>Help center</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleSignOut}>
+                          <svg
+                            className="mr-3 h-5 w-5 text-zinc-500"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                            <polyline points="16 17 21 12 16 7" />
+                            <line x1="21" x2="9" y1="12" y2="12" />
+                          </svg>
+                          <span className="text-red-600">Sign Out</span>
+                        </DropdownMenuItem>
+                      </DropdownMenu>
+                      {/* Hamburger Menu Button - Visible only on mobile */}
+                      <button
+                        className="flex md:hidden items-center justify-center w-10 h-10 rounded-full bg-white text-black border border-gray-300 hover:bg-gray-100 focus:outline-none"
+                        aria-label="Menu"
+                        onClick={() => setShowMobileMenu((prev) => !prev)}
+                      >
+                        <svg
+                          className="w-6 h-6"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Sign In/Sign Up Buttons (keep as fallback) */}
+                    <Link
+                      to="/signin"
+                      className="px-6 py-2 border-2 border-green-400 text-white rounded-full hover:bg-green-400 hover:text-black transition font-semibold"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      to="/auth"
+                      className="px-6 py-2 border-2 border-green-400 text-white rounded-full hover:bg-green-400 hover:text-black transition font-semibold"
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          </nav>
+          {/* Mobile Menu Dropdown */}
+          {showMobileMenu && (
+            <div
+              className="lg:hidden bg-black border-t border-gray-700"
+              style={{
+                position: "fixed",
+                top: "90px",
+                left: 0,
+                right: 0,
+                zIndex: 2000,
+              }}
+            >
+              <div className="px-4 py-2 space-y-2">
+                {/* Navigation Links */}
+                <div className="space-y-1">
+                  <Link
+                    to="/"
+                    className={`block px-3 py-2 text-sm rounded-lg transition ${
+                      isActive("/")
+                        ? "text-green-400 font-semibold bg-gray-800"
+                        : "text-white hover:text-green-400 hover:bg-gray-800"
+                    }`}
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    Home
+                  </Link>
+                  <Link
+                    to="/products"
+                    className={`block px-3 py-2 text-sm rounded-lg transition ${
+                      isActive("/products")
+                        ? "text-green-400 font-semibold bg-gray-800"
+                        : "text-white hover:text-green-400 hover:bg-gray-800"
+                    }`}
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    All Products
+                  </Link>
+                  <Link
+                    to="/buildpc"
+                    className={`block px-3 py-2 text-sm rounded-lg transition ${
+                      isActive("/buildpc")
+                        ? "text-green-400 font-semibold bg-gray-800"
+                        : "text-white hover:text-green-400 hover:bg-gray-800"
+                    }`}
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    PC Build
+                  </Link>
+                  <Link
+                    to="/compare"
+                    className={`block px-3 py-2 text-sm rounded-lg transition ${
+                      isActive("/compare")
+                        ? "text-green-400 font-semibold bg-gray-800"
+                        : "text-white hover:text-green-400 hover:bg-gray-800"
+                    }`}
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    Compare
+                  </Link>
+                </div>
+                {/* Profile Accordion */}
+                <div className="border-t border-gray-700 pt-2">
+                  <button
+                    className="flex items-center w-full px-3 py-2 text-white hover:text-green-400 transition rounded-lg"
+                    onClick={() => setShowProfileAccordion((prev) => !prev)}
+                  >
+                    <img
+                      src="https://randomuser.me/api/portraits/men/32.jpg"
+                      alt="Profile"
+                      className="w-7 h-7 rounded-full object-cover mr-2"
+                    />
+                    <span className="flex-1 text-left">Profile</span>
+                    <svg
+                      className={`w-4 h-4 ml-2 transition-transform ${
+                        showProfileAccordion ? "rotate-90" : ""
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                  {showProfileAccordion && (
+                    <div className="pl-10 py-1 space-y-1">
+                      <button
+                        className="block w-full text-left px-2 py-1 text-sm text-white hover:text-green-400"
+                        onClick={() => {
+                          setShowMobileMenu(false);
+                          setShowProfileAccordion(false);
+                          // Profile logic here
+                        }}
+                      >
+                        Profile
+                      </button>
+                      <button
+                        className="block w-full text-left px-2 py-1 text-sm text-white hover:text-green-400"
+                        onClick={() => {
+                          setShowMobileMenu(false);
+                          setShowProfileAccordion(false);
+                          navigate("/purchases");
+                        }}
+                      >
+                        My Purchases
+                      </button>
+                      <button
+                        className="block w-full text-left px-2 py-1 text-sm text-white hover:text-green-400"
+                        onClick={() => {
+                          setShowMobileMenu(false);
+                          setShowProfileAccordion(false);
+                          navigate("/settings");
+                        }}
+                      >
+                        Settings
+                      </button>
+                      <button
+                        className="block w-full text-left px-2 py-1 text-sm text-white hover:text-green-400"
+                        onClick={() => {
+                          setShowMobileMenu(false);
+                          setShowProfileAccordion(false);
+                          // Help Center logic here
+                        }}
+                      >
+                        Help Center
+                      </button>
+                      <button
+                        className="block w-full text-left px-2 py-1 text-sm text-red-400 hover:text-red-600"
+                        onClick={() => {
+                          setShowMobileMenu(false);
+                          setShowProfileAccordion(false);
+                          handleSignOut();
+                        }}
+                      >
+                        Sign Out
+                      </button>
+                    </div>
                   )}
                 </div>
-
-                {/* PROFILE AND HAMBURGER */}
-                <div className="flex items-center md:order-4 space-x-3 md:space-x-0 rtl:space-x-reverse">
+                {/* Icons */}
+                <div className="flex items-center gap-4 pt-2 border-t border-gray-700">
                   <button
-                    type="button"
-                    className="flex text-sm bg-gray-800 rounded-full md:me-0 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600"
-                    id="user-menu-button"
-                    aria-expanded="false"
-                    data-dropdown-toggle="user-dropdown"
-                    data-dropdown-placement="bottom"
+                    className="flex items-center gap-2 px-3 py-2 text-white hover:text-green-400 transition"
+                    aria-label="Notifications"
                   >
-                    <span className="sr-only">Open user menu</span>
-                    <img
-                      className="w-8 h-8 rounded-full"
-                      src="/docs/images/people/profile-picture-3.jpg"
-                      alt="user photo"
-                    />
+                    <IoIosNotifications className="text-lg sm:text-xl md:text-2xl" />
+                    <span className="text-xs sm:text-sm">Notifications</span>
                   </button>
-
                   <button
-                    data-collapse-toggle="navbar-user"
-                    type="button"
-                    className="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
-                    aria-controls="navbar-user"
-                    aria-expanded="false"
+                    className="flex items-center gap-2 px-3 py-2 text-white hover:text-green-400 transition"
+                    aria-label="Cart"
                   >
-                    <span className="sr-only">Open main menu</span>
-                    <svg
-                      className="w-5 h-5"
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 17 14"
-                    >
-                      <path
-                        stroke="currentColor"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M1 1h15M1 7h15M1 13h15"
-                      />
-                    </svg>
+                    <FaShoppingCart className="text-base sm:text-lg md:text-xl" />
+                    <span className="text-xs sm:text-sm">Cart</span>
                   </button>
                 </div>
               </div>
             </div>
-          </nav>
+          )}
+          {showSearchBar !== undefined && (
+            <div
+              className={`fixed left-0 right-0 top-[130px] z-50 flex justify-center bg-transparent p-1 transition-all duration-300 ease-in-out
+                ${
+                  showSearchBar
+                    ? "translate-y-0 opacity-100 pointer-events-auto"
+                    : "-translate-y-8 opacity-0 pointer-events-none"
+                }`}
+              style={{ pointerEvents: showSearchBar ? "auto" : "none" }}
+            >
+              <div
+                className="flex items-center bg-white rounded-full px-2 sm:px-3 md:px-4 py-2 w-[90%] sm:w-[80%] md:w-[70%] lg:w-[60%] xl:w-1/2 shadow-lg border-5 border-black"
+                style={{ pointerEvents: "auto" }}
+              >
+                <input
+                  type="text"
+                  className="flex-1 bg-transparent text-black border-none outline-none focus:outline-0 focus:border-0 w-full pl-8 sm:pl-10 rounded-full text-sm sm:text-base"
+                  placeholder="Search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+                <svg
+                  className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mr-1 sm:mr-2 absolute ml-2"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <button
+                  onClick={handleSearch}
+                  className="ml-1 sm:ml-2 px-2 sm:px-3 md:px-4 py-1 sm:py-2 bg-green-400 text-black rounded-full font-semibold hover:bg-green-500 transition text-xs sm:text-sm md:text-base"
+                >
+                  Search
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -15,7 +15,7 @@ const Footer = ({ isAuth }) => {
             {/* Logo */}
             <div className="mb-6 w-full sm:w-auto">
               <img
-                src="https://i.ibb.co/Cpx2BBt5/egie-removebg-preview-1.png"
+                src="https://i.ibb.co/tp4Bkfzs/egie-removebg-preview-1.png"
                 alt="EGIE Game Shop"
                 className="w-[280px] sm:w-[350px] mx-auto sm:mx-0"
               />
@@ -43,6 +43,11 @@ const Footer = ({ isAuth }) => {
                 <li>
                   <a href="/contact" className="hover:underline">
                     Contact Us
+                  </a>
+                </li>
+                <li>
+                  <a href="/faqs" className="hover:underline">
+                    Compare
                   </a>
                 </li>
                 <li>

@@ -7,7 +7,7 @@
 @source "../node_modules/flowbite";
 
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Poppins', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -54,9 +54,12 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
-body {
+body, html {
   margin: 0;
-  padding: 0;
+    padding: 0;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
   background-color: var(--main-bg-color);
   color: var(--primary-color);
 
@@ -141,4 +144,221 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@font-face {
+  font-family: 'Bruno Ace SC';
+  src: url('/Font/BrunoAceSC-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('/Font/Poppins-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('/Font/Poppins-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('/Font/Poppins-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('/Font/Poppins-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('/Font/Poppins-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Apply custom font only to landing page */
+.landing-page {
+  font-family: 'Bruno Ace SC', Arial, sans-serif;
+}
+
+/* Apply custom font to navbar */
+.navbar {
+  font-family: 'Bruno Ace SC', Arial, sans-serif;
+}
+
+/* Default font for all other pages */
+body {
+  font-family: 'Poppins', system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+/* Responsive max-width containers to prevent content stretching */
+.container-responsive {
+  width: 100%;
+    max-width: 1536px;
+    /* or any max you want like 1280px, 1366px */
+    margin-left: auto;
+    margin-right: auto;
+
+    box-sizing: border-box;
+}
+
+/* Custom Swiper Navigation Arrows */
+.swiper-button-next,
+.swiper-button-prev {
+  color: #000000 !important; /* Black arrows */
+  background: transparent !important;
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+  background: #39FC1D !important; /* Green background on hover */
+  transform: scale(1.1);
+}
+
+.swiper-button-next::after,
+.swiper-button-prev::after {
+  font-size: 20px !important;
+  font-weight: bold;
+}
+
+/* Custom Swiper Pagination */
+.swiper-pagination-bullet {
+  background: #39FC1D !important;
+  opacity: 0.7;
+}
+
+.swiper-pagination-bullet-active {
+  background: #39FC1D !important;
+  opacity: 1;
+}
+
+/* Hide scrollbar while maintaining scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
+/* Product Modal Thumbnail Carousel Styles */
+.thumbnail-slider .slick-slide {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.thumbnail-slider .slick-slide.slick-current {
+  opacity: 1;
+}
+
+.thumbnail-slider .slick-slide:hover {
+  opacity: 1;
+}
+
+.thumbnail-slider .slick-arrow {
+  z-index: 10;
+}
+
+.thumbnail-slider .slick-prev,
+.thumbnail-slider .slick-next {
+  background: white !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.thumbnail-slider .slick-prev:hover,
+.thumbnail-slider .slick-next:hover {
+  background: #f3f4f6 !important;
+}
+
+.thumbnail-slider .slick-prev::before,
+.thumbnail-slider .slick-next::before {
+  color: #6b7280 !important;
+  font-size: 16px !important;
+}
+
+/* Modal animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Custom scrollbar for modal - only show thumb */
+.modal-scrollbar-hide {
+  scrollbar-width: thin;  /* Firefox */
+  scrollbar-color: #39FC1D transparent;  /* Firefox: thumb and track colors */
+}
+
+.modal-scrollbar-hide::-webkit-scrollbar {
+  width: 6px;  /* Width of the scrollbar */
+}
+
+.modal-scrollbar-hide::-webkit-scrollbar-track {
+  background: transparent;  /* Hide the track */
+}
+
+.modal-scrollbar-hide::-webkit-scrollbar-thumb {
+  background: #39FC1D;  /* Green thumb color matching your theme */
+  border-radius: 3px;  /* Rounded corners */
+}
+
+.modal-scrollbar-hide::-webkit-scrollbar-thumb:hover {
+  background: #2dd817;  /* Darker green on hover */
+}
+
+/* Line clamp utility for text truncation */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
