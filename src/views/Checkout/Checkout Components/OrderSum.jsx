@@ -26,7 +26,7 @@ const OrderSum = () => {
 
   return (
     <div className=" p-5 border rounded-lg shadow-lg w-full bg-white">
-      <div className="flex justify-between">
+      <div className="flex justify-between max-md:flex-col md:items-start md:gap-2">
         <h2 className="text-lg font-bold mb-2">Order Summary</h2>
         <p className="text-sm text-gray-600 mb-4">
           Order ID: #EGIE-
@@ -81,9 +81,9 @@ const OrderSum = () => {
           <span>Shipping</span>
           <span>₱{shippingFee.toLocaleString()}</span>
         </div>
-        <div className="flex justify-between font-bold text-base mt-2">
+        <div className="flex justify-between font-bold text-base mt-2 text-green-600">
           <span>Total</span>
-          <span>₱{total.toLocaleString()}</span>
+          <span className="text-xl">₱{total.toLocaleString()}</span>
         </div>
       </div>
     </div>
