@@ -2,19 +2,14 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-
-import OrderDetails from "./OrderDetails";
+import { useOrders } from "./OrderContext";
 
 const OrderCard = ({
   status,
@@ -32,12 +27,7 @@ const OrderCard = ({
   products,
 }) => {
   const navigate = useNavigate();
-  const [isRatingOpen, setIsRatingOpen] = useState(false);
-  const [newReview, setNewReview] = useState({
-    author: "",
-    rating: 0,
-    comment: "",
-  });
+  const { updateOrderStatus } = useOrders();
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [selectedCancelReason, setSelectedCancelReason] = useState("");
 
@@ -57,13 +47,6 @@ const OrderCard = ({
       )
     : 0;
 
-  const handleReviewSubmit = () => {
-    // Handle review submission logic here
-    console.log("Review submitted:", newReview);
-    setIsRatingOpen(false);
-    setNewReview({ author: "", rating: 0, comment: "" });
-  };
-
   const handleButtonClick = (buttonLabel) => {
     switch (buttonLabel) {
       case "Contact Store":
@@ -75,12 +58,8 @@ const OrderCard = ({
       case "Cancel Order":
         setIsCancelOpen(true);
         break;
-      case "Rate":
-        setIsRatingOpen(true);
-        break;
       case "Order Received":
-        // Update order status to Completed
-        onStatusChange("Completed");
+        updateOrderStatus(id, "Completed");
         break;
       default:
         break;
@@ -102,7 +81,7 @@ const OrderCard = ({
 
         <Link
           to={`/purchases/details/${id}`}
-          className="block text-sm cursor-pointer bg-green-500 text-white px-3 py-1 rounded"
+          className="block text-sm cursor-pointer bg-green-500 text-white px-3 py-1 rounded max-md:text-xs"
         >
           View Order Details
         </Link>
@@ -138,7 +117,6 @@ const OrderCard = ({
 
       {/* Total */}
       <div className="flex justify-between items-center text-sm mb-3">
-        {/* Optional Note or Cancelation Reason */}
         {status === "Cancelled" && cancelReason ? (
           <p className="text-xs text-gray-500 text-right">
             Cancelation Reason: {cancelReason}
@@ -158,76 +136,23 @@ const OrderCard = ({
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-2">
-        {buttons.map((label, index) => (
-          <Button
-            key={index}
-            variant="outline"
-            className="text-sm cursor-pointer hover:bg-green-500 hover:text-white"
-            onClick={() => handleButtonClick(label)}
-          >
-            {label}
-          </Button>
-        ))}
+        {buttons
+          .filter((label) => label !== "Rate") // 🚫 remove Rate button
+          .map((label, index) => (
+            <Button
+              key={index}
+              variant="outline"
+              className="text-sm cursor-pointer hover:bg-green-500 hover:text-white"
+              onClick={() => handleButtonClick(label)}
+            >
+              {label}
+            </Button>
+          ))}
       </div>
 
-      {/* Rating Dialog */}
-      <Dialog open={isRatingOpen} onOpenChange={setIsRatingOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Write a Review</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <Input
-              placeholder="Your name"
-              value={newReview.author}
-              onChange={(e) =>
-                setNewReview({ ...newReview, author: e.target.value })
-              }
-            />
-
-            <div>
-              <p className="mb-1">Rating</p>
-              <div className="flex space-x-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span
-                    key={star}
-                    onClick={() => setNewReview({ ...newReview, rating: star })}
-                    className={`cursor-pointer text-2xl ${
-                      star <= newReview.rating
-                        ? "text-yellow-400"
-                        : "text-gray-300"
-                    }`}
-                  >
-                    ★
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <Textarea
-              placeholder="What did you like or dislike?"
-              value={newReview.comment}
-              onChange={(e) =>
-                setNewReview({ ...newReview, comment: e.target.value })
-              }
-            />
-          </div>
-
-          <DialogFooter>
-            <Button
-              onClick={handleReviewSubmit}
-              className="cursor-pointer hover:bg-green-500 hover:text-white"
-            >
-              Post Review
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Cancel Order Dialog */}
-      <Dialog open={isCancelOpen} onOpenChange={setIsCancelOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+      <Dialog open={isCancelOpen} onOpenChange={setIsCancelOpen} className="">
+        <DialogContent className="sm:max-w-[500px] mt-10">
           <DialogHeader>
             <DialogTitle>Select Cancellation Reason</DialogTitle>
           </DialogHeader>
@@ -262,7 +187,6 @@ const OrderCard = ({
             </Button>
             <Button
               onClick={() => {
-                // Change order status to Cancelled and store reason
                 onStatusChange("Cancelled", selectedCancelReason);
                 setIsCancelOpen(false);
                 setSelectedCancelReason("");

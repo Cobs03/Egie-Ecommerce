@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -23,19 +23,26 @@ import Purchases from "./views/Purchases/Purchases";
 import OrderDetails from "./views/Purchases/Purchase Components/OrderDetails";
 import LoadingSpinner from "./components/LoadingSpinner";
 import AIChatBox from "./components/AIChatBox";
+import { OrderProvider } from "./views/Purchases/Purchase Components/OrderContext";
+import purchaseData from "./views/Data/purchaseData";
+import Tracking from "./views/Purchases/Purchase Components/Tracking";
 
 import { Toaster } from "sonner";
 
 function App() {
+  const [orders, setOrders] = useState(purchaseData);
+
   return (
     <Router>
-      <Main />
+      <OrderProvider initialOrders={orders} updateOrders={setOrders}>
+        <Main orders={orders} setOrders={setOrders} />
+      </OrderProvider>
     </Router>
   );
 }
 
 // Separate component so we can access route info
-const Main = () => {
+const Main = ({ orders, setOrders }) => {
   const location = useLocation();
 
   // Detect if current route is sign-in/sign-up page
@@ -145,16 +152,24 @@ const Main = () => {
           <Route
             path="/purchases"
             element={
-              <div className="pt-[20px] container-responsive">
-                <Purchases />
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+                <Purchases orders={orders} setOrders={setOrders} />
               </div>
             }
           />
           <Route
             path="/purchases/details/:id"
             element={
-              <div className="pt-[20px] container-responsive">
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
                 <OrderDetails />
+              </div>
+            }
+          />
+          <Route
+            path="/purchases/tracking/:id"
+            element={
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+                <Tracking />
               </div>
             }
           />

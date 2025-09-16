@@ -72,7 +72,7 @@ const Cart = () => {
   }, [cartItems]);
 
   return (
-    <div className="flex flex-col max-w-7xl mx-auto px-4 py-6 h-screen overflow-y-auto">
+    <div className="flex flex-col max-w-7xl mx-auto px-4 py-6 h-auto max-md:h-screen max-md:overflow-y-auto">
       <h1 className="text-2xl [@media(min-width:763px)]:text-4xl font-['Bruno_Ace_SC'] mb-4 [@media(min-width:763px)]:mb-6">
         Shopping Cart
       </h1>

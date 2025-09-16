@@ -25,13 +25,14 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
-import DropdownComponent from "@/components/ui/dropdown";
+
 import {
   DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown";
-import { User, HelpCenter } from "@/components/ui/dropdown";
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = ({ isAuth }) => {
   const [cartCount, setCartCount] = useState(2); // example
@@ -45,12 +46,21 @@ const Navbar = ({ isAuth }) => {
 
   const isActive = (path) => location.pathname === path;
 
+  // State to track dropdown visibility
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Function to close dropdown
+  const closeDropdown = () => {
+    setIsDropdownOpen(false);
+  };
+
+  // Modified handleSignOut to also close the dropdown
   const handleSignOut = () => {
     // Optional: clear any user session data, tokens, etc.
     // localStorage.removeItem('token');
-
-    setIsSignedIn(true);
-    navigate("/signin"); // Redirect to Sign In page
+    setIsSignedIn(false);
+    closeDropdown();
+    navigate("/signin");
   };
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,6 +74,12 @@ const Navbar = ({ isAuth }) => {
       // Replace this with your actual search logic
       alert(`Searching for: ${searchQuery}`);
     }
+  };
+
+  // Function to navigate and close dropdown
+  const navigateAndClose = (path) => {
+    closeDropdown();
+    navigate(path);
   };
 
   return (
@@ -205,12 +221,13 @@ const Navbar = ({ isAuth }) => {
                       <TooltipProvider className="md:hidden">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <button
+                            <Link
+                              to="/notification"
                               className="relative focus:outline-none"
                               aria-label="Notifications"
                             >
                               <IoIosNotifications className="text-2xl sm:text-3xl md:text-4xl text-lime-400 hover:text-lime-500 transition cursor-pointer" />
-                            </button>
+                            </Link>
                           </TooltipTrigger>
                           <TooltipContent
                             side="bottom"
@@ -224,7 +241,11 @@ const Navbar = ({ isAuth }) => {
                       <TooltipProvider className="md:hidden">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Link to="/cart" className="relative focus:outline-none" aria-label="Cart">
+                            <Link
+                              to="/cart"
+                              className="relative focus:outline-none"
+                              aria-label="Cart"
+                            >
                               <FaShoppingCart className="text-xl sm:text-2xl md:text-3xl text-lime-400 hover:text-lime-500 transition cursor-pointer" />
                             </Link>
                           </TooltipTrigger>
@@ -258,9 +279,12 @@ const Navbar = ({ isAuth }) => {
                     </div>
 
                     <div className="flex items-center gap-8">
-                      {/* Profile Menu using custom Dropdown */}
+                      {/* Profile Menu using dropdown */}
                       <DropdownMenu
-                        trigger={
+                        open={isDropdownOpen}
+                        onOpenChange={setIsDropdownOpen}
+                      >
+                        <DropdownMenuTrigger asChild>
                           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white text-black border border-gray-300 hover:bg-gray-100 cursor-pointer max-md:hidden">
                             <img
                               src="https://randomuser.me/api/portraits/men/32.jpg"
@@ -268,63 +292,101 @@ const Navbar = ({ isAuth }) => {
                               className="w-8 h-8 rounded-full object-cover"
                             />
                           </div>
-                        }
-                      >
-                        <DropdownMenuItem
-                          onClick={() => console.log("Profile clicked")}
-                          active={true}
-                        >
-                          <User className="mr-3 h-5 w-5 text-zinc-500" />
-                          <span>Profile</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => navigate("/purchases")}
-                        >
-                          <svg
-                            className="mr-3 h-5 w-5 text-zinc-500"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56 z-[10000] font-['Bruno_Ace_SC']">
+                          <DropdownMenuItem
+                            className="cursor-pointer hover:bg-gray-100"
+                            onClick={() => {
+                              console.log("Profile clicked");
+                              closeDropdown();
+                            }}
                           >
-                            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <span>My Purchases</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/settings")}>
-                          <svg
-                            className="mr-3 h-5 w-5 text-zinc-500"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
+                            <svg
+                              className="mr-3 h-5 w-5 text-zinc-500"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path>
+                              <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <span>Profile</span>
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            className="cursor-pointer hover:bg-gray-100"
+                            onClick={() => navigateAndClose("/purchases")}
                           >
-                            <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          <span>Settings</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => console.log("Help Center clicked")}
-                        >
-                          <HelpCenter className="mr-3 h-5 w-5 text-zinc-500" />
-                          <span>Help center</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleSignOut}>
-                          <svg
-                            className="mr-3 h-5 w-5 text-zinc-500"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
+                            <svg
+                              className="mr-3 h-5 w-5 text-zinc-500"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>My Purchases</span>
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            className="cursor-pointer hover:bg-gray-100"
+                            onClick={() => navigateAndClose("/settings")}
                           >
-                            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-                            <polyline points="16 17 21 12 16 7" />
-                            <line x1="21" x2="9" y1="12" y2="12" />
-                          </svg>
-                          <span className="text-red-600">Sign Out</span>
-                        </DropdownMenuItem>
+                            <svg
+                              className="mr-3 h-5 w-5 text-zinc-500"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                              <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span>Settings</span>
+                          </DropdownMenuItem>
+
+                          <DropdownMenuSeparator />
+
+                          <DropdownMenuItem
+                            className="cursor-pointer hover:bg-gray-100"
+                            onClick={() => {
+                              navigateAndClose("/contactus");
+                            }}
+                          >
+                            <svg
+                              className="mr-3 h-5 w-5 text-zinc-500"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle cx="12" cy="12" r="10"></circle>
+                              <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"></path>
+                              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                            <span>Help center</span>
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            className="cursor-pointer hover:bg-gray-100"
+                            onClick={handleSignOut}
+                          >
+                            <svg
+                              className="mr-3 h-5 w-5 text-zinc-500"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                              <polyline points="16 17 21 12 16 7" />
+                              <line x1="21" x2="9" y1="12" y2="12" />
+                            </svg>
+                            <span className="text-red-600">Sign Out</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
                       </DropdownMenu>
                       {/* Hamburger Menu Button - Visible only on mobile */}
                       <button
@@ -364,7 +426,8 @@ const Navbar = ({ isAuth }) => {
               </div>
             </div>
           </nav>
-          {/* Mobile Menu Dropdown */}
+
+          {/* Mobile Menu - Code unchanged */}
           {showMobileMenu && (
             <div
               className="lg:hidden bg-black border-t border-gray-700"
@@ -523,6 +586,8 @@ const Navbar = ({ isAuth }) => {
               </div>
             </div>
           )}
+
+          {/* Search bar - Code unchanged */}
           {showSearchBar !== undefined && (
             <div
               className={`fixed left-0 right-0 top-[130px] z-50 flex justify-center bg-transparent p-1 transition-all duration-300 ease-in-out

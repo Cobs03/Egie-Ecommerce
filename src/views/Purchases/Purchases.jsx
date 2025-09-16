@@ -2,30 +2,24 @@ import React, { useState } from "react";
 import OrderTabs from "./Purchase Components/OrderTabs";
 import OrderCard from "./Purchase Components/OrdersCard";
 import purchaseData from "../Data/purchaseData";
+// Change this line in Purchases.jsx
+import { OrderProvider, useOrders } from './Purchase Components/OrderContext';
 
-const Purchases = () => {
+const Purchases = ({ orders, setOrders }) => {
   const [activeTab, setActiveTab] = useState("All");
-  const [orders, setOrders] = useState(purchaseData);
-
+  
   const handleStatusChange = (orderIndex, newStatus, reason = "") => {
-    setOrders((prevOrders) => {
-      const updatedOrders = [...prevOrders];
-      updatedOrders[orderIndex] = {
-        ...updatedOrders[orderIndex],
-        status: newStatus,
-        subStatus:
-          newStatus === "Completed"
-            ? "Order Completed"
-            : newStatus === "Cancelled"
-            ? "Cancelled by you"
-            : updatedOrders[orderIndex].subStatus,
-        cancelReason:
-          newStatus === "Cancelled"
-            ? reason
-            : updatedOrders[orderIndex].cancelReason,
-      };
-      return updatedOrders;
-    });
+    const updatedOrders = [...orders];
+    updatedOrders[orderIndex].status = newStatus;
+
+    if (newStatus === "Cancelled") {
+      updatedOrders[orderIndex].cancelReason = reason;
+      updatedOrders[orderIndex].subStatus = "Cancelled by you";
+    } else if (newStatus === "Completed") {
+      updatedOrders[orderIndex].subStatus = "Order Completed";
+    }
+
+    setOrders(updatedOrders);
   };
 
   const filteredOrders =
@@ -50,19 +44,8 @@ const Purchases = () => {
     }
   };
 
-  const orderTotal = orders
-    ? orders.reduce((sum, order) => {
-        const orderSum = order.products.reduce(
-          (productSum, product) =>
-            productSum + Number(product.total.replace(/,/g, "")),
-          0
-        );
-        return sum + orderSum;
-      }, 0)
-    : 0;
-
   return (
-    <div className="w-full min-h-screen py-6">
+    <div className="w-full py-6">
       <OrderTabs activeTab={activeTab} onChange={setActiveTab} />
       <div className="mt-6 space-y-6 px-4 md:px-10">
         {filteredOrders.length > 0 ? (
@@ -83,7 +66,6 @@ const Purchases = () => {
           </p>
         )}
       </div>
-
     </div>
   );
 };
