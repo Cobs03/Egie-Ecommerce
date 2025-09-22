@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom"; // Import Link
 import { FaFacebook } from "react-icons/fa";
 import { FaInstagram } from "react-icons/fa";
 import { RiMastercardFill } from "react-icons/ri";
@@ -26,34 +27,34 @@ const Footer = ({ isAuth }) => {
               <h4 className="mb-3 font-semibold text-lg">Quick Links</h4>
               <ul className="space-y-2">
                 <li>
-                  <a href="/" className="hover:underline">
+                  <Link to="/" className="hover:underline">
                     Home
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="/shop" className="hover:underline">
+                  <Link to="/products" className="hover:underline">
                     Shop
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="/about" className="hover:underline">
+                  <Link to="/about" className="hover:underline">
                     About Us
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="/contact" className="hover:underline">
+                  <Link to="/contactus" className="hover:underline">
                     Contact Us
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="/faqs" className="hover:underline">
+                  <Link to="/compare" className="hover:underline">
                     Compare
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="/faqs" className="hover:underline">
+                  <Link to="/faq" className="hover:underline">
                     FAQs
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -93,7 +94,6 @@ const Footer = ({ isAuth }) => {
               <h4 className="mb-3 font-semibold text-lg">We accept:</h4>
               <div className="flex flex-row space-x-2 justify-center sm:justify-start">
                 <RiMastercardFill className="text-3xl" />
-
                 <FaCcVisa className="text-3xl" />
               </div>
             </div>
@@ -104,17 +104,29 @@ const Footer = ({ isAuth }) => {
           <div className="text-sm px-4">
             <p>
               © 2025 Egie Gameshop. All rights reserved.{" "}
-              <a href="/terms" className="hover:underline">
+              <Link to="/terms" className="hover:underline">
                 Terms of Service
-              </a>{" "}
+              </Link>{" "}
               |{" "}
-              <a href="/privacy" className="hover:underline">
+              <Link to="/privacy" className="hover:underline">
                 Privacy Policy
-              </a>
+              </Link>
             </p>
           </div>
         </>
       )}
+      <div className="legal-links">
+        {/* Update these links to point to your new pages */}
+        <Link to="/terms" className="text-gray-300 hover:text-white mx-2">
+          Terms & Conditions
+        </Link>
+        <Link
+          to="/privacy-policy"
+          className="text-gray-300 hover:text-white mx-2"
+        >
+          Privacy Policy
+        </Link>
+      </div>
     </footer>
   );
 };

@@ -261,12 +261,13 @@ const Navbar = ({ isAuth }) => {
                       <TooltipProvider className="md:hidden">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <button
+                            <Link
+                              to="/compare"
                               className="relative focus:outline-none"
                               aria-label="Compare"
                             >
                               <FaCodeCompare className="text-xl sm:text-2xl md:text-3xl text-lime-400 hover:text-lime-500 transition cursor-pointer" />
-                            </button>
+                            </Link>
                           </TooltipTrigger>
                           <TooltipContent
                             side="bottom"
@@ -293,7 +294,7 @@ const Navbar = ({ isAuth }) => {
                             />
                           </div>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-56 z-[10000] font-['Bruno_Ace_SC']">
+                        <DropdownMenuContent className="w-56 z-[10000] font-['Bruno_Ace_SC'] bg-white">
                           <DropdownMenuItem
                             className="cursor-pointer hover:bg-gray-100"
                             onClick={() => {

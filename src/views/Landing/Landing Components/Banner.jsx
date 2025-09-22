@@ -10,6 +10,45 @@ import "swiper/css/pagination";
 const LandingBanner = () => {
   return (
     <div className="">
+      <style>
+        {`
+          /* Custom styles for Swiper navigation buttons */
+          @media (max-width: 768px) {
+            .swiper-button-prev,
+            .swiper-button-next {
+              width: 30px !important;
+              height: 30px !important;
+              background-color: rgba(0, 0, 0, 0.4);
+              border-radius: 50%;
+              padding: 6px !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+            }
+            
+            .swiper-button-prev:after,
+            .swiper-button-next:after {
+              font-size: 16px !important;
+              color: white;
+              margin: 0 !important;
+            }
+          }
+
+          /* Desktop version - add padding here too */
+          .swiper-button-prev,
+          .swiper-button-next {
+            padding: 10px !important;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+          }
+          
+          /* Ensure arrows are centered within the buttons */
+          .swiper-button-prev:after,
+          .swiper-button-next:after {
+            margin: 0 !important;
+          }
+        `}
+      </style>
       <Swiper
         pagination={{
           dynamicBullets: true,
@@ -17,30 +56,26 @@ const LandingBanner = () => {
         }}
         navigation={true}
         loop={true}
-        // autoplay={{
-        //   delay: 2500,
-        //   disableOnInteraction: false,
-        // }}
         modules={[Navigation, Pagination, Autoplay]}
         spaceBetween={0}
         slidesPerView={1}
       >
         {/* Slide 1 */}
         <SwiperSlide>
-          <div className="">  
+          <div className="relative">  
             <img
               src="https://i.ibb.co/nT6ymQq/Find-the.png"
               className="w-full h-full object-cover"
               alt="Find-the"
             />
-            <div className="absolute top-3/5 left-1/5 max-md:left-2/6 transform -translate-y-1/2 -translate-x-1/2 flex gap-4">
+            <div className="absolute top-2/3 left-1/4 transform -translate-y-1/2 -translate-x-1/2 max-md:translate-x-[-20%] flex gap-2 md:gap-4 z-10">
               <Link
                 to="/products"
-                className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-4 md:px-6 py-2 md:py-3 rounded-md text-sm max-md:text-xs md:text-lg transition"
+                className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-2 md:px-6 py-1 md:py-3 rounded text-xs md:text-lg transition"
               >
                 SHOP NOW
               </Link>
-              <button className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 md:px-6 py-2 md:py-3 rounded-md text-sm max-md:text-xs md:text-lg transition">
+              <button className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white font-semibold px-2 md:px-6 py-1 md:py-3 rounded text-xs md:text-lg transition">
                 LEARN MORE
               </button>
             </div>
@@ -55,10 +90,10 @@ const LandingBanner = () => {
               className="w-full h-full object-cover"
               alt="2"
             />
-            <div className="absolute top-4/5 left-1/2 transform -translate-y-1/2 -translate-x-1/2">
+            <div className="absolute top-3/4 left-1/2 transform -translate-y-1/2 -translate-x-1/2">
               <Link
                 to="/products"
-                className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-6 md:px-10 py-3 md:py-4 rounded-md text-lg max-md:text-sm md:text-2xl transition"
+                className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-3 md:px-10 py-1.5 md:py-4 rounded text-xs md:text-2xl transition"
               >
                 SHOP NOW
               </Link>

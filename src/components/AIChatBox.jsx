@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Bot, Camera } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
+import { useNavigate } from "react-router-dom";
+import PCBuildQuestionnaire from "../views/Question/Question";
 
 const AIChatBox = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,6 +18,8 @@ const AIChatBox = () => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const navigate = useNavigate(); // Add React Router navigate
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false); // State to control questionnaire display
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -73,12 +77,48 @@ const AIChatBox = () => {
   };
 
   const handleCameraClick = () => {
-    // Navigate to camera page - you can replace this with your actual navigation logic
-    window.location.href = "/camera"; // or use React Router navigation
+    // Toggle the questionnaire visibility instead of navigating
+    setShowQuestionnaire(true);
+    // Close the chat if it's open
+    if (isOpen) setIsOpen(false);
+  };
+
+  const handleQuestionnaireSubmit = (formData) => {
+    console.log("PC Build Questionnaire submitted:", formData);
+    // Process the questionnaire data
+    setShowQuestionnaire(false);
+    
+    // Optional: Add an AI message about the submission
+    setIsOpen(true);
+    setTimeout(() => {
+      const aiResponse = {
+        id: messages.length + 1,
+        text: "Thank you for completing the PC Build Questionnaire! Our team will review your preferences and provide custom recommendations soon.",
+        sender: "ai",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, aiResponse]);
+    }, 500);
   };
 
   return (
     <>
+      {/* PC Build Questionnaire Modal */}
+      {showQuestionnaire && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="relative w-full max-w-4xl">
+            <button 
+              onClick={() => setShowQuestionnaire(false)}
+              className="absolute -top-12 right-0 bg-white rounded-full p-2 shadow-md"
+              aria-label="Close Questionnaire"
+            >
+              <X size={20} />
+            </button>
+            <PCBuildQuestionnaire onSubmit={handleQuestionnaireSubmit} />
+          </div>
+        </div>
+      )}
+
       {/* Floating Camera Button - Smaller on mobile */}
       <div className="fixed bottom-16 [@media(min-width:761px)]:bottom-20 right-4 [@media(min-width:761px)]:right-6 z-40 mb-2 [@media(min-width:761px)]:mb-4">
         <Tooltip>
@@ -86,13 +126,13 @@ const AIChatBox = () => {
             <button
               onClick={handleCameraClick}
               className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 [@media(min-width:761px)]:p-4 shadow-lg transition-all duration-300 hover:scale-110 cursor-pointer"
-              aria-label="Open Camera"
+              aria-label="PC Build Questionnaire"
             >
               <Camera size={20} className="[@media(min-width:761px)]:w-6 [@media(min-width:761px)]:h-6" />
             </button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Scan Product</p>
+            <p>PC Build Questionnaire</p>
           </TooltipContent>
         </Tooltip>
       </div>

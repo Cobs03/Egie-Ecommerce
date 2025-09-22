@@ -26,8 +26,13 @@ import AIChatBox from "./components/AIChatBox";
 import { OrderProvider } from "./views/Purchases/Purchase Components/OrderContext";
 import purchaseData from "./views/Data/purchaseData";
 import Tracking from "./views/Purchases/Purchase Components/Tracking";
+import Notfound from "./views/Notfound/Notfound";
+import Compare from "./views/Compare/Compare";
+import Terms from "./views/Policy and Terms/Terms";
+import Policy from "./views/Policy and Terms/Policy";
+import Settings from "./views/Settings/Settings";
 
-import { Toaster } from "sonner";
+import { Toaster } from "../src/components/ui/sonner";
 
 function App() {
   const [orders, setOrders] = useState(purchaseData);
@@ -170,6 +175,46 @@ const Main = ({ orders, setOrders }) => {
             element={
               <div className="mt-32.5 max-md:mt-22.5 container-responsive">
                 <Tracking />
+              </div>
+            }
+          />
+          <Route
+            path="/compare"
+            element={
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+                <Compare />
+              </div>
+            }
+          />
+          <Route
+            path="/terms"
+            element={
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+                <Terms />
+              </div>
+            }
+          />
+          <Route
+            path="/privacy"
+            element={
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+                <Policy />
+              </div>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+                <Settings />
+              </div>
+            }
+          />
+          <Route
+            path="*"
+            element={
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+                <Notfound />
               </div>
             }
           />
