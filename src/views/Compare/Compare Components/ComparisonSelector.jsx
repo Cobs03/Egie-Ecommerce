@@ -4,10 +4,12 @@ import { FaSearch, FaTimes } from "react-icons/fa";
 import { toast } from "sonner";
 import { components } from "../../Data/components";
 
-const ComparisonSelector = ({ addToComparison, existingProducts = [], onClose }) => {
+const ComparisonSelector = ({ addToComparison, existingProducts = [], selectedProduct, onClose }) => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [selectedProducts, setSelectedProducts] = useState(
+    selectedProduct ? [selectedProduct] : []
+  );
   const navigate = useNavigate();
 
   // Extract unique component types from your data
@@ -64,9 +66,17 @@ const ComparisonSelector = ({ addToComparison, existingProducts = [], onClose })
     return () => window.removeEventListener("keydown", handleEscKey);
   }, [onClose]);
 
+  // Update selectedProducts if selectedProduct prop changes
+  useEffect(() => {
+    if (selectedProduct && !selectedProducts.find(p => p.id === selectedProduct.id)) {
+      setSelectedProducts([selectedProduct]);
+    }
+  }, [selectedProduct]);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center overflow-y-auto ">
       <div className="bg-white text-gray-800 rounded-lg shadow-xl w-full max-w-6xl max-h-[70vh] overflow-y-auto m-4 mt-32.5 max-md:mt-22.5">
+        {/* Header remains unchanged */}
         <div className="sticky top-0 bg-white z-10 p-4 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-2xl font-bold">Select Products to Compare</h2>
           {onClose && (
@@ -81,7 +91,7 @@ const ComparisonSelector = ({ addToComparison, existingProducts = [], onClose })
         </div>
 
         <div className="p-4 max-w-6xl mx-auto">
-          {/* Selected products preview */}
+          {/* Selected products preview - unchanged */}
           <div className="flex justify-center items-center mb-8 gap-4">
             {selectedProducts.length > 0 ? (
               selectedProducts.map((product) => (
@@ -165,35 +175,35 @@ const ComparisonSelector = ({ addToComparison, existingProducts = [], onClose })
             </div>
           </div>
 
-          {/* Product grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {/* Product grid - UPDATED to 2 columns on mobile screens only */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                className="border border-gray-200 rounded-lg p-2 sm:p-4 hover:shadow-md transition-shadow"
               >
-                <div className="h-28 flex items-center justify-center mb-3">
+                <div className="h-24 sm:h-28 flex items-center justify-center mb-2 sm:mb-3">
                   <img
                     src={product.imageUrl || "https://via.placeholder.com/100"}
                     alt={product.productName}
                     className="max-h-full max-w-full object-contain"
                   />
                 </div>
-                <div className="mb-3">
-                  <p className="font-medium text-sm line-clamp-2 h-10">
+                <div className="mb-2 sm:mb-3">
+                  <p className="font-medium text-xs sm:text-sm line-clamp-2 h-8 sm:h-10">
                     {product.productName}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
                     {product.brand} - {product.subCategory}
                   </p>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-green-600 font-bold">
+                  <span className="text-green-600 font-bold text-xs sm:text-base">
                     ${product.price}
                   </span>
                   <button
                     onClick={() => handleAddProduct(product)}
-                    className="bg-green-500 hover:bg-green-600 text-white text-xs py-1 px-3 rounded transition-colors"
+                    className="bg-green-500 hover:bg-green-600 text-white text-[10px] sm:text-xs py-1 px-2 sm:px-3 rounded transition-colors"
                   >
                     Add
                   </button>
@@ -209,6 +219,7 @@ const ComparisonSelector = ({ addToComparison, existingProducts = [], onClose })
           )}
         </div>
 
+        {/* Footer buttons remain unchanged */}
         <div className="sticky bottom-0 bg-white p-4 border-t border-gray-200 flex justify-between">
           <button
             onClick={onClose}
