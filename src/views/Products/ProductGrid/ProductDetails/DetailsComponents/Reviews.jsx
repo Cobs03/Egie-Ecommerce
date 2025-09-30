@@ -158,7 +158,8 @@ const Reviews = () => {
               </Button>
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-[500px]">
+            {/* Updated DialogContent with explicit white background */}
+            <DialogContent className="sm:max-w-[500px] bg-white">
               <DialogHeader>
                 <DialogTitle>Write a Review</DialogTitle>
               </DialogHeader>
@@ -203,7 +204,7 @@ const Reviews = () => {
               </div>
 
               <DialogFooter>
-                <Button onClick={handleReviewSubmit} className="cursor-pointer">
+                <Button onClick={handleReviewSubmit} className="cursor-pointer bg-green-400 hover:bg-green-500 text-white">
                   Post Review
                 </Button>
               </DialogFooter>

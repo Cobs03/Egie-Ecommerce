@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Bot, Camera } from "lucide-react";
+import { MessageCircle, X, Send, Bot, Camera, ChevronUp, ChevronDown } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
 import { useNavigate } from "react-router-dom";
 import PCBuildQuestionnaire from "../views/Question/Question";
 
 const AIChatBox = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMenuExpanded, setIsMenuExpanded] = useState(false);
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -18,8 +19,23 @@ const AIChatBox = () => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const navigate = useNavigate(); // Add React Router navigate
-  const [showQuestionnaire, setShowQuestionnaire] = useState(false); // State to control questionnaire display
+  const menuRef = useRef(null);
+  const navigate = useNavigate();
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuExpanded(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuRef]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -77,18 +93,20 @@ const AIChatBox = () => {
   };
 
   const handleCameraClick = () => {
-    // Toggle the questionnaire visibility instead of navigating
     setShowQuestionnaire(true);
-    // Close the chat if it's open
+    setIsMenuExpanded(false);
     if (isOpen) setIsOpen(false);
+  };
+
+  const handleChatToggle = () => {
+    setIsOpen(!isOpen);
+    setIsMenuExpanded(false);
   };
 
   const handleQuestionnaireSubmit = (formData) => {
     console.log("PC Build Questionnaire submitted:", formData);
-    // Process the questionnaire data
     setShowQuestionnaire(false);
     
-    // Optional: Add an AI message about the submission
     setIsOpen(true);
     setTimeout(() => {
       const aiResponse = {
@@ -119,46 +137,74 @@ const AIChatBox = () => {
         </div>
       )}
 
-      {/* Floating Camera Button - Smaller on mobile */}
-      <div className="fixed bottom-16 [@media(min-width:761px)]:bottom-20 right-4 [@media(min-width:761px)]:right-6 z-40 mb-2 [@media(min-width:761px)]:mb-4">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={handleCameraClick}
-              className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 [@media(min-width:761px)]:p-4 shadow-lg transition-all duration-300 hover:scale-110 cursor-pointer"
-              aria-label="PC Build Questionnaire"
-            >
-              <Camera size={20} className="[@media(min-width:761px)]:w-6 [@media(min-width:761px)]:h-6" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>PC Build Questionnaire</p>
-          </TooltipContent>
-        </Tooltip>
-      </div>
+      {/* Collapsible Button Stack */}
+      <div 
+        ref={menuRef}
+        className="fixed bottom-4 [@media(min-width:761px)]:bottom-6 right-4 [@media(min-width:761px)]:right-6 z-40 flex flex-col items-center gap-2"
+      >
+        {/* Stack of Additional Buttons - Shown when menu is expanded */}
+        <div className={`flex flex-col gap-2 items-center transition-all duration-300 ${
+          isMenuExpanded 
+            ? "opacity-100 translate-y-0" 
+            : "opacity-0 translate-y-10 pointer-events-none"
+        }`}>
+          {/* Chat Button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={handleChatToggle}
+                className={`${isOpen ? 'bg-red-500 hover:bg-red-600' : 'bg-[#39FC1D] hover:bg-[#2dd817]'} text-white rounded-full p-2 [@media(min-width:761px)]:p-4 shadow-lg transition-all duration-300 hover:scale-110`}
+                aria-label={isOpen ? "Close AI Chat" : "Open AI Chat"}
+              >
+                {isOpen ? 
+                  <X size={20} className="[@media(min-width:761px)]:w-6 [@media(min-width:761px)]:h-6" /> : 
+                  <MessageCircle size={20} className="[@media(min-width:761px)]:w-6 [@media(min-width:761px)]:h-6" />
+                }
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{isOpen ? "Close AI Chat" : "Open AI Chat"}</p>
+            </TooltipContent>
+          </Tooltip>
 
-      {/* Floating Chat Button - Smaller on mobile */}
-      <div className="fixed bottom-4 [@media(min-width:761px)]:bottom-6 right-4 [@media(min-width:761px)]:right-6 z-40">
+          {/* Camera/Questionnaire Button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={handleCameraClick}
+                className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 [@media(min-width:761px)]:p-4 shadow-lg transition-all duration-300 hover:scale-110"
+                aria-label="PC Build Questionnaire"
+              >
+                <Camera size={20} className="[@media(min-width:761px)]:w-6 [@media(min-width:761px)]:h-6" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>PC Build Questionnaire</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Main Button - Toggles the menu */}
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="bg-[#39FC1D] hover:bg-[#2dd817] text-white rounded-full p-2 [@media(min-width:761px)]:p-4 shadow-lg transition-all duration-300 hover:scale-110 cursor-pointer"
-              aria-label="Open AI Chat"
+              onClick={() => setIsMenuExpanded(!isMenuExpanded)}
+              className="bg-green-500 hover:bg-green-600 text-white rounded-full p-3 [@media(min-width:761px)]:p-4 shadow-lg transition-all duration-300 hover:scale-110 z-50"
+              aria-label={isMenuExpanded ? "Close menu" : "Open menu"}
             >
-              {isOpen ? 
-                <X size={20} className="[@media(min-width:761px)]:w-6 [@media(min-width:761px)]:h-6" /> : 
-                <MessageCircle size={20} className="[@media(min-width:761px)]:w-6 [@media(min-width:761px)]:h-6" />
+              {isMenuExpanded ? 
+                <ChevronDown size={20} className="[@media(min-width:761px)]:w-6 [@media(min-width:761px)]:h-6" /> : 
+                <ChevronUp size={20} className="[@media(min-width:761px)]:w-6 [@media(min-width:761px)]:h-6" />
               }
             </button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{isOpen ? "Close AI Chat" : "Open AI Chat"}</p>
+            <p>{isMenuExpanded ? "Close menu" : "Show options"}</p>
           </TooltipContent>
         </Tooltip>
       </div>
 
-      {/* Chat Window - Adjusted position for mobile */}
+      {/* Chat Window - Remains unchanged */}
       {isOpen && (
         <div className="fixed bottom-16 [@media(min-width:761px)]:bottom-24 right-2 [@media(min-width:761px)]:right-6 z-40 w-[calc(100%-16px)] [@media(min-width:761px)]:w-80 max-w-[320px] h-80 [@media(min-width:761px)]:h-96 bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col">
           {/* Header */}
@@ -174,13 +220,14 @@ const AIChatBox = () => {
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="hover:bg-blue-500 hover:bg-opacity-20 rounded-full p-1 transition-colors cursor-pointer"
+              className="hover:bg-green-600 rounded-full p-1 transition-colors cursor-pointer"
+              aria-label="Close chat"
             >
               <X size={16} />
             </button>
           </div>
 
-          {/* Messages */}
+          {/* Messages - Unchanged */}
           <div className="flex-1 overflow-y-auto p-3 [@media(min-width:761px)]:p-4 space-y-2 [@media(min-width:761px)]:space-y-3">
             {messages.map((message) => (
               <div
@@ -210,7 +257,7 @@ const AIChatBox = () => {
               </div>
             ))}
 
-            {/* Typing Indicator */}
+            {/* Typing Indicator - Unchanged */}
             {isTyping && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 text-gray-800 rounded-lg rounded-bl-none p-2 [@media(min-width:761px)]:p-3">
@@ -231,7 +278,7 @@ const AIChatBox = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
+          {/* Input - Unchanged */}
           <div className="p-3 [@media(min-width:761px)]:p-4 border-t border-gray-200">
             <div className="flex space-x-2">
               <input

@@ -58,9 +58,9 @@ const ProductDetails = () => {
         <TopDetails product={product} />
       )}
 
-      <div className="flex flex-col lg:flex-row max-w-7xl mx-auto px-4 py-4 sm:py-6 md:py-8 w-full lg:w-[90%] gap-4 sm:gap-6 md:gap-10">
-        {/* Details Left*/}
-        <div className="flex flex-col mb-4 bg-white p-4 sm:p-6 md:p-8 rounded-lg shadow-md flex-1 lg:flex-3/4 w-full lg:w-[95%] h-auto box-responsive">
+      <div className="flex flex-col lg:flex-row max-w-7xl mx-auto px-4 py-4 sm:py-6 md:py-8 w-full gap-4 sm:gap-6 md:gap-10">
+        {/* Details Left - 75% width on desktop */}
+        <div className="flex flex-col mb-4 bg-white p-4 sm:p-6 md:p-8 rounded-lg shadow-md w-full lg:w-3/4">
           <Description product={product} />
 
           <Reviews product={product} />
@@ -69,8 +69,8 @@ const ProductDetails = () => {
           {!isBundle && <CompComponents product={product} />}
         </div>
 
-        {/* Details Right */}
-        <div className="flex-1 lg:flex-1/4 space-responsive-md">
+        {/* Details Right - 25% width on desktop */}
+        <div className="w-full lg:w-1/4">
           <Warranty product={product} />
           
           {/* Show Bundles component for both products and bundles */}

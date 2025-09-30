@@ -154,7 +154,7 @@ const BuildComponents = ({
               }}
               className="bg-lime-400 text-black px-6 py-2 rounded hover:bg-lime-500 font-semibold"
             >
-              Buy Now
+              Add to Cart
             </Link>
           </div>
         </div>

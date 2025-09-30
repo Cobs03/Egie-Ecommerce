@@ -38,7 +38,7 @@ const ThankYou = () => {
             Thank you for Shopping at Egie Online GameShop
           </h1>
           <p className="text-gray-600 text-center mb-6 max-w-lg mx-auto">
-            Your order has been received and is being processed. You will
+            Your order is being processed. You will
             receive a confirmation email shortly.
           </p>
           <Link
