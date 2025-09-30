@@ -314,7 +314,7 @@ const Navbar = ({ isAuth }) => {
                           <DropdownMenuItem
                             className="cursor-pointer hover:bg-gray-100"
                             onClick={() => {
-                              navigate("/profile");
+                              navigate("/settings");
                               closeDropdown();
                             }}
                           >
@@ -535,7 +535,7 @@ const Navbar = ({ isAuth }) => {
                         onClick={() => {
                           setShowMobileMenu(false);
                           setShowProfileAccordion(false);
-                          navigate("/profile");
+                          navigate("/settings");
                         }}
                       >
                         Profile

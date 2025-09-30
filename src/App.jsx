@@ -29,7 +29,6 @@ import purchaseData from "./views/Data/purchaseData";
 import Tracking from "./views/Purchases/Purchase Components/Tracking";
 import Notfound from "./views/Notfound/Notfound";
 import Compare from "./views/Compare/Compare";
-import Profile from "./views/Profile/Profile";
 import Terms from "./views/Policy and Terms/Terms";
 import Policy from "./views/Policy and Terms/Policy";
 import Settings from "./views/Settings/Settings";
@@ -91,14 +90,6 @@ const Main = ({ orders, setOrders }) => {
             element={
               <div className="container-responsive">
                 <SignIn />
-              </div>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
-                <Profile />
               </div>
             }
           />
