@@ -1,5 +1,4 @@
-import React from "react";
-
+import React, { useState } from "react";
 
 const OrderSum = () => {
   const products = [
@@ -20,12 +19,61 @@ const OrderSum = () => {
     },
   ];
 
+  const [discountCode, setDiscountCode] = useState("");
+  const [discountError, setDiscountError] = useState(null);
+  const [appliedDiscount, setAppliedDiscount] = useState(null);
+  
+  const availableDiscounts = [
+    { code: "WELCOME10", discount: 0.1, expired: false, usageLimit: 100, currentUsage: 5 },
+    { code: "SUMMER20", discount: 0.2, expired: false, usageLimit: 50, currentUsage: 50 },
+    { code: "FLASH15", discount: 0.15, expired: true, usageLimit: 200, currentUsage: 45 },
+  ];
+
   const shippingFee = 50;
   const subtotal = products.reduce((sum, item) => sum + item.price, 0);
-  const total = subtotal + shippingFee;
+  const discountAmount = appliedDiscount ? Math.round(subtotal * appliedDiscount.discount) : 0;
+  const total = subtotal + shippingFee - discountAmount;
+
+  const handleApplyDiscount = () => {
+    setDiscountError(null);
+    
+    const trimmedCode = discountCode.trim();
+    
+    if (!trimmedCode) {
+      setDiscountError("Please enter a discount code");
+      return;
+    }
+    
+    const foundDiscount = availableDiscounts.find(
+      discount => discount.code.toLowerCase() === trimmedCode.toLowerCase()
+    );
+    
+    if (!foundDiscount) {
+      setDiscountError("Invalid discount code");
+      return;
+    }
+    
+    if (foundDiscount.expired) {
+      setDiscountError("This discount code has expired");
+      return;
+    }
+    
+    if (foundDiscount.currentUsage >= foundDiscount.usageLimit) {
+      setDiscountError("This discount code has reached its usage limit");
+      return;
+    }
+    
+    setAppliedDiscount(foundDiscount);
+  };
+
+  const getErrorStyle = () => {
+    if (!discountError) return "";
+    
+    return "text-sm text-red-600 mt-1";
+  };
 
   return (
-    <div className=" p-5 border rounded-lg shadow-lg w-full bg-white">
+    <div className="p-5 border rounded-lg shadow-lg w-full bg-white">
       <div className="flex justify-between max-md:flex-col md:items-start md:gap-2">
         <h2 className="text-lg font-bold mb-2">Order Summary</h2>
         <p className="text-sm text-gray-600 mb-4">
@@ -61,15 +109,34 @@ const OrderSum = () => {
         ))}
       </div>
 
-      <div className="mt-6 flex gap-2">
-        <input
-          type="text"
-          placeholder="Discount code or gift card"
-          className="border border-gray-300 rounded-md p-2 w-full"
-        />
-        <button className="bg-green-500 text-white px-2 rounded-lg hover:bg-green-600 cursor-pointer">
-          Apply
-        </button>
+      <div className="mt-6">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Discount code or gift card"
+            className={`border rounded-md p-2 w-full ${discountError ? 'border-red-500' : 'border-gray-300'}`}
+            value={discountCode}
+            onChange={(e) => setDiscountCode(e.target.value)}
+          />
+          <button 
+            className="bg-green-500 text-white px-2 rounded-lg hover:bg-green-600 cursor-pointer"
+            onClick={handleApplyDiscount}
+          >
+            Apply
+          </button>
+        </div>
+        
+        {discountError && (
+          <div className={getErrorStyle()}>
+            {discountError}
+          </div>
+        )}
+        
+        {appliedDiscount && !discountError && (
+          <div className="text-sm text-green-600 mt-1">
+            Discount code applied: {appliedDiscount.code} ({appliedDiscount.discount * 100}% off)
+          </div>
+        )}
       </div>
 
       <div className="mt-6 space-y-2 text-sm">
@@ -77,10 +144,19 @@ const OrderSum = () => {
           <span>Subtotal</span>
           <span>₱{subtotal.toLocaleString()}</span>
         </div>
+        
+        {appliedDiscount && (
+          <div className="flex justify-between text-green-600">
+            <span>Discount ({appliedDiscount.discount * 100}%)</span>
+            <span>-₱{discountAmount.toLocaleString()}</span>
+          </div>
+        )}
+        
         <div className="flex justify-between">
           <span>Shipping</span>
           <span>₱{shippingFee.toLocaleString()}</span>
         </div>
+        
         <div className="flex justify-between font-bold text-base mt-2 text-green-600">
           <span>Total</span>
           <span className="text-xl">₱{total.toLocaleString()}</span>
