@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "../../../../src/index.css";
 import "flowbite";
@@ -7,6 +7,7 @@ import { FaShoppingCart } from "react-icons/fa";
 import { FaSquareFacebook } from "react-icons/fa6";
 import { AiFillInstagram } from "react-icons/ai";
 import { useAuth } from "../../../contexts/AuthContext";
+import { supabase } from "../../../lib/supabase";
 
 import { FaCodeCompare } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
@@ -39,6 +40,9 @@ const Navbar = ({ isAuth }) => {
   const [cartCount, setCartCount] = useState(2); // example
   const [notificationCount, setNotificationCount] = useState(3); // example
   const { user, signOut } = useAuth();
+  
+  // Profile state for avatar
+  const [userAvatar, setUserAvatar] = useState("https://randomuser.me/api/portraits/men/32.jpg");
 
   const navigate = useNavigate();
 
@@ -71,6 +75,34 @@ const Navbar = ({ isAuth }) => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showProfileAccordion, setShowProfileAccordion] = useState(false);
+
+  // Load user avatar
+  useEffect(() => {
+    const loadUserAvatar = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error loading avatar:', error);
+          return;
+        }
+
+        if (data && data.avatar_url) {
+          setUserAvatar(data.avatar_url);
+        }
+      } catch (error) {
+        console.error('Error loading avatar:', error.message);
+      }
+    };
+
+    loadUserAvatar();
+  }, [user]);
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
@@ -291,7 +323,7 @@ const Navbar = ({ isAuth }) => {
                         <DropdownMenuTrigger asChild>
                           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white text-black border border-gray-300 hover:bg-gray-100 cursor-pointer max-md:hidden">
                             <img
-                              src="https://randomuser.me/api/portraits/men/32.jpg"
+                              src={userAvatar}
                               alt="Profile"
                               className="w-8 h-8 rounded-full object-cover"
                             />
@@ -511,7 +543,7 @@ const Navbar = ({ isAuth }) => {
                     onClick={() => setShowProfileAccordion((prev) => !prev)}
                   >
                     <img
-                      src="https://randomuser.me/api/portraits/men/32.jpg"
+                      src={userAvatar}
                       alt="Profile"
                       className="w-7 h-7 rounded-full object-cover mr-2"
                     />
