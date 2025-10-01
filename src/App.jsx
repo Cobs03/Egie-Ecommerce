@@ -24,10 +24,13 @@ import OrderDetails from "./views/Purchases/Purchase Components/OrderDetails";
 import LoadingSpinner from "./components/LoadingSpinner";
 import AIChatBox from "./components/AIChatBox";
 import { OrderProvider } from "./views/Purchases/Purchase Components/OrderContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import purchaseData from "./views/Data/purchaseData";
 import Tracking from "./views/Purchases/Purchase Components/Tracking";
 import Notfound from "./views/Notfound/Notfound";
 import Compare from "./views/Compare/Compare";
+import ForgotPassword from "./views/ForgotPassword/ForgotPassword";
+import ResetPassword from "./views/ResetPassword/ResetPassword";
 import Terms from "./views/Policy and Terms/Terms";
 import Policy from "./views/Policy and Terms/Policy";
 import Settings from "./views/Settings/Settings";
@@ -38,11 +41,13 @@ function App() {
   const [orders, setOrders] = useState(purchaseData);
 
   return (
-    <Router>
-      <OrderProvider initialOrders={orders} updateOrders={setOrders}>
-        <Main orders={orders} setOrders={setOrders} />
-      </OrderProvider>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <OrderProvider initialOrders={orders} updateOrders={setOrders}>
+          <Main orders={orders} setOrders={setOrders} />
+        </OrderProvider>
+      </Router>
+    </AuthProvider>
   );
 }
 
@@ -87,6 +92,22 @@ const Main = ({ orders, setOrders }) => {
             element={
               <div className="container-responsive">
                 <SignIn />
+              </div>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <div className="container-responsive">
+                <ForgotPassword />
+              </div>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <div className="container-responsive">
+                <ResetPassword />
               </div>
             }
           />

@@ -6,6 +6,7 @@ import { IoIosNotifications } from "react-icons/io";
 import { FaShoppingCart } from "react-icons/fa";
 import { FaSquareFacebook } from "react-icons/fa6";
 import { AiFillInstagram } from "react-icons/ai";
+import { useAuth } from "../../../contexts/AuthContext";
 
 import { FaCodeCompare } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
@@ -37,8 +38,8 @@ import {
 const Navbar = ({ isAuth }) => {
   const [cartCount, setCartCount] = useState(2); // example
   const [notificationCount, setNotificationCount] = useState(3); // example
+  const { user, signOut } = useAuth();
 
-  const [isSignedIn, setIsSignedIn] = useState(true);
   const navigate = useNavigate();
 
   const location = useLocation();
@@ -55,12 +56,14 @@ const Navbar = ({ isAuth }) => {
   };
 
   // Modified handleSignOut to also close the dropdown
-  const handleSignOut = () => {
-    // Optional: clear any user session data, tokens, etc.
-    // localStorage.removeItem('token');
-    setIsSignedIn(false);
-    closeDropdown();
-    navigate("/signin");
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      closeDropdown();
+      navigate("/signin");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -214,7 +217,7 @@ const Navbar = ({ isAuth }) => {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                {isSignedIn ? (
+                {user ? (
                   <div className="flex items-center gap-8">
                     <div className="flex items-center gap-8 max-md:hidden">
                       {/* Notification Icon - Hidden on mobile */}
@@ -295,10 +298,23 @@ const Navbar = ({ isAuth }) => {
                           </div>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-56 z-[10000] font-['Bruno_Ace_SC'] bg-white">
+                          {/* User Info Section */}
+                          <div className="px-3 py-2 border-b border-gray-200">
+                            <p className="text-sm font-medium text-gray-900">
+                              {user?.user_metadata?.first_name && user?.user_metadata?.last_name 
+                                ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
+                                : user?.email?.split('@')[0] || 'User'
+                              }
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">
+                              {user?.email}
+                            </p>
+                          </div>
+                          
                           <DropdownMenuItem
                             className="cursor-pointer hover:bg-gray-100"
                             onClick={() => {
-                              console.log("Profile clicked");
+                              navigate("/settings");
                               closeDropdown();
                             }}
                           >
@@ -519,7 +535,7 @@ const Navbar = ({ isAuth }) => {
                         onClick={() => {
                           setShowMobileMenu(false);
                           setShowProfileAccordion(false);
-                          // Profile logic here
+                          navigate("/settings");
                         }}
                       >
                         Profile
