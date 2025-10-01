@@ -36,9 +36,22 @@ const SignUp = () => {
       });
 
       if (error) {
-        setError(error.message);
+        // Handle specific Supabase errors with user-friendly messages
+        if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+          setError("An account with this email already exists. Please sign in instead.");
+        } else if (error.message.includes('Invalid email')) {
+          setError("Please enter a valid email address.");
+        } else if (error.message.includes('Password should contain at least one character')) {
+          setError("Password must contain at least one uppercase letter, lowercase letter, number, and special character.");
+        } else if (error.message.includes('Password should be at least')) {
+          setError("Password must be at least 6 characters long.");
+        } else if (error.message.includes('User already registered')) {
+          setError("This email is already registered. Please sign in instead.");
+        } else {
+          setError(error.message);
+        }
       } else {
-        setMessage("Check your email for the confirmation link!");
+        setMessage("Please check your email for the confirmation link! Note: If this email is already registered, no new confirmation email will be sent - please try signing in instead.");
         // Optionally redirect to sign in page after a delay
         setTimeout(() => {
           navigate("/signin");
@@ -68,7 +81,12 @@ const SignUp = () => {
       });
 
       if (error) {
-        setError(error.message);
+        // Handle Google OAuth specific errors
+        if (error.message.includes('already registered') || error.message.includes('already exists')) {
+          setError("An account with this Google email already exists. Please sign in instead.");
+        } else {
+          setError("Failed to sign up with Google. Please try again or use email signup.");
+        }
       }
     } catch (err) {
       setError("An unexpected error occurred");

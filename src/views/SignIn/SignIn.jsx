@@ -25,7 +25,18 @@ const SignIn = () => {
       });
 
       if (error) {
-        setError(error.message);
+        // Handle specific Supabase errors with user-friendly messages
+        if (error.message.includes('Invalid login credentials') || error.message.includes('Invalid email or password')) {
+          setError("Invalid email or password. Please check your credentials and try again.");
+        } else if (error.message.includes('Email not confirmed')) {
+          setError("Please confirm your email address before signing in. Check your inbox for a confirmation link.");
+        } else if (error.message.includes('Too many requests')) {
+          setError("Too many login attempts. Please wait a few minutes before trying again.");
+        } else if (error.message.includes('User not found')) {
+          setError("No account found with this email. Please sign up first.");
+        } else {
+          setError("Sign in failed. Please try again.");
+        }
       } else {
         // Redirect to home page or dashboard
         navigate("/");
@@ -54,7 +65,12 @@ const SignIn = () => {
       });
 
       if (error) {
-        setError(error.message);
+        // Handle Google OAuth specific errors
+        if (error.message.includes('User not found')) {
+          setError("No account found with this Google email. Please sign up first.");
+        } else {
+          setError("Failed to sign in with Google. Please try again or use email sign in.");
+        }
       }
     } catch (err) {
       setError("An unexpected error occurred");
