@@ -1,9 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaUser, FaLock, FaCreditCard, FaBell, FaMapMarkerAlt, FaHistory } from "react-icons/fa";
 import { IoMdEyeOff, IoMdEye } from "react-icons/io";
+import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../lib/supabase";
 
 const Settings = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
+  const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  
+  // Password change states
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -11,33 +20,222 @@ const Settings = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  // Mock user data - replace with actual user data from your state management
+  // User profile data from Supabase
   const [userData, setUserData] = useState({
-    firstName: "Bruce",
-    lastName: "Wayne",
-    email: "wayne.enterprises@gotham.com",
-    phone: "+63 915 123 4567",
-    avatar: "https://randomuser.me/api/portraits/men/32.jpg"
+    firstName: "",
+    lastName: "",
+    email: user?.email || "",
+    phone: "",
+    avatar: `https://ui-avatars.io/api/?name=${user?.email?.charAt(0).toUpperCase() || "U"}&background=000000&color=ffffff&size=150`
   });
 
-  // Form handling
-  const handleProfileSubmit = (e) => {
-    e.preventDefault();
-    // Process profile update
-    console.log("Profile updated:", userData);
-    // Add your API call here
+  // Load user profile data on component mount
+  useEffect(() => {
+    if (user) {
+      loadUserProfile();
+    }
+  }, [user]);
+
+  const loadUserProfile = async () => {
+    try {
+      setLoading(true);
+      
+      // Get user profile from Supabase
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        // PGRST116 is "not found" error, which is fine for new users
+        console.error('Error loading profile:', error);
+        return;
+      }
+
+      if (data) {
+        setUserData(prev => ({
+          ...prev,
+          firstName: data.first_name || "",
+          lastName: data.last_name || "",
+          phone: data.phone || "",
+          avatar: data.avatar_url || `https://ui-avatars.io/api/?name=${user?.email?.charAt(0).toUpperCase() || "U"}&background=000000&color=ffffff&size=150`
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handlePasswordSubmit = (e) => {
+  // Form handling
+  const handleProfileSubmit = async (e) => {
     e.preventDefault();
-    // Process password change
-    console.log("Password change requested");
-    // Add your API call here
     
-    // Reset fields after submission
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
+    if (!userData.firstName.trim() || !userData.lastName.trim()) {
+      setError("First name and last name are required");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      setMessage("");
+
+      // Update or insert user profile in Supabase
+      const { data, error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          first_name: userData.firstName.trim(),
+          last_name: userData.lastName.trim(),
+          phone: userData.phone.trim(),
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      setMessage("Profile updated successfully!");
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(""), 3000);
+      
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setError("Failed to update profile. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!newPassword.trim()) {
+      setError("Please enter a new password");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("New passwords don't match");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      setMessage("");
+
+      // Update password in Supabase
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setMessage("Password updated successfully!");
+      
+      // Reset password fields
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(""), 3000);
+      
+    } catch (error) {
+      console.error('Error updating password:', error);
+      setError(error.message || "Failed to update password. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle profile image upload
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+      setError('');
+
+      // Create unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      // Upload image to Supabase storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('profiles')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('profiles')
+        .getPublicUrl(filePath);
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          phone: userData.phone,
+          avatar_url: publicUrl,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
+        });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Update local state
+      setUserData(prev => ({
+        ...prev,
+        avatar: publicUrl
+      }));
+
+      setMessage('Profile picture updated successfully!');
+      setTimeout(() => setMessage(''), 3000);
+
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setError('Failed to upload image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   return (
@@ -160,10 +358,25 @@ const Settings = () => {
                 <h2 className="text-xl font-semibold text-gray-800 mb-6">
                   Profile Information
                 </h2>
+
+                {/* Success Message */}
+                {message && (
+                  <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+                    {message}
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {error && (
+                  <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {error}
+                  </div>
+                )}
+
                 <form onSubmit={handleProfileSubmit}>
                   <div className="mb-6">
                     <div className="flex items-center mb-4">
-                      <div className="w-24 h-24 rounded-full overflow-hidden mr-6">
+                      <div className="w-24 h-24 rounded-full overflow-hidden mr-6 border-2 border-gray-200">
                         <img
                           src={userData.avatar}
                           alt="Profile"
@@ -171,14 +384,25 @@ const Settings = () => {
                         />
                       </div>
                       <div>
-                        <button
-                          type="button"
-                          className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition"
+                        <input
+                          type="file"
+                          id="avatar-upload"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="avatar-upload"
+                          className={`inline-block px-4 py-2 rounded cursor-pointer transition ${
+                            uploadingImage
+                              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                              : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                          }`}
                         >
-                          Change Photo
-                        </button>
+                          {uploadingImage ? "Uploading..." : "Change Photo"}
+                        </label>
                         <p className="text-xs text-gray-500 mt-2">
-                          JPG, GIF or PNG. Max size 2MB
+                          JPG, GIF or PNG. Max size 5MB
                         </p>
                       </div>
                     </div>
@@ -196,13 +420,17 @@ const Settings = () => {
                         type="text"
                         id="firstName"
                         value={userData.firstName}
-                        onChange={(e) =>
+                        onChange={(e) => {
                           setUserData({
                             ...userData,
                             firstName: e.target.value,
-                          })
-                        }
+                          });
+                          // Clear errors when user starts typing
+                          if (error) setError("");
+                        }}
                         className="w-full p-2 border border-gray-300 rounded focus:ring-green-500 focus:border-green-500"
+                        required
+                        disabled={loading}
                       />
                     </div>
                     <div>
@@ -216,10 +444,14 @@ const Settings = () => {
                         type="text"
                         id="lastName"
                         value={userData.lastName}
-                        onChange={(e) =>
-                          setUserData({ ...userData, lastName: e.target.value })
-                        }
+                        onChange={(e) => {
+                          setUserData({ ...userData, lastName: e.target.value });
+                          // Clear errors when user starts typing
+                          if (error) setError("");
+                        }}
                         className="w-full p-2 border border-gray-300 rounded focus:ring-green-500 focus:border-green-500"
+                        required
+                        disabled={loading}
                       />
                     </div>
                   </div>
@@ -235,11 +467,12 @@ const Settings = () => {
                       type="email"
                       id="email"
                       value={userData.email}
-                      onChange={(e) =>
-                        setUserData({ ...userData, email: e.target.value })
-                      }
-                      className="w-full p-2 border border-gray-300 rounded focus:ring-green-500 focus:border-green-500"
+                      className="w-full p-2 border border-gray-300 rounded bg-gray-50 focus:ring-green-500 focus:border-green-500"
+                      disabled
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Email cannot be changed here. Contact support if you need to update your email.
+                    </p>
                   </div>
 
                   <div className="mb-6">
@@ -247,25 +480,34 @@ const Settings = () => {
                       className="block text-sm font-medium text-gray-700 mb-1"
                       htmlFor="phone"
                     >
-                      Phone Number
+                      Phone Number <span className="text-gray-500 text-sm">(Optional)</span>
                     </label>
                     <input
                       type="tel"
                       id="phone"
                       value={userData.phone}
-                      onChange={(e) =>
-                        setUserData({ ...userData, phone: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setUserData({ ...userData, phone: e.target.value });
+                        // Clear errors when user starts typing
+                        if (error) setError("");
+                      }}
                       className="w-full p-2 border border-gray-300 rounded focus:ring-green-500 focus:border-green-500"
+                      placeholder="Enter your phone number (e.g., +63 915 123 4567)"
+                      disabled={loading}
                     />
                   </div>
 
                   <div className="flex justify-end">
                     <button
                       type="submit"
-                      className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                      disabled={loading}
+                      className={`px-6 py-2 rounded-lg transition ${
+                        loading
+                          ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                          : "bg-green-500 text-white hover:bg-green-600"
+                      }`}
                     >
-                      Save Changes
+                      {loading ? "Saving..." : "Save Changes"}
                     </button>
                   </div>
                 </form>
@@ -278,6 +520,20 @@ const Settings = () => {
                 <h2 className="text-xl font-semibold text-gray-800 mb-6">
                   Security Settings
                 </h2>
+
+                {/* Success Message */}
+                {message && (
+                  <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+                    {message}
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {error && (
+                  <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {error}
+                  </div>
+                )}
 
                 <div className="mb-8">
                   <h3 className="text-lg font-medium mb-4">Change Password</h3>
@@ -325,8 +581,15 @@ const Settings = () => {
                           type={showNewPassword ? "text" : "password"}
                           id="newPassword"
                           value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
+                          onChange={(e) => {
+                            setNewPassword(e.target.value);
+                            // Clear errors when user starts typing
+                            if (error) setError("");
+                          }}
                           className="w-full p-2 border border-gray-300 rounded pr-10 focus:ring-green-500 focus:border-green-500"
+                          required
+                          minLength={6}
+                          disabled={loading}
                         />
                         <button
                           type="button"
@@ -341,8 +604,7 @@ const Settings = () => {
                         </button>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        Password must be at least 8 characters and include a
-                        number and a special character.
+                        Password must be at least 6 characters long.
                       </p>
                     </div>
 
@@ -358,8 +620,14 @@ const Settings = () => {
                           type={showConfirmPassword ? "text" : "password"}
                           id="confirmPassword"
                           value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          onChange={(e) => {
+                            setConfirmPassword(e.target.value);
+                            // Clear errors when user starts typing
+                            if (error) setError("");
+                          }}
                           className="w-full p-2 border border-gray-300 rounded pr-10 focus:ring-green-500 focus:border-green-500"
+                          required
+                          disabled={loading}
                         />
                         <button
                           type="button"
@@ -380,9 +648,14 @@ const Settings = () => {
                     <div className="flex justify-end">
                       <button
                         type="submit"
-                        className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                        disabled={loading}
+                        className={`px-6 py-2 rounded-lg transition ${
+                          loading
+                            ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                            : "bg-green-500 text-white hover:bg-green-600"
+                        }`}
                       >
-                        Update Password
+                        {loading ? "Updating..." : "Update Password"}
                       </button>
                     </div>
                   </form>
