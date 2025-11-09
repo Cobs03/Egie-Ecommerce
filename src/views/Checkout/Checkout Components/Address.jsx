@@ -36,7 +36,6 @@ const Address = () => {
     isDefault: true,
     // Additional fields for detailed address
     streetAddress: "Blk 69 LOT 96",
-    region: "North Luzon, Philippines",
     province: "Bulacan",
     city: "Santa Maria",
     barangay: "Poblacion",

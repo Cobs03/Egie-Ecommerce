@@ -1,5 +1,293 @@
 export const components = [
   {
+    type: "Case",
+    imageUrl: "/case.png",
+    products: [
+      {
+        id: "CASE-1",
+        productName: "NZXT H510 Elite",
+        brand: "NZXT",
+        price: 8500,
+        subCategory: "Mid Tower - Tempered Glass",
+        ratings: 4.7,
+        newArrivals: false,
+      },
+      {
+        id: "CASE-2",
+        productName: "Corsair 4000D Airflow",
+        brand: "Corsair",
+        price: 7200,
+        subCategory: "Mid Tower - High Airflow",
+        ratings: 4.8,
+        newArrivals: false,
+      },
+      {
+        id: "CASE-3",
+        productName: "Lian Li O11 Dynamic",
+        brand: "Lian Li",
+        price: 9800,
+        subCategory: "Mid Tower - Dual Chamber",
+        ratings: 4.9,
+        newArrivals: true,
+      },
+      {
+        id: "CASE-4",
+        productName: "Fractal Design Meshify C",
+        brand: "Fractal Design",
+        price: 6500,
+        subCategory: "Compact Mid Tower",
+        ratings: 4.6,
+        newArrivals: false,
+      },
+      {
+        id: "CASE-5",
+        productName: "Cooler Master H500",
+        brand: "Cooler Master",
+        price: 7800,
+        subCategory: "Mid Tower - RGB",
+        ratings: 4.5,
+        newArrivals: false,
+      },
+      {
+        id: "CASE-6",
+        productName: "Phanteks Eclipse P500A",
+        brand: "Phanteks",
+        price: 8900,
+        subCategory: "Mid Tower - DRGB",
+        ratings: 4.8,
+        newArrivals: true,
+      },
+      {
+        id: "CASE-7",
+        productName: "be quiet! Pure Base 500DX",
+        brand: "be quiet!",
+        price: 7500,
+        subCategory: "Mid Tower - Silent",
+        ratings: 4.7,
+        newArrivals: false,
+      },
+      {
+        id: "CASE-8",
+        productName: "Thermaltake Core P3",
+        brand: "Thermaltake",
+        price: 9200,
+        subCategory: "Open Frame - ATX",
+        ratings: 4.4,
+        newArrivals: false,
+      },
+      {
+        id: "CASE-9",
+        productName: "NZXT H710i",
+        brand: "NZXT",
+        price: 10500,
+        subCategory: "Full Tower - Smart Device",
+        ratings: 4.6,
+        newArrivals: false,
+      },
+      {
+        id: "CASE-10",
+        productName: "Corsair iCUE 5000X RGB",
+        brand: "Corsair",
+        price: 11200,
+        subCategory: "Full Tower - RGB",
+        ratings: 4.8,
+        newArrivals: true,
+      },
+    ],
+  },
+  {
+    type: "Motherboard",
+    imageUrl: "/motherboard.png",
+    products: [
+      {
+        id: "MB-1",
+        productName: "ASUS ROG STRIX B550-F GAMING",
+        brand: "ASUS",
+        price: 12500,
+        subCategory: "AMD B550 - ATX",
+        ratings: 4.7,
+        newArrivals: false,
+      },
+      {
+        id: "MB-2",
+        productName: "MSI MPG B550 GAMING EDGE WIFI",
+        brand: "MSI",
+        price: 11200,
+        subCategory: "AMD B550 - ATX - WiFi 6",
+        ratings: 4.6,
+        newArrivals: false,
+      },
+      {
+        id: "MB-3",
+        productName: "Gigabyte B550 AORUS PRO V2",
+        brand: "Gigabyte",
+        price: 10800,
+        subCategory: "AMD B550 - ATX",
+        ratings: 4.5,
+        newArrivals: false,
+      },
+      {
+        id: "MB-4",
+        productName: "ASUS TUF GAMING X570-PLUS",
+        brand: "ASUS",
+        price: 14500,
+        subCategory: "AMD X570 - ATX - PCIe 4.0",
+        ratings: 4.8,
+        newArrivals: false,
+      },
+      {
+        id: "MB-5",
+        productName: "MSI MAG B660 TOMAHAWK WIFI",
+        brand: "MSI",
+        price: 13200,
+        subCategory: "Intel B660 - ATX - DDR5",
+        ratings: 4.7,
+        newArrivals: true,
+      },
+      {
+        id: "MB-6",
+        productName: "Gigabyte Z690 AORUS ELITE AX",
+        brand: "Gigabyte",
+        price: 15800,
+        subCategory: "Intel Z690 - ATX - DDR5",
+        ratings: 4.8,
+        newArrivals: true,
+      },
+      {
+        id: "MB-7",
+        productName: "ASRock B550M Steel Legend",
+        brand: "ASRock",
+        price: 9500,
+        subCategory: "AMD B550 - Micro ATX",
+        ratings: 4.4,
+        newArrivals: false,
+      },
+      {
+        id: "MB-8",
+        productName: "ASUS ROG CROSSHAIR VIII HERO",
+        brand: "ASUS",
+        price: 22500,
+        subCategory: "AMD X570 - ATX - Premium",
+        ratings: 4.9,
+        newArrivals: false,
+      },
+      {
+        id: "MB-9",
+        productName: "MSI MPG Z790 CARBON WIFI",
+        brand: "MSI",
+        price: 24800,
+        subCategory: "Intel Z790 - ATX - DDR5",
+        ratings: 4.8,
+        newArrivals: true,
+      },
+      {
+        id: "MB-10",
+        productName: "Gigabyte B450M DS3H",
+        brand: "Gigabyte",
+        price: 6800,
+        subCategory: "AMD B450 - Micro ATX - Budget",
+        ratings: 4.2,
+        newArrivals: false,
+      },
+    ],
+  },
+  {
+    type: "GPU",
+    imageUrl: "/gpu.png",
+    products: [
+      {
+        id: "GPU-1",
+        productName: "NVIDIA GeForce RTX 4090",
+        brand: "NVIDIA",
+        price: 89000,
+        subCategory: "24GB GDDR6X - Flagship",
+        ratings: 4.9,
+        newArrivals: true,
+      },
+      {
+        id: "GPU-2",
+        productName: "NVIDIA GeForce RTX 4080",
+        brand: "NVIDIA",
+        price: 68000,
+        subCategory: "16GB GDDR6X - High-End",
+        ratings: 4.8,
+        newArrivals: true,
+      },
+      {
+        id: "GPU-3",
+        productName: "NVIDIA GeForce RTX 4070 Ti",
+        brand: "NVIDIA",
+        price: 45000,
+        subCategory: "12GB GDDR6X - Performance",
+        ratings: 4.7,
+        newArrivals: true,
+      },
+      {
+        id: "GPU-4",
+        productName: "AMD Radeon RX 7900 XTX",
+        brand: "AMD",
+        price: 58000,
+        subCategory: "24GB GDDR6 - High-End",
+        ratings: 4.7,
+        newArrivals: true,
+      },
+      {
+        id: "GPU-5",
+        productName: "AMD Radeon RX 7800 XT",
+        brand: "AMD",
+        price: 38000,
+        subCategory: "16GB GDDR6 - Performance",
+        ratings: 4.6,
+        newArrivals: true,
+      },
+      {
+        id: "GPU-6",
+        productName: "NVIDIA GeForce RTX 4060 Ti",
+        brand: "NVIDIA",
+        price: 28000,
+        subCategory: "8GB GDDR6 - Mainstream",
+        ratings: 4.5,
+        newArrivals: false,
+      },
+      {
+        id: "GPU-7",
+        productName: "AMD Radeon RX 6700 XT",
+        brand: "AMD",
+        price: 32000,
+        subCategory: "12GB GDDR6 - 1440p Gaming",
+        ratings: 4.4,
+        newArrivals: false,
+      },
+      {
+        id: "GPU-8",
+        productName: "NVIDIA GeForce RTX 3060",
+        brand: "NVIDIA",
+        price: 22000,
+        subCategory: "12GB GDDR6 - Budget Gaming",
+        ratings: 4.3,
+        newArrivals: false,
+      },
+      {
+        id: "GPU-9",
+        productName: "AMD Radeon RX 6600",
+        brand: "AMD",
+        price: 18000,
+        subCategory: "8GB GDDR6 - 1080p Gaming",
+        ratings: 4.2,
+        newArrivals: false,
+      },
+      {
+        id: "GPU-10",
+        productName: "NVIDIA GeForce GTX 1660 Super",
+        brand: "NVIDIA",
+        price: 15000,
+        subCategory: "6GB GDDR6 - Entry Level",
+        ratings: 4.1,
+        newArrivals: false,
+      },
+    ],
+  },
+  {
     type: "Processor",
     imageUrl: "/processor.png",
     products: [
@@ -98,7 +386,6 @@ export const components = [
   {
     type: "RAM",
     imageUrl: "/ram.png",
-
     products: [
       {
         id: "RAM-1",
@@ -195,7 +482,6 @@ export const components = [
   {
     type: "Keyboard",
     imageUrl: "/keyboard.png",
-
     products: [
       {
         id: "KB-1",
@@ -292,7 +578,6 @@ export const components = [
   {
     type: "Mouse",
     imageUrl: "/mouse.png",
-
     products: [
       {
         id: "MS-1",
@@ -389,7 +674,6 @@ export const components = [
   {
     type: "Headset/Speaker",
     imageUrl: "/headset-speaker.png",
-
     products: [
       {
         id: "HS-1",
@@ -486,7 +770,6 @@ export const components = [
   {
     type: "Extra (AIO)",
     imageUrl: "/aio.png",
-
     products: [
       {
         id: "AIO-1",
@@ -583,7 +866,6 @@ export const components = [
   {
     type: "Extra (Fan)",
     imageUrl: "/fan.png",
-
     products: [
       {
         id: "FAN-1",
@@ -680,7 +962,6 @@ export const components = [
   {
     type: "Extra (Webcam)",
     imageUrl: "/webcam.png",
-
     products: [
       {
         id: "CAM-1",

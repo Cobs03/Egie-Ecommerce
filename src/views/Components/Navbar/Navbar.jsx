@@ -37,29 +37,56 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const Navbar = ({ isAuth }) => {
-  const [cartCount, setCartCount] = useState(2); // example
-  const [notificationCount, setNotificationCount] = useState(3); // example
+  const [cartCount, setCartCount] = useState(2);
+  const [notificationCount, setNotificationCount] = useState(3);
   const { user, signOut } = useAuth();
   
-  // Profile state for avatar
   const [userAvatar, setUserAvatar] = useState("https://randomuser.me/api/portraits/men/32.jpg");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchBar, setShowSearchBar] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showProfileAccordion, setShowProfileAccordion] = useState(false);
+
+  // Navbar scroll behavior state
+  const [showNavbar, setShowNavbar] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   const navigate = useNavigate();
-
   const location = useLocation();
   const isProductsActive = location.pathname.startsWith("/products");
-
   const isActive = (path) => location.pathname === path;
 
-  // State to track dropdown visibility
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  // Scroll behavior effect
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
 
-  // Function to close dropdown
+      if (currentScrollY < lastScrollY || currentScrollY < 50) {
+        // Scrolling up or at the top
+        setShowNavbar(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down
+        setShowNavbar(false);
+        setShowSearchBar(false); // Close search bar when hiding navbar
+        setShowMobileMenu(false); // Close mobile menu when hiding navbar
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [lastScrollY]);
+
   const closeDropdown = () => {
     setIsDropdownOpen(false);
   };
 
-  // Modified handleSignOut to also close the dropdown
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -70,13 +97,6 @@ const Navbar = ({ isAuth }) => {
     }
   };
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showSearchBar, setShowSearchBar] = useState(false);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showProfileAccordion, setShowProfileAccordion] = useState(false);
-
-  // Load user avatar
   useEffect(() => {
     const loadUserAvatar = async () => {
       if (!user) return;
@@ -106,12 +126,10 @@ const Navbar = ({ isAuth }) => {
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      // Replace this with your actual search logic
       alert(`Searching for: ${searchQuery}`);
     }
   };
 
-  // Function to navigate and close dropdown
   const navigateAndClose = (path) => {
     closeDropdown();
     navigate(path);
@@ -123,7 +141,9 @@ const Navbar = ({ isAuth }) => {
         <div className="auth-header "></div>
       ) : (
         <div className="main-header">
-          <nav className="bg-gradient-to-r from-green-200 to-green-300 border-gray-200 w-full min-w-[320px] md:min-w-[768px] lg:min-w-[1024px] xl:min-w-[1280px] fixed top-0 left-0 right-0 z-[500] ">
+          <nav className={`bg-gradient-to-r from-green-200 to-green-300 border-gray-200 w-full min-w-[320px] md:min-w-[768px] lg:min-w-[1024px] xl:min-w-[1280px] fixed top-0 left-0 right-0 z-[500] transition-transform duration-300 ${
+            showNavbar ? 'translate-y-0' : '-translate-y-full'
+          }`}>
             {/* UPPER NAVBAR - Desktop */}
             <div className="hidden md:flex bg-gradient-to-r from-green-100 to-green-300 text-black px-5 py-1 justify-around items-center w-full h-10">
               <div className="text-[10px] font-bold">
@@ -252,7 +272,7 @@ const Navbar = ({ isAuth }) => {
                 {user ? (
                   <div className="flex items-center gap-8">
                     <div className="flex items-center gap-8 max-md:hidden">
-                      {/* Notification Icon - Hidden on mobile */}
+                      {/* Notification Icon */}
                       <TooltipProvider className="md:hidden">
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -272,7 +292,7 @@ const Navbar = ({ isAuth }) => {
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      {/* Cart Icon - Hidden on mobile */}
+                      {/* Cart Icon */}
                       <TooltipProvider className="md:hidden">
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -292,7 +312,7 @@ const Navbar = ({ isAuth }) => {
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      {/* Compare Icon - Hidden on mobile */}
+                      {/* Compare Icon */}
                       <TooltipProvider className="md:hidden">
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -315,7 +335,7 @@ const Navbar = ({ isAuth }) => {
                     </div>
 
                     <div className="flex items-center gap-8">
-                      {/* Profile Menu using dropdown */}
+                      {/* Profile Menu */}
                       <DropdownMenu
                         open={isDropdownOpen}
                         onOpenChange={setIsDropdownOpen}
@@ -330,7 +350,6 @@ const Navbar = ({ isAuth }) => {
                           </div>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-56 z-[10000] font-['Bruno_Ace_SC'] bg-white">
-                          {/* User Info Section */}
                           <div className="px-3 py-2 border-b border-gray-200">
                             <p className="text-sm font-medium text-gray-900">
                               {user?.user_metadata?.first_name && user?.user_metadata?.last_name 
@@ -437,7 +456,7 @@ const Navbar = ({ isAuth }) => {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      {/* Hamburger Menu Button - Visible only on mobile */}
+                      {/* Hamburger Menu Button */}
                       <button
                         className="flex md:hidden items-center justify-center w-10 h-10 rounded-full bg-white text-black border border-gray-300 hover:bg-gray-100 focus:outline-none"
                         aria-label="Menu"
@@ -457,7 +476,6 @@ const Navbar = ({ isAuth }) => {
                   </div>
                 ) : (
                   <>
-                    {/* Sign In/Sign Up Buttons (keep as fallback) */}
                     <Link
                       to="/signin"
                       className="px-6 py-2 border-2 border-green-400 text-white rounded-full hover:bg-green-400 hover:text-black transition font-semibold"
@@ -476,8 +494,8 @@ const Navbar = ({ isAuth }) => {
             </div>
           </nav>
 
-          {/* Mobile Menu - Code unchanged */}
-          {showMobileMenu && (
+          {/* Mobile Menu */}
+          {showMobileMenu && showNavbar && (
             <div
               className="lg:hidden bg-black border-t border-gray-700"
               style={{
@@ -636,8 +654,8 @@ const Navbar = ({ isAuth }) => {
             </div>
           )}
 
-          {/* Search bar - Code unchanged */}
-          {showSearchBar !== undefined && (
+          {/* Search bar */}
+          {showSearchBar && showNavbar && (
             <div
               className={`fixed left-0 right-0 top-[130px] z-50 flex justify-center bg-transparent p-1 transition-all duration-300 ease-in-out
                 ${

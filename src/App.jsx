@@ -44,7 +44,9 @@ function App() {
     <AuthProvider>
       <Router>
         <OrderProvider initialOrders={orders} updateOrders={setOrders}>
-          <Main orders={orders} setOrders={setOrders} />
+          <div className="bg-[#F3F7F6] min-h-screen">
+            <Main orders={orders} setOrders={setOrders} />
+          </div>
         </OrderProvider>
       </Router>
     </AuthProvider>

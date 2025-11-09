@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { components } from "../../Data/components";
 import { FaMinus, FaPlus, FaTrash } from "react-icons/fa";
-
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -9,45 +8,50 @@ const BuildComponents = ({
   selectedType,
   setSelectedType,
   selectedProducts,
-  setSelectedProducts, // <-- Add this prop to allow modification
+  setSelectedProducts,
 }) => {
-  const [quantities, setQuantities] = useState(components.map(() => 0));
+  const [quantities, setQuantities] = useState(
+    components.reduce((acc, comp) => ({ ...acc, [comp.type]: 0 }), {})
+  );
 
-  const handleDecrease = (index, compType) => {
+  const handleDecrease = (compType) => {
     if (!selectedProducts[compType]) return;
-    setQuantities((prev) =>
-      prev.map((qty, i) => (i === index && qty > 0 ? qty - 1 : qty))
-    );
+    setQuantities((prev) => ({
+      ...prev,
+      [compType]: Math.max(0, prev[compType] - 1),
+    }));
   };
 
-  const handleIncrease = (index, compType) => {
+  const handleIncrease = (compType) => {
     if (!selectedProducts[compType]) return;
-    setQuantities((prev) =>
-      prev.map((qty, i) => (i === index ? qty + 1 : qty))
-    );
+    setQuantities((prev) => ({
+      ...prev,
+      [compType]: prev[compType] + 1,
+    }));
   };
 
-  const handleDelete = (index, compType) => {
-    // Remove product
+  const handleDelete = (compType) => {
     setSelectedProducts((prev) => {
       const updated = { ...prev };
       delete updated[compType];
       return updated;
     });
 
-    // Reset quantity
-    setQuantities((prev) => prev.map((qty, i) => (i === index ? 0 : qty)));
+    setQuantities((prev) => ({
+      ...prev,
+      [compType]: 0,
+    }));
   };
 
-  const subtotal = components.reduce((acc, comp, index) => {
+  const subtotal = components.reduce((acc, comp) => {
     const selectedProduct = selectedProducts[comp.type];
     const price = selectedProduct?.price || 0;
-    const total = price * quantities[index];
+    const total = price * (quantities[comp.type] || 0);
     return acc + total;
   }, 0);
 
   return (
-    <div className="w-[800px] mb-4">
+    <div className="w-full mb-4">
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex-1 border rounded shadow-sm bg-gray-50 p-4">
           <table className="min-w-full text-sm border border-gray-300 mb-4">
@@ -62,63 +66,66 @@ const BuildComponents = ({
               </tr>
             </thead>
             <tbody>
-              {components.map((comp, index) => {
+              {components.map((comp) => {
                 const selectedProduct = selectedProducts[comp.type];
                 const price = selectedProduct?.price || 0;
-                const total = price * quantities[index];
+                const quantity = quantities[comp.type] || 0;
+                const total = price * quantity;
 
-                return (
-                  <tr key={index} className="bg-white hover:bg-gray-100">
-                    <td className="p-2 border">{comp.type}</td>
-                    <td className="p-2 border w68">
-                      {selectedProduct ? (
-                        <span className="text-sm font-medium text-gray-800">
-                          {selectedProduct.productName}
-                        </span>
-                      ) : (
+                if (!selectedProduct) {
+                  return (
+                    <tr key={comp.type} className="bg-white hover:bg-gray-100">
+                      <td className="p-2 border font-medium text-gray-700">
+                        {comp.type}
+                      </td>
+                      <td colSpan="5" className="p-4 border text-center">
                         <button
                           onClick={() => setSelectedType(comp.type)}
-                          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 cursor-pointer"
+                          className="bg-transparent border-2 border-dashed border-green-500 text-green-600 px-6 py-2 rounded-lg hover:bg-green-50 font-semibold transition-colors w-full max-w-md"
                         >
-                          Add a component
+                          + Add a {comp.type} Component
                         </button>
-                      )}
+                      </td>
+                    </tr>
+                  );
+                }
+
+                return (
+                  <tr key={comp.type} className="bg-white hover:bg-gray-100">
+                    <td className="p-2 border font-medium text-gray-700">
+                      {comp.type}
+                    </td>
+                    <td className="p-2 border w-68">
+                      <span className="text-sm font-medium text-gray-800">
+                        {selectedProduct.productName}
+                      </span>
                     </td>
                     <td className="p-2 border text-center">
                       <div className="flex justify-center items-center space-x-2">
                         <button
-                          onClick={() => handleDecrease(index, comp.type)}
-                          className={`cursor-pointer bg-red-500 text-white p-1 rounded-full hover:bg-red-600 ${
-                            !selectedProduct
-                              ? "opacity-50 cursor-not-allowed"
-                              : ""
-                          }`}
-                          disabled={!selectedProduct}
+                          onClick={() => handleDecrease(comp.type)}
+                          className="cursor-pointer bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
                         >
                           <FaMinus size={12} />
                         </button>
-                        <span className="w-5 text-center">
-                          {quantities[index]}
+                        <span className="w-8 text-center font-semibold">
+                          {quantity}
                         </span>
                         <button
-                          onClick={() => handleIncrease(index, comp.type)}
-                          className={`cursor-pointer bg-green-500 text-white p-1 rounded-full hover:bg-green-600 ${
-                            !selectedProduct
-                              ? "opacity-50 cursor-not-allowed"
-                              : ""
-                          }`}
-                          disabled={!selectedProduct}
+                          onClick={() => handleIncrease(comp.type)}
+                          className="cursor-pointer bg-green-500 text-white p-1 rounded-full hover:bg-green-600"
                         >
                           <FaPlus size={12} />
                         </button>
                       </div>
                     </td>
                     <td className="p-2 border">₱{price.toFixed(2)}</td>
-                    <td className="p-2 border">₱{total.toFixed(2)}</td>
+                    <td className="p-2 border font-semibold">₱{total.toFixed(2)}</td>
                     <td className="p-2 border text-center">
                       <button
-                        onClick={() => handleDelete(index, comp.type)}
-                        className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 cursor-pointer"
+                        onClick={() => handleDelete(comp.type)}
+                        className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 cursor-pointer transition-colors"
+                        title="Remove component"
                       >
                         <FaTrash size={12} />
                       </button>
@@ -130,7 +137,7 @@ const BuildComponents = ({
           </table>
 
           <div className="bg-gray-700 text-white flex justify-between items-center p-4 rounded-md">
-            <span className="text-sm font-medium">
+            <span className="text-lg font-semibold">
               Subtotal: ₱{subtotal.toFixed(2)}
             </span>
             <Link
@@ -139,7 +146,7 @@ const BuildComponents = ({
                 const hasSelection = Object.keys(selectedProducts).length > 0;
 
                 if (!hasSelection) {
-                  e.preventDefault(); // ✅ Prevent navigation only when there's an error
+                  e.preventDefault();
                   toast.error("No components selected", {
                     description:
                       "Please add at least one component before buying.",
@@ -150,11 +157,10 @@ const BuildComponents = ({
                 toast.success("Added to cart!", {
                   description: "Your products have been successfully added.",
                 });
-                // ✅ Do not prevent default if everything is okay — allow navigation
               }}
-              className="bg-lime-400 text-black px-6 py-2 rounded hover:bg-lime-500 font-semibold"
+              className="bg-lime-400 text-black px-6 py-2 rounded hover:bg-lime-500 font-semibold transition-colors"
             >
-              Add to Cart
+              Buy Now
             </Link>
           </div>
         </div>
