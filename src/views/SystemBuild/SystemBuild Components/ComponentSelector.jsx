@@ -1,24 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { components } from "../../Data/components";
-import { FaMinus } from "react-icons/fa";
 
-const ComponentSelector = ({ selectedType, setSelectedType, selectedProducts, setSelectedProducts }) => {
-  const [hoveredComponent, setHoveredComponent] = useState(null);
-
-  const handleDeselect = (e, componentType) => {
-    e.stopPropagation(); // Prevent triggering the button's onClick
-    setSelectedProducts((prev) => {
-      const updated = { ...prev };
-      delete updated[componentType];
-      return updated;
-    });
-    
-    // Clear selection if deselecting the currently selected type
-    if (selectedType === componentType) {
-      setSelectedType(null);
-    }
-  };
-
+const ComponentSelector = ({ selectedType, setSelectedType, selectedProducts }) => {
   return (
     <div className="h-full bg-white p-4">
       <h3 className="text-gray-800 text-lg font-bold mb-4 border-b border-gray-300 pb-2">
@@ -30,8 +13,6 @@ const ComponentSelector = ({ selectedType, setSelectedType, selectedProducts, se
           <button
             key={component.type}
             onClick={() => setSelectedType(component.type)}
-            onMouseEnter={() => setHoveredComponent(component.type)}
-            onMouseLeave={() => setHoveredComponent(null)}
             className={`w-full text-left px-4 py-3 rounded-lg transition-all border-2 border-dashed relative ${
               selectedType === component.type
                 ? 'bg-lime-500 text-white font-semibold border-lime-500'
@@ -45,20 +26,12 @@ const ComponentSelector = ({ selectedType, setSelectedType, selectedProducts, se
                 {selectedProducts[component.type] ? '✓' : '+'} {component.type}
               </span>
               
-              {selectedProducts[component.type] && hoveredComponent === component.type ? (
-                <button
-                  onClick={(e) => handleDeselect(e, component.type)}
-                  className="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full transition-all"
-                  title="Remove component"
-                >
-                  <FaMinus size={12} />
-                </button>
-              ) : selectedProducts[component.type] ? (
+              {selectedProducts[component.type] && (
                 <span className="text-xs text-lime-600 font-semibold">Selected</span>
-              ) : null}
+              )}
             </div>
           </button>
-        ))}
+        ))} 
       </div>
 
     </div>

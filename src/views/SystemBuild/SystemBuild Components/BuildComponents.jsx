@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { components } from "../../Data/components";
-import { FaMinus, FaPlus, FaTrash } from "react-icons/fa";
+import { FaMinus, FaPlus, FaTrash, FaShoppingCart } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -120,7 +120,9 @@ const BuildComponents = ({
                       </div>
                     </td>
                     <td className="p-2 border">₱{price.toFixed(2)}</td>
-                    <td className="p-2 border font-semibold">₱{total.toFixed(2)}</td>
+                    <td className="p-2 border font-semibold">
+                      ₱{total.toFixed(2)}
+                    </td>
                     <td className="p-2 border text-center">
                       <button
                         onClick={() => handleDelete(comp.type)}
@@ -136,7 +138,7 @@ const BuildComponents = ({
             </tbody>
           </table>
 
-          <div className="bg-gray-700 text-white flex justify-between items-center p-4 rounded-md">
+          <div className="bg-black text-white flex justify-between items-center p-4 rounded-md">
             <span className="text-lg font-semibold">
               Subtotal: ₱{subtotal.toFixed(2)}
             </span>
@@ -158,9 +160,10 @@ const BuildComponents = ({
                   description: "Your products have been successfully added.",
                 });
               }}
-              className="bg-lime-400 text-black px-6 py-2 rounded hover:bg-lime-500 font-semibold transition-colors"
+              className="bg-lime-400 text-black px-6 py-2 rounded hover:bg-lime-500 font-semibold transition-colors flex items-center gap-2"
             >
-              Buy Now
+              <FaShoppingCart size={16} />
+              Add to Cart
             </Link>
           </div>
         </div>

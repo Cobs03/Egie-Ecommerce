@@ -1,355 +1,567 @@
-import React, { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
-import { FaSearchPlus, FaSearchMinus, FaUndo, FaSyncAlt } from 'react-icons/fa';
-
-// Import separated modules
-import { 
-  initializeScene, 
-  setupLighting, 
-  addGridHelper, 
-  addTestCube 
-} from './SceneSetup';
-
-import { 
-  initializeControls, 
-  attachControlsEventListeners, 
-  detachControlsEventListeners 
-} from './ControlsSetup';
-
-import { 
-  setupKeyboardControls, 
-  removeKeyboardControls 
-} from './KeyboardControls';
-
-import { 
-  attachMouseDebugListeners, 
-  detachMouseDebugListeners 
-} from './MouseDebug';
-
-import { 
-  updateComponents 
-} from './ComponentGeometry';
-
-import { 
-  startAnimationLoop, 
-  stopAnimationLoop 
-} from './AnimationLoop';
-
-import { 
-  cleanupScene 
-} from './Cleanup';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { initializeScene, setupLighting, addGridHelper, addAxesHelper } from './SceneSetup';
+import { initializeControls, attachControlsEventListeners, detachControlsEventListeners } from './ControlsSetup';
+import { setupKeyboardControls, removeKeyboardControls } from './KeyboardControls';
+import { attachMouseDebugListeners, detachMouseDebugListeners } from './MouseDebug';
+import { startAnimationLoop, stopAnimationLoop } from './AnimationLoop';
+import { cleanupScene } from './Cleanup';
+import { updateSceneWithComponents, clearAllComponents, showOnlyComponent, showAllComponents, getComponentModelInfo } from './ModelLoader';
+import { clearModelCache } from './SketchfabLoader';
 
 const SystemBuilder3D = ({ selectedProducts, mini = false }) => {
-  console.log('🚀 SystemBuilder3D render');
-
   const containerRef = useRef(null);
   const sceneRef = useRef(null);
-  const rendererRef = useRef(null);
   const cameraRef = useRef(null);
+  const rendererRef = useRef(null);
   const controlsRef = useRef(null);
-  const animationFrameRef = useRef(null);
-  const testCubeRef = useRef(null);
-  const isInitializedRef = useRef(false);
-  const isMountedRef = useRef(true); // Track if component is mounted
+  const animationIdRef = useRef(null);
+
+  // Loading states
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStatus, setLoadingStatus] = useState('Initializing 3D scene...');
+  const [modelSummary, setModelSummary] = useState(null);
+
+  // Pagination state for navigating models
+  const [currentModelIndex, setCurrentModelIndex] = useState(0);
   
-  // Event handlers storage
-  const eventHandlersRef = useRef({});
+  // Current model info state
+  const [currentModelInfo, setCurrentModelInfo] = useState(null);
 
-  const [controlsEnabled, setControlsEnabled] = useState(false);
-  const [isInteracting, setIsInteracting] = useState(false);
+  // Get array of selected component types
+  const componentTypes = Object.keys(selectedProducts || {});
+  const totalModels = componentTypes.length;
+  const currentComponent = componentTypes[currentModelIndex];
+  const currentProduct = selectedProducts?.[currentComponent];
 
-  // MAIN INITIALIZATION EFFECT
+  // Navigation handlers
+  const goToPrevious = () => {
+    setCurrentModelIndex((prev) => (prev > 0 ? prev - 1 : totalModels - 1));
+  };
+
+  const goToNext = () => {
+    setCurrentModelIndex((prev) => (prev < totalModels - 1 ? prev + 1 : 0));
+  };
+
+  // Reset index when products change
   useEffect(() => {
-    // Prevent double initialization
-    if (isInitializedRef.current) {
-      console.log('⚠️ Already initialized, skipping...');
-      return;
+    if (currentModelIndex >= totalModels && totalModels > 0) {
+      setCurrentModelIndex(0);
     }
+  }, [totalModels, currentModelIndex]);
 
-    if (!containerRef.current) {
-      console.warn('⚠️ Container not ready');
-      return;
+  // Show only the current model based on pagination (not in mini mode)
+  // Also update the model info display
+  useEffect(() => {
+    if (!mini && currentComponent && !isLoading) {
+      showOnlyComponent(currentComponent);
+      // Get and update model info for current component
+      const info = getComponentModelInfo(currentComponent);
+      setCurrentModelInfo(info?.modelInfo || null);
     }
+  }, [currentModelIndex, currentComponent, isLoading, mini]);
 
-    console.log('═══════════════════════════════════════');
-    console.log('🎬 STARTING 3D INITIALIZATION');
-    console.log('═══════════════════════════════════════');
+  // Initialize 3D scene
+  useEffect(() => {
+    if (!containerRef.current) return;
 
-    isInitializedRef.current = true;
-    isMountedRef.current = true;
+    console.log('🔧 Initializing 3D scene...');
+    setIsLoading(true);
+    setLoadingStatus('Initializing 3D scene...');
+    setLoadingProgress(0);
 
-    // Small delay to ensure DOM is ready
-    const initTimeout = setTimeout(() => {
-      if (!isMountedRef.current || !containerRef.current) return;
+    // Initialize scene, camera, renderer
+    const { scene, camera, renderer } = initializeScene(containerRef.current, mini);
+    sceneRef.current = scene;
+    cameraRef.current = camera;
+    rendererRef.current = renderer;
 
-      try {
-        // 1. Initialize Scene, Camera, Renderer
-        const { scene, camera, renderer } = initializeScene(containerRef.current, mini);
-        sceneRef.current = scene;
-        cameraRef.current = camera;
-        rendererRef.current = renderer;
+    // Setup lighting
+    setupLighting(scene, camera);
+    scene.add(camera);
 
-        // 2. Setup Lighting
-        setupLighting(scene, mini);
+    // Add helpers
+    addGridHelper(scene);
+    addAxesHelper(scene);
 
-        // 3. Add Grid Helper
-        addGridHelper(scene, mini);
+    // Initialize controls
+    const controls = initializeControls(camera, renderer);
+    controlsRef.current = controls;
 
-        // 4. Add Test Cube
-        const testCube = addTestCube(scene);
-        testCubeRef.current = testCube;
+    // Attach event listeners
+    attachControlsEventListeners(controls);
+    setupKeyboardControls(camera, controls);
+    attachMouseDebugListeners(renderer.domElement);
 
-        // 5. Initialize OrbitControls
-        const controls = initializeControls(camera, renderer, mini);
-        controlsRef.current = controls;
+    // Start animation loop
+    animationIdRef.current = startAnimationLoop(renderer, scene, camera, controls);
 
-        // 6. Attach Controls Event Listeners
-        const controlsHandlers = attachControlsEventListeners(controls, renderer, setIsInteracting);
-        eventHandlersRef.current.controlsHandlers = controlsHandlers;
-        setControlsEnabled(true);
+    console.log('✅ 3D INITIALIZATION COMPLETE');
 
-        // 7. Setup Keyboard Controls
-        const keyboardHandler = setupKeyboardControls(camera, controls, mini);
-        eventHandlersRef.current.keyboardHandler = keyboardHandler;
+    // Hide loading after scene is ready
+    setTimeout(() => {
+      setIsLoading(false);
+      setLoadingStatus('');
+    }, 500);
 
-        // 8. Attach Mouse Debug Listeners
-        const mouseHandlers = attachMouseDebugListeners(renderer.domElement);
-        eventHandlersRef.current.mouseHandlers = mouseHandlers;
-
-        // 9. Setup Window Resize Handler
-        const handleResize = () => {
-          if (!containerRef.current || !isMountedRef.current) return;
-          camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
-          camera.updateProjectionMatrix();
-          renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-          console.log('📐 Window resized');
-        };
-        eventHandlersRef.current.resizeHandler = handleResize;
-        window.addEventListener('resize', handleResize);
-
-        // 10. Start Animation Loop
-        const animationId = startAnimationLoop(renderer, scene, camera, controls, testCube);
-        animationFrameRef.current = animationId;
-
-        console.log('═══════════════════════════════════════');
-        console.log('✅ 3D INITIALIZATION COMPLETE');
-        console.log('═══════════════════════════════════════');
-      } catch (error) {
-        console.error('❌ Initialization error:', error);
-        isInitializedRef.current = false;
-      }
-    }, 100);
-
-    // CLEANUP FUNCTION
+    // Cleanup on unmount
     return () => {
-      console.log('═══════════════════════════════════════');
       console.log('🧹 STARTING CLEANUP');
-      console.log('═══════════════════════════════════════');
-
-      clearTimeout(initTimeout);
-      isMountedRef.current = false;
-      isInitializedRef.current = false;
-
-      // Stop animation loop
-      if (animationFrameRef.current) {
-        stopAnimationLoop(animationFrameRef.current);
-      }
-
-      // Remove window resize listener
-      if (eventHandlersRef.current.resizeHandler) {
-        window.removeEventListener('resize', eventHandlersRef.current.resizeHandler);
-      }
-
-      // Remove keyboard controls
-      if (eventHandlersRef.current.keyboardHandler) {
-        removeKeyboardControls(eventHandlersRef.current.keyboardHandler);
-      }
-
-      // Remove mouse debug listeners
-      if (eventHandlersRef.current.mouseHandlers && rendererRef.current) {
-        detachMouseDebugListeners(rendererRef.current.domElement, eventHandlersRef.current.mouseHandlers);
-      }
-
-      // Remove controls event listeners
-      if (eventHandlersRef.current.controlsHandlers && controlsRef.current) {
-        detachControlsEventListeners(controlsRef.current, eventHandlersRef.current.controlsHandlers);
-      }
-
-      // Cleanup scene
-      if (sceneRef.current) {
-        cleanupScene(sceneRef.current, rendererRef.current, controlsRef.current, containerRef.current);
-      }
-
-      // Clear refs
-      sceneRef.current = null;
-      rendererRef.current = null;
-      cameraRef.current = null;
-      controlsRef.current = null;
-      animationFrameRef.current = null;
-      testCubeRef.current = null;
-      eventHandlersRef.current = {};
-
-      setControlsEnabled(false);
-      setIsInteracting(false);
-
-      console.log('═══════════════════════════════════════');
+      removeKeyboardControls();
+      detachMouseDebugListeners(renderer.domElement);
+      detachControlsEventListeners(controls);
+      clearAllComponents(scene);
+      clearModelCache();
+      stopAnimationLoop(animationIdRef.current);
+      cleanupScene(scene, renderer, controls, containerRef.current);
       console.log('✅ CLEANUP COMPLETE');
-      console.log('═══════════════════════════════════════');
     };
-  }, [mini]); // Only re-initialize if mini changes
+  }, [mini]);
 
-  // UPDATE COMPONENTS EFFECT
+  // Update components when selectedProducts changes
   useEffect(() => {
-    if (!sceneRef.current || !isMountedRef.current) {
-      return;
+    if (!sceneRef.current) return;
+
+    const componentCount = selectedProducts ? Object.keys(selectedProducts).length : 0;
+    console.log('🔄 Updating 3D components:', selectedProducts);
+
+    if (componentCount > 0) {
+      setIsLoading(true);
+      setLoadingProgress(0);
+      setLoadingStatus('Loading 3D models...');
     }
 
-    console.log('🔄 Updating components');
-
-    const timeoutId = setTimeout(() => {
-      if (sceneRef.current && isMountedRef.current) {
-        updateComponents(sceneRef.current, selectedProducts, mini);
+    // Update scene with components
+    updateSceneWithComponents(
+      sceneRef.current, 
+      selectedProducts || {},
+      (progress) => {
+        setLoadingProgress(Math.round(progress));
+      },
+      (status) => {
+        setLoadingStatus(status);
       }
-    }, 50);
+    )
+      .then((summary) => {
+        setModelSummary(summary);
+        setIsLoading(false);
+        setLoadingStatus('');
+        // After loading, show only the current component (in full mode)
+        // In mini mode, show all components
+        if (!mini && currentComponent) {
+          showOnlyComponent(currentComponent);
+          // Update model info for current component
+          const info = getComponentModelInfo(currentComponent);
+          setCurrentModelInfo(info?.modelInfo || null);
+        } else if (mini) {
+          showAllComponents();
+        }
+      })
+      .catch((error) => {
+        console.error('Error loading components:', error);
+        setIsLoading(false);
+        setLoadingStatus('Error loading models');
+      });
 
-    return () => clearTimeout(timeoutId);
-  }, [selectedProducts, mini]);
+  }, [selectedProducts]);
 
-  // CONTROL BUTTON HANDLERS
-  const handleZoomIn = () => {
-    if (!cameraRef.current || !controlsRef.current) return;
-    const direction = new THREE.Vector3();
-    direction.subVectors(controlsRef.current.target, cameraRef.current.position).normalize();
-    cameraRef.current.position.addScaledVector(direction, 0.5);
-    controlsRef.current.update();
-  };
-
-  const handleZoomOut = () => {
-    if (!cameraRef.current || !controlsRef.current) return;
-    const direction = new THREE.Vector3();
-    direction.subVectors(controlsRef.current.target, cameraRef.current.position).normalize();
-    cameraRef.current.position.addScaledVector(direction, -0.5);
-    controlsRef.current.update();
-  };
-
-  const handleResetCamera = () => {
-    if (!cameraRef.current || !controlsRef.current) return;
-    cameraRef.current.position.set(mini ? 4 : 5, mini ? 3 : 4, mini ? 4 : 5);
-    controlsRef.current.target.set(0, 1, 0);
-    controlsRef.current.update();
-  };
-
-  const toggleAutoRotate = () => {
-    if (!controlsRef.current) return;
-    controlsRef.current.autoRotate = !controlsRef.current.autoRotate;
-  };
-
-  // RENDER
   return (
-    <div className={`w-full h-full relative ${mini ? '' : 'bg-gray-200'} rounded-lg overflow-hidden shadow-2xl`}>
-      {/* Canvas Container */}
-      <div 
-        ref={containerRef} 
-        className="w-full h-full"
-        style={{ 
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 1
+    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      {/* 3D Canvas Container */}
+      <div
+        ref={containerRef}
+        style={{
+          width: "100%",
+          height: "100%",
+          minHeight: mini ? "200px" : "500px",
+          cursor: "grab",
         }}
       />
 
-      {/* Status Badge */}
-      <div 
-        className={`absolute top-2 right-2 px-2 py-1 ${isInteracting ? 'bg-yellow-500' : 'bg-green-500'} text-white text-xs rounded pointer-events-none`}
-        style={{ zIndex: 20 }}
-      >
-        {isInteracting ? '🎮 Interacting...' : (controlsEnabled ? '✅ Controls Active' : '⏳ Loading...')}
-      </div>
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(255, 255, 255, 0.95)",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 10,
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          {/* Animated Spinner */}
+          <div
+            style={{
+              width: mini ? "40px" : "60px",
+              height: mini ? "40px" : "60px",
+              border: "4px solid #e5e7eb",
+              borderTop: "4px solid #84cc16",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+              marginBottom: "16px",
+            }}
+          />
 
-      {/* UI Overlays (only in full view) */}
-      {!mini && (
-        <>
-          {/* Controls Panel */}
-          <div 
-            className="absolute top-4 left-4 bg-white/90 backdrop-blur-md text-gray-800 p-4 rounded-lg border border-gray-300 shadow-lg"
-            style={{ zIndex: 20, pointerEvents: 'auto' }}
-          >
-            <h3 className="font-bold mb-2 text-lime-600">🎮 Controls:</h3>
-            <ul className="text-xs space-y-1">
-              <li>🖱️ <strong>Left Drag:</strong> Rotate</li>
-              <li>🖱️ <strong>Right Drag:</strong> Pan</li>
-              <li>🖱️ <strong>Scroll:</strong> Zoom</li>
-              <li>⌨️ <strong>Q/E:</strong> Zoom In/Out</li>
-              <li>⌨️ <strong>R:</strong> Reset View</li>
-              <li>⌨️ <strong>Space:</strong> Auto-Rotate</li>
-            </ul>
-          </div>
-
-          {/* Action Buttons */}
-          <div 
-            className="absolute top-4 right-4 flex flex-col gap-2"
-            style={{ zIndex: 20, pointerEvents: 'auto' }}
-          >
-            <button 
-              onClick={handleZoomIn} 
-              className="bg-lime-500 hover:bg-lime-600 text-white font-bold p-3 rounded shadow-lg transition flex items-center justify-center"
-              title="Zoom In"
+          {/* Progress Bar */}
+          {loadingProgress > 0 && (
+            <div
+              style={{
+                width: mini ? "120px" : "200px",
+                height: "8px",
+                backgroundColor: "#e5e7eb",
+                borderRadius: "4px",
+                overflow: "hidden",
+                marginBottom: "12px",
+              }}
             >
-              <FaSearchPlus size={20} />
-            </button>
-            <button 
-              onClick={handleZoomOut} 
-              className="bg-lime-500 hover:bg-lime-600 text-white font-bold p-3 rounded shadow-lg transition flex items-center justify-center"
-              title="Zoom Out"
-            >
-              <FaSearchMinus size={20} />
-            </button>
-            <button 
-              onClick={handleResetCamera} 
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold p-3 rounded shadow-lg transition flex items-center justify-center"
-              title="Reset Camera"
-            >
-              <FaUndo size={20} />
-            </button>
-            <button 
-              onClick={toggleAutoRotate} 
-              className="bg-purple-500 hover:bg-purple-600 text-white font-bold p-3 rounded shadow-lg transition flex items-center justify-center"
-              title="Toggle Auto-Rotate"
-            >
-              <FaSyncAlt size={20} />
-            </button>
-          </div>
-
-          {/* Component Counter */}
-          <div 
-            className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md text-gray-800 p-4 rounded-lg border border-gray-300 shadow-lg"
-            style={{ zIndex: 20, pointerEvents: 'auto' }}
-          >
-            <h3 className="font-bold mb-2 text-lime-600">📦 Components</h3>
-            <div className="text-xs">
-              <span>Selected: </span>
-              <span className="font-bold text-lime-600">{Object.keys(selectedProducts).length}</span>
+              <div
+                style={{
+                  width: `${loadingProgress}%`,
+                  height: "100%",
+                  backgroundColor: "#84cc16",
+                  transition: "width 0.3s ease",
+                }}
+              />
             </div>
+          )}
+
+          {/* Loading Status Text */}
+          <div
+            style={{
+              fontSize: mini ? "11px" : "14px",
+              fontWeight: "500",
+              color: "#374151",
+              textAlign: "center",
+              maxWidth: "250px",
+              padding: "0 16px",
+            }}
+          >
+            {loadingStatus}
           </div>
-        </>
+
+          {loadingProgress > 0 && (
+            <div
+              style={{
+                fontSize: mini ? "10px" : "12px",
+                color: "#6b7280",
+                marginTop: "4px",
+              }}
+            >
+              {loadingProgress}%
+            </div>
+          )}
+        </div>
       )}
 
-      {/* Empty State */}
-      {!mini && Object.keys(selectedProducts).length === 0 && (
-        <div 
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-          style={{ zIndex: 15 }}
+      {/* Model Creator Info Panel - Top Left */}
+      {!isLoading && !mini && (
+        <div
+          style={{
+            position: "absolute",
+            top: "12px",
+            left: "12px",
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+            border: "1px solid #d1d5db",
+            borderRadius: "8px",
+            padding: "12px 16px",
+            fontSize: "12px",
+            lineHeight: "1.5",
+            minWidth: "180px",
+            maxWidth: "220px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          }}
         >
-          <div className="text-gray-700 text-center">
-            <p className="text-2xl mb-2">🖥️</p>
-            <p className="text-sm">Add components to see them in 3D</p>
-            <p className="text-xs mt-2 text-gray-500">Try interacting with the view!</p>
+          <div
+            style={{
+              fontWeight: "600",
+              color: "#84cc16",
+              marginBottom: "8px",
+              fontSize: "13px",
+            }}
+          >
+            3D Model Info:
+          </div>
+          {currentModelInfo ? (
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+            >
+              <div>
+                <span style={{ color: "#84cc16" }}>Creator: </span>
+                <a
+                  href={currentModelInfo.creatorUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: "white",
+                    fontWeight: "500",
+                    textDecoration: "none",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.target.style.textDecoration = "underline")
+                  }
+                  onMouseLeave={(e) => (e.target.style.textDecoration = "none")}
+                >
+                  {currentModelInfo.creator}
+                </a>
+              </div>
+              <div>
+                <span style={{ color: "#84cc16" }}>Source: </span>
+                <a
+                  href={currentModelInfo.modelUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: "white",
+                    fontWeight: "500",
+                    textDecoration: "none",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.target.style.textDecoration = "underline")
+                  }
+                  onMouseLeave={(e) => (e.target.style.textDecoration = "none")}
+                >
+                  {currentModelInfo.source}
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div style={{ color: "#9ca3af", fontStyle: "italic" }}>
+              {totalModels > 0 ? "Placeholder model" : "No model selected"}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Model Pagination Navigation - Top Center */}
+      {!isLoading && !mini && totalModels > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            top: "12px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            zIndex: 5,
+          }}
+        >
+          {/* Previous Button */}
+          <button
+            onClick={goToPrevious}
+            disabled={totalModels <= 1}
+            style={{
+              width: "36px",
+              height: "36px",
+              backgroundColor: "rgba(255, 255, 255, 0.95)",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              cursor: totalModels <= 1 ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "16px",
+              color: totalModels <= 1 ? "#9ca3af" : "#374151",
+              transition: "all 0.2s",
+              opacity: totalModels <= 1 ? 0.5 : 1,
+            }}
+            onMouseEnter={(e) => {
+              if (totalModels > 1) {
+                e.target.style.backgroundColor = "#84cc16";
+                e.target.style.color = "#fff";
+                e.target.style.borderColor = "#84cc16";
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = "rgba(255, 255, 255, 0.95)";
+              e.target.style.color = totalModels <= 1 ? "#9ca3af" : "#374151";
+              e.target.style.borderColor = "#d1d5db";
+            }}
+          >
+            ‹
+          </button>
+
+          {/* Current Model Display */}
+          <div
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.95)",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              padding: "8px 16px",
+              minWidth: "160px",
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "13px",
+                fontWeight: "600",
+                color: "#374151",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                maxWidth: "200px",
+              }}
+            >
+              {currentComponent || "No Components"}
+            </div>
+            <div
+              style={{
+                fontSize: "11px",
+                color: "#6b7280",
+                marginTop: "2px",
+              }}
+            >
+              {totalModels > 0
+                ? `${currentModelIndex + 1} of ${totalModels}`
+                : "0 selected"}
+            </div>
+          </div>
+
+          {/* Next Button */}
+          <button
+            onClick={goToNext}
+            disabled={totalModels <= 1}
+            style={{
+              width: "36px",
+              height: "36px",
+              backgroundColor: "rgba(255, 255, 255, 0.95)",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              cursor: totalModels <= 1 ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "16px",
+              color: totalModels <= 1 ? "#9ca3af" : "#374151",
+              transition: "all 0.2s",
+              opacity: totalModels <= 1 ? 0.5 : 1,
+            }}
+            onMouseEnter={(e) => {
+              if (totalModels > 1) {
+                e.target.style.backgroundColor = "#84cc16";
+                e.target.style.color = "#fff";
+                e.target.style.borderColor = "#84cc16";
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = "rgba(255, 255, 255, 0.95)";
+              e.target.style.color = totalModels <= 1 ? "#9ca3af" : "#374151";
+              e.target.style.borderColor = "#d1d5db";
+            }}
+          >
+            ›
+          </button>
+        </div>
+      )}
+
+      {/* Controls Instructions Panel - Right Side */}
+      {!isLoading && !mini && (
+        <div
+          style={{
+            position: "absolute",
+            top: "12px",
+            right: "12px",
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+            color: "#fff",
+            padding: "12px 16px",
+            borderRadius: "8px",
+            fontSize: "12px",
+            lineHeight: "1.6",
+            backdropFilter: "blur(4px)",
+            minWidth: "160px",
+          }}
+        >
+          <div
+            style={{
+              color: "#84cc16",
+              fontWeight: "600",
+              marginBottom: "8px",
+              fontSize: "13px",
+            }}
+          >
+            🎮 Controls:
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <div>
+              <span style={{ color: "#84cc16", fontWeight: "500" }}>
+                ◉ Left Drag:
+              </span>{" "}
+              Rotate
+            </div>
+            <div>
+              <span style={{ color: "#84cc16", fontWeight: "500" }}>
+                ◉ Right Drag:
+              </span>{" "}
+              Pan
+            </div>
+            <div>
+              <span style={{ color: "#84cc16", fontWeight: "500" }}>
+                ◉ Scroll:
+              </span>{" "}
+              Zoom
+            </div>
+            <div>
+              <span style={{ color: "#84cc16", fontWeight: "500" }}>
+                ◉ Q/E:
+              </span>{" "}
+              Zoom In/Out
+            </div>
+            <div>
+              <span style={{ color: "#84cc16", fontWeight: "500" }}>◉ R:</span>{" "}
+              Reset View
+            </div>
+            <div>
+              <span style={{ color: "#84cc16", fontWeight: "500" }}>
+                ◉ Space:
+              </span>{" "}
+              Auto-Rotate
+            </div>
           </div>
         </div>
       )}
+
+      {/* Model Summary Badge */}
+      {!isLoading && modelSummary && modelSummary.placeholders > 0 && !mini && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "12px",
+            left: "12px",
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            color: "#fff",
+            padding: "8px 12px",
+            borderRadius: "6px",
+            fontSize: "12px",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          <span style={{ color: "#fbbf24" }}>⚠️</span>
+          <span>
+            {modelSummary.placeholders} of {modelSummary.total} models
+            unavailable
+          </span>
+        </div>
+      )}
+
+      {/* CSS Animation for Spinner */}
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
     </div>
   );
 };

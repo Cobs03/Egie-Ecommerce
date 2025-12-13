@@ -10,41 +10,68 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const Selected = ({ selectedType, selectedProducts, onAddProduct, darkMode = false }) => {
+const Selected = ({ selectedType, selectedProducts, onAddProduct, onRemoveProduct, darkMode = false }) => {
   const selectedComponent = components.find((c) => c.type === selectedType);
   const products = selectedComponent ? selectedComponent.products : [];
 
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [selectedBrand, setSelectedBrand] = useState("");
-  const [selectedSubCategory, setSelectedSubCategory] = useState("");
+  const [selectedBrand, setSelectedBrand] = useState("all");
+  const [selectedSubCategory, setSelectedSubCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // ⬇️ Reset filters when selectedType changes
+  // Reset filters when selectedType changes
   useEffect(() => {
-    setSelectedBrand("");
-    setSelectedSubCategory("");
+    setSelectedBrand("all");
+    setSelectedSubCategory("all");
     setSelectedProduct(null);
+    setSearchTerm("");
   }, [selectedType]);
 
   const brands = [...new Set(products.map((p) => p.brand))];
   const subCategories = [...new Set(products.map((p) => p.subCategory))];
 
   const filteredProducts = products.filter((p) => {
-    const matchesBrand = selectedBrand === "" || p.brand === selectedBrand;
-    const matchesSub = selectedSubCategory === "" || p.subCategory === selectedSubCategory;
+    const matchesBrand = selectedBrand === "all" || p.brand === selectedBrand;
+    const matchesSub = selectedSubCategory === "all" || p.subCategory === selectedSubCategory;
     const matchesSearch = p.productName.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesBrand && matchesSub && matchesSearch;
   });
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
-      <h2 className="text-xl font-bold text-gray-800 mb-4 border-b border-gray-300 pb-2">
-        Selected Components
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-[900px] flex flex-col">
+      <h2 className="text-lg font-bold text-gray-800 mb-3 border-b border-gray-300 pb-2 flex-shrink-0">
+        Select Products
       </h2>
 
+      {/* Selected Products Summary - NEW SECTION */}
+      {Object.keys(selectedProducts).length > 0 && (
+        <div className="mb-3 pb-3 border-b border-gray-200 flex-shrink-0">
+          <h4 className="text-md font-semibold text-gray-700 mb-2">Selected ({Object.keys(selectedProducts).length})</h4>
+          <div className="space-y-1 max-h-32 overflow-y-auto">
+            {Object.entries(selectedProducts).map(([type, product]) => (
+              <div key={type} className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium text-gray-600">{type}:</span>
+                  <span className="ml-1 text-gray-800 truncate">{product.productName}</span>
+                </div>
+                {onRemoveProduct && (
+                  <button
+                    onClick={() => onRemoveProduct(type)}
+                    className="ml-2 text-red-500 hover:text-red-700 flex-shrink-0"
+                    title={`Remove ${type}`}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Header - Fixed */}
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold mb-4 text-gray-800">
+      <div className="mb-3 flex-shrink-0">
+        <h3 className="text-base font-semibold mb-3 text-gray-800">
           {selectedType || "Select a Component"}
         </h3>
         <input
@@ -52,15 +79,18 @@ const Selected = ({ selectedType, selectedProducts, onAddProduct, darkMode = fal
           placeholder="Search by product name..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="mb-4 w-full px-3 py-2 border border-gray-300 rounded text-sm bg-white"
+          className="mb-3 w-full px-3 py-2 border border-gray-300 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
         />
 
-        <div className="flex gap-4 mb-4">
+        <div className="flex gap-2 mb-3">
           <Select onValueChange={setSelectedBrand} value={selectedBrand}>
-            <SelectTrigger className="w-[180px] bg-white">
+            <SelectTrigger className="flex-1 bg-white text-sm h-9">
               <SelectValue placeholder="Brand" />
             </SelectTrigger>
             <SelectContent className="bg-white">
+              <SelectItem value="all" className="hover:bg-gray-100">
+                All Brands
+              </SelectItem>
               {brands.map((brand, index) => (
                 <SelectItem 
                   key={index} 
@@ -74,10 +104,13 @@ const Selected = ({ selectedType, selectedProducts, onAddProduct, darkMode = fal
           </Select>
 
           <Select onValueChange={setSelectedSubCategory} value={selectedSubCategory}>
-            <SelectTrigger className="w-[180px] bg-white">
+            <SelectTrigger className="flex-1 bg-white text-sm h-9">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent className="bg-white">
+              <SelectItem value="all" className="hover:bg-gray-100">
+                All Categories
+              </SelectItem>
               {subCategories.map((sub, index) => (
                 <SelectItem 
                   key={index} 
@@ -93,44 +126,94 @@ const Selected = ({ selectedType, selectedProducts, onAddProduct, darkMode = fal
       </div>
 
       {/* Scrollable Products List */}
-      <div className="overflow-y-auto flex-1">
-        {filteredProducts.length === 0 ? (
-          <p className="text-gray-500 text-sm">
+      <div className="overflow-y-auto flex-1 min-h-0 pr-1">
+        {!selectedType ? (
+          <div className="flex flex-col items-center justify-center h-full text-gray-400">
+            <p className="text-sm text-center">
+              Click on a component row to view available products
+            </p>
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <p className="text-gray-500 text-sm text-center py-4">
             No products match your filters.
           </p>
         ) : (
-          filteredProducts.map((product, index) => (
-            <div key={index} className="mb-4 p-3 rounded bg-gray-50">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gray-300 flex items-center justify-center rounded">
-                  <span className="text-gray-500 text-xs">📷</span>
-                </div>
+          <div className="space-y-3">
+            {filteredProducts.map((product, index) => {
+              const isSelected = selectedProducts[selectedType]?.id === product.id;
+              
+              return (
+                <div 
+                  key={index} 
+                  className={`p-3 rounded border transition-all ${
+                    isSelected 
+                      ? 'bg-lime-50 border-lime-400' 
+                      : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Product Image */}
+                    <div className="w-14 h-14 bg-gray-200 flex items-center justify-center rounded flex-shrink-0 overflow-hidden">
+                      {product.imageUrl ? (
+                        <img 
+                          src={product.imageUrl} 
+                          alt={product.productName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-gray-400 text-xs">📷</span>
+                      )}
+                    </div>
 
-                <div className="flex-1">
-                  <p className="font-semibold text-sm text-gray-800">{product.productName}</p>
-                  <p className="text-xs text-gray-600">
-                    {product.brand} - {product.subCategory}
-                  </p>
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={() => setSelectedProduct(product)}
-                      className="cursor-pointer bg-blue-500 text-white text-sm px-3 py-1 rounded hover:bg-blue-600 transition"
-                    >
-                      Details
-                    </button>
-                    <button
-                      onClick={() => onAddProduct(selectedType, product)}
-                      className="cursor-pointer bg-lime-400 text-black text-sm px-3 py-1 rounded hover:bg-lime-500 transition"
-                    >
-                      Add
-                    </button>
+                    {/* Product Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-gray-800 truncate">
+                        {product.productName}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {product.brand} • {product.subCategory}
+                      </p>
+                      <p className="text-sm font-bold text-gray-700 mt-1">
+                        ₱{product.price?.toLocaleString() || '0'}
+                      </p>
+                      
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={() => setSelectedProduct(product)}
+                          className="cursor-pointer bg-blue-500 text-white text-xs px-3 py-1 rounded hover:bg-blue-600 transition"
+                        >
+                          Details
+                        </button>
+                        <button
+                          onClick={() => onAddProduct(selectedType, product)}
+                          disabled={isSelected}
+                          className={`cursor-pointer text-xs px-3 py-1 rounded transition ${
+                            isSelected
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-lime-400 text-black hover:bg-lime-500'
+                          }`}
+                        >
+                          {isSelected ? 'Added ✓' : 'Add'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          ))
+              );
+            })}
+          </div>
         )}
       </div>
+
+      {/* Product Count Footer */}
+      {selectedType && filteredProducts.length > 0 && (
+        <div className="mt-3 pt-2 border-t border-gray-200 flex-shrink-0">
+          <p className="text-xs text-gray-500 text-center">
+            Showing {filteredProducts.length} of {products.length} products
+          </p>
+        </div>
+      )}
 
       {selectedProduct && (
         <ProductModal

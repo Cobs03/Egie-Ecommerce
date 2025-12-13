@@ -1,109 +1,119 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-export const initializeControls = (camera, renderer, mini = false) => {
+export const initializeControls = (camera, renderer) => {
   console.log('🎮 Initializing OrbitControls...');
+  
+  // OrbitControls needs the canvas DOM element, NOT the renderer
+  const domElement = renderer.domElement;
+  console.log('📍 DOM Element:', domElement);
 
-  const controls = new OrbitControls(camera, renderer.domElement);
+  const controls = new OrbitControls(camera, domElement);
   
-  // Enable all controls
-  controls.enabled = true;
-  controls.enableRotate = true;
-  controls.enableZoom = true;
-  controls.enablePan = true;
-  
-  // Rotation settings
-  controls.rotateSpeed = 1.0;
-  
-  // Zoom settings
-  controls.zoomSpeed = 1.2;
-  controls.minDistance = mini ? 2 : 3;
-  controls.maxDistance = mini ? 15 : 25;
-  
-  // Pan settings
-  controls.panSpeed = 0.8;
-  controls.screenSpacePanning = true;
-  
-  // Damping (smooth movement)
+  // Configure controls
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
+  controls.screenSpacePanning = false;
+  controls.minDistance = 1;
+  controls.maxDistance = 50;
+  controls.maxPolarAngle = Math.PI / 1.5;
+  controls.enablePan = true;
+  controls.enableZoom = true;
+  controls.enableRotate = true;
   
-  // Limits
-  controls.maxPolarAngle = Math.PI / 2; // Don't go below ground
-  controls.minPolarAngle = 0;
-  
-  // Auto-rotate in mini mode
-  controls.autoRotate = mini;
-  controls.autoRotateSpeed = 2;
-  
-  // Mouse buttons mapping
-  controls.mouseButtons = {
-    LEFT: THREE.MOUSE.ROTATE,
-    MIDDLE: THREE.MOUSE.DOLLY,
-    RIGHT: THREE.MOUSE.PAN
-  };
-
-  // Touch controls for mobile
-  controls.touches = {
-    ONE: THREE.TOUCH.ROTATE,
-    TWO: THREE.TOUCH.DOLLY_PAN
-  };
+  // Auto-rotate settings (disabled by default)
+  controls.autoRotate = false;
+  controls.autoRotateSpeed = 2.0;
 
   console.log('✅ OrbitControls initialized:', {
     enabled: controls.enabled,
     enableRotate: controls.enableRotate,
     enableZoom: controls.enableZoom,
-    enablePan: controls.enablePan
+    enablePan: controls.enablePan,
+    domElement: 'attached'
   });
 
   return controls;
 };
 
-export const attachControlsEventListeners = (controls, renderer, setIsInteracting) => {
+// Store event handlers for cleanup
+let controlsStartHandler = null;
+let controlsEndHandler = null;
+let controlsChangeHandler = null;
+
+export const attachControlsEventListeners = (controls) => {
   console.log('🔗 Attaching controls event listeners...');
 
-  const handleControlsStart = () => {
-    console.log('🎮 Controls started');
-    setIsInteracting(true);
-    if (renderer.domElement) {
-      renderer.domElement.style.cursor = 'grabbing';
-    }
+  controlsStartHandler = () => {
+    console.log('🎮 Controls interaction started');
   };
 
-  const handleControlsEnd = () => {
-    console.log('🎮 Controls ended');
-    setIsInteracting(false);
-    if (renderer.domElement) {
-      renderer.domElement.style.cursor = 'grab';
-    }
+  controlsEndHandler = () => {
+    console.log('🎮 Controls interaction ended');
   };
 
-  const handleControlsChange = () => {
-    // Too spammy, only log occasionally
-    // console.log('📹 Camera moving...');
+  controlsChangeHandler = () => {
+    // Uncomment for verbose logging
+    // console.log('🎮 Controls changed');
   };
 
-  controls.addEventListener('start', handleControlsStart);
-  controls.addEventListener('end', handleControlsEnd);
-  controls.addEventListener('change', handleControlsChange);
+  controls.addEventListener('start', controlsStartHandler);
+  controls.addEventListener('end', controlsEndHandler);
+  controls.addEventListener('change', controlsChangeHandler);
 
   console.log('✅ Controls event listeners attached');
-
-  return {
-    handleControlsStart,
-    handleControlsEnd,
-    handleControlsChange
-  };
 };
 
-export const detachControlsEventListeners = (controls, handlers) => {
+export const detachControlsEventListeners = (controls) => {
   console.log('🔗 Detaching controls event listeners...');
-  
-  if (controls && handlers) {
-    controls.removeEventListener('start', handlers.handleControlsStart);
-    controls.removeEventListener('end', handlers.handleControlsEnd);
-    controls.removeEventListener('change', handlers.handleControlsChange);
-    controls.dispose();
-    console.log('✅ Controls event listeners detached');
+
+  if (controls) {
+    if (controlsStartHandler) {
+      controls.removeEventListener('start', controlsStartHandler);
+    }
+    if (controlsEndHandler) {
+      controls.removeEventListener('end', controlsEndHandler);
+    }
+    if (controlsChangeHandler) {
+      controls.removeEventListener('change', controlsChangeHandler);
+    }
   }
+
+  controlsStartHandler = null;
+  controlsEndHandler = null;
+  controlsChangeHandler = null;
+
+  console.log('✅ Controls event listeners detached');
+};
+
+export const resetControls = (controls, camera) => {
+  console.log('🔄 Resetting controls...');
+  
+  if (controls && camera) {
+    controls.reset();
+    camera.position.set(5, 4, 5);
+    controls.target.set(0, 0, 0);
+    controls.update();
+  }
+  
+  console.log('✅ Controls reset');
+};
+
+export const focusOnObject = (controls, camera, object) => {
+  console.log('🎯 Focusing on object...');
+  
+  if (controls && camera && object) {
+    const box = new THREE.Box3().setFromObject(object);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const distance = maxDim * 2;
+    
+    camera.position.set(center.x + distance, center.y + distance / 2, center.z + distance);
+    controls.target.copy(center);
+    controls.update();
+  }
+  
+  console.log('✅ Focused on object');
 };
