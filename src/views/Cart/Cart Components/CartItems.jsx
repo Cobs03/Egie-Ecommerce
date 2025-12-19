@@ -2,8 +2,11 @@ import React, { useState } from "react";
 import { FaTrash } from "react-icons/fa";
 import { FaShoppingCart, FaPlus, FaMinus } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { useCart } from "../../../context/CartContext";
 
-const CartItems = ({ cartItems, setCartItems }) => {
+const CartItems = ({ cartItems, selectedItems, setSelectedItems }) => {
+  const { updateQuantity: updateCartQuantity, removeFromCart, clearCart } = useCart();
+  
   // State for individual item deletion
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -11,31 +14,38 @@ const CartItems = ({ cartItems, setCartItems }) => {
   // State for clear cart confirmation
   const [showConfirmClear, setShowConfirmClear] = useState(false);
 
-  const updateQuantity = (id, delta) => {
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              quantity: Math.max(item.quantity + delta, 1),
-            }
-          : item
-      )
-    );
+  // State for updating quantity
+  const [updatingItem, setUpdatingItem] = useState(null);
+
+  const updateQuantity = async (id, delta) => {
+    const item = cartItems.find(i => i.id === id);
+    if (!item) return;
+
+    const newQuantity = Math.max(item.quantity + delta, 1);
+    
+    setUpdatingItem(id);
+    await updateCartQuantity(id, newQuantity);
+    setUpdatingItem(null);
   };
 
   const toggleSelect = (id) => {
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, selected: !item.selected } : item
-      )
-    );
+    setSelectedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
   };
 
   const toggleSelectAll = (checked) => {
-    setCartItems((prev) =>
-      prev.map((item) => ({ ...item, selected: checked }))
-    );
+    if (checked) {
+      setSelectedItems(new Set(cartItems.map(item => item.id)));
+    } else {
+      setSelectedItems(new Set());
+    }
   };
 
   // Show clear cart confirmation
@@ -44,8 +54,8 @@ const CartItems = ({ cartItems, setCartItems }) => {
   };
 
   // Handle confirming clear cart
-  const confirmClearCart = () => {
-    setCartItems([]);
+  const confirmClearCart = async () => {
+    await clearCart();
     setShowConfirmClear(false);
   };
 
@@ -61,11 +71,9 @@ const CartItems = ({ cartItems, setCartItems }) => {
   };
 
   // Handle confirming deletion
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (itemToDelete) {
-      setCartItems((prev) =>
-        prev.filter((item) => item.id !== itemToDelete.id)
-      );
+      await removeFromCart(itemToDelete.id);
     }
     // Reset delete state
     setShowConfirmDelete(false);
@@ -78,14 +86,14 @@ const CartItems = ({ cartItems, setCartItems }) => {
     setItemToDelete(null);
   };
 
-  const selectedItems = cartItems.filter((item) => item.selected);
-  const total = selectedItems.reduce(
+  const selected = cartItems.filter((item) => item.selected);
+  const total = selected.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
 
   const allSelected =
-    cartItems.length > 0 && selectedItems.length === cartItems.length;
+    cartItems.length > 0 && selectedItems.size === cartItems.length;
 
   // Helper function to determine item URL
   const getItemUrl = (item) => {
@@ -158,19 +166,26 @@ const CartItems = ({ cartItems, setCartItems }) => {
                   </td>
                   <td className="py-2">
                     <Link
-                      to={getItemUrl(item)}
+                      to={`/products/details?type=product&id=${item.product_id}`}
                       className="flex items-center gap-3 group"
                     >
                       <img
                         src={item.image}
                         alt={item.name}
-                        className="w-16 h-16"
+                        className="w-16 h-16 object-contain"
                       />
-                      <span className="group-hover:text-green-600 group-hover:underline">
-                        {item.name.length > 20
-                          ? item.name.slice(0, 20) + "..."
-                          : item.name}
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="group-hover:text-green-600 group-hover:underline">
+                          {item.name.length > 50
+                            ? item.name.slice(0, 50) + "..."
+                            : item.name}
+                        </span>
+                        {item.variant_name && (
+                          <span className="text-xs text-gray-500">
+                            Variant: {item.variant_name}
+                          </span>
+                        )}
+                      </div>
                     </Link>
                   </td>
                   <td className="py-2">₱{item.price.toLocaleString()}</td>
@@ -178,16 +193,22 @@ const CartItems = ({ cartItems, setCartItems }) => {
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => updateQuantity(item.id, -1)}
-                        className="bg-red-500 text-white rounded px-2 h-8"
+                        disabled={updatingItem === item.id}
+                        className="bg-red-500 text-white rounded px-2 h-8 disabled:opacity-50"
                       >
                         −
                       </button>
-                      <span className="inline-flex items-center justify-center h-8 px-2 border rounded">
-                        {item.quantity}
+                      <span className="inline-flex items-center justify-center h-8 px-2 border rounded min-w-[40px]">
+                        {updatingItem === item.id ? (
+                          <div className="animate-spin h-4 w-4 border-2 border-green-500 border-t-transparent rounded-full" />
+                        ) : (
+                          item.quantity
+                        )}
                       </span>
                       <button
                         onClick={() => updateQuantity(item.id, 1)}
-                        className="bg-green-500 text-white rounded px-2 h-8"
+                        disabled={updatingItem === item.id}
+                        className="bg-green-500 text-white rounded px-2 h-8 disabled:opacity-50"
                       >
                         +
                       </button>
@@ -248,17 +269,22 @@ const CartItems = ({ cartItems, setCartItems }) => {
                   onChange={() => toggleSelect(item.id)}
                   className="mr-3 mt-1 w-4 h-4 rounded accent-green-600"
                 />
-                <Link to={getItemUrl(item)} className="flex-1">
+                <Link to={`/products/details?type=product&id=${item.product_id}`} className="flex-1">
                   <div className="flex items-center">
                     <img
                       src={item.image}
                       alt={item.name}
-                      className="w-16 h-16 mr-3"
+                      className="w-16 h-16 mr-3 object-contain"
                     />
                     <div className="flex-1">
                       <p className="text-sm font-medium line-clamp-2">
                         {item.name}
                       </p>
+                      {item.variant_name && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Variant: {item.variant_name}
+                        </p>
+                      )}
                       <p className="font-bold text-base mt-1">
                         ₱{item.price.toLocaleString()}
                       </p>
@@ -272,14 +298,22 @@ const CartItems = ({ cartItems, setCartItems }) => {
                 <div className="flex items-center">
                   <button
                     onClick={() => updateQuantity(item.id, -1)}
-                    className="w-6 h-6 flex items-center justify-center rounded-full bg-red-500 text-white"
+                    disabled={updatingItem === item.id}
+                    className="w-6 h-6 flex items-center justify-center rounded-full bg-red-500 text-white disabled:opacity-50"
                   >
                     <FaMinus className="text-xs" />
                   </button>
-                  <span className="mx-3 w-5 text-center">{item.quantity}</span>
+                  <span className="mx-3 w-8 text-center">
+                    {updatingItem === item.id ? (
+                      <div className="animate-spin h-4 w-4 border-2 border-green-500 border-t-transparent rounded-full mx-auto" />
+                    ) : (
+                      item.quantity
+                    )}
+                  </span>
                   <button
                     onClick={() => updateQuantity(item.id, 1)}
-                    className="w-6 h-6 flex items-center justify-center rounded-full bg-green-500 text-white"
+                    disabled={updatingItem === item.id}
+                    className="w-6 h-6 flex items-center justify-center rounded-full bg-green-500 text-white disabled:opacity-50"
                   >
                     <FaPlus className="text-xs" />
                   </button>

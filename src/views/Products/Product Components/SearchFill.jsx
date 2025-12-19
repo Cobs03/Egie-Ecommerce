@@ -1,17 +1,10 @@
-import React, { useState, useMemo } from "react";
-import { components } from "../../Data/components";
+import React, { useState, useEffect } from "react";
+import { BrandService } from "../../../services/BrandService";
 
-const SearchFill = ({ filters, onChange }) => {
-  // 🔍 Extract unique brands from components
-  const allBrands = useMemo(() => {
-    const brandSet = new Set();
-    components.forEach((component) => {
-      component.products.forEach((product) => {
-        brandSet.add(product.brand);
-      });
-    });
-    return Array.from(brandSet);
-  }, []);
+const SearchFill = ({ filters, onChange, selectedCategory }) => {
+  // 🔍 Fetch brands dynamically from database
+  const [allBrands, setAllBrands] = useState([]);
+  const [loadingBrands, setLoadingBrands] = useState(false);
 
   const discounts = ["Christmas Sale", "Seasons", "Top", "Anniversary"];
 
@@ -21,6 +14,44 @@ const SearchFill = ({ filters, onChange }) => {
   const [selectedDiscounts, setSelectedDiscounts] = useState([]);
   const [selectedRating, setSelectedRating] = useState(null);
   const [showAllBrands, setShowAllBrands] = useState(false);
+
+  // 🔄 Fetch brands when component mounts or category changes
+  useEffect(() => {
+    const fetchBrands = async () => {
+      setLoadingBrands(true);
+      try {
+        let result;
+        
+        if (selectedCategory) {
+          // If a category is selected, get brands for that category only
+          result = await BrandService.getBrandsByCategory(selectedCategory);
+        } else {
+          // If no category selected (All Products), get all brands with products
+          result = await BrandService.getBrandsWithProducts();
+        }
+
+        if (result.success) {
+          setAllBrands(result.data);
+        } else {
+          console.error('Error fetching brands:', result.error);
+          setAllBrands([]);
+        }
+      } catch (error) {
+        console.error('Error fetching brands:', error);
+        setAllBrands([]);
+      } finally {
+        setLoadingBrands(false);
+      }
+    };
+
+    fetchBrands();
+  }, [selectedCategory]); // Re-fetch when category changes
+
+  // 🔄 Clear selected brands when category changes (optional UX improvement)
+  useEffect(() => {
+    setSelectedBrands([]);
+    onChange({ brands: [] });
+  }, [selectedCategory]);
 
   const applyPrice = () => {
     onChange({
@@ -107,20 +138,36 @@ const SearchFill = ({ filters, onChange }) => {
       {/* Brand Filter */}
       <div className="mb-8">
         <label className="block mb-4 font-semibold text-white">By Brand</label>
-        <div className="space-y-3">
-          {allBrands.slice(0, 4).map((brand) => (
-            <label key={brand} className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                value={brand}
-                checked={selectedBrands.includes(brand)}
-                onChange={() => toggleBrand(brand)}
-                className="w-4 h-4 text-green-500 bg-black bg-opacity-50 border-gray-600 rounded focus:ring-green-500 focus:ring-2"
-              />
-              <span className="ml-3 text-gray-300">{brand}</span>
-            </label>
-          ))}
-        </div>
+        {loadingBrands ? (
+          <div className="text-gray-400 text-sm">Loading brands...</div>
+        ) : allBrands.length === 0 ? (
+          <div className="text-gray-400 text-sm">No brands available</div>
+        ) : (
+          <div className="space-y-3">
+            {(showAllBrands ? allBrands : allBrands.slice(0, 4))
+              .filter(brand => brand && brand.id && brand.name) // Safety check
+              .map((brand) => (
+              <label key={brand.id} className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  value={brand.id}
+                  checked={selectedBrands.includes(brand.id)}
+                  onChange={() => toggleBrand(brand.id)}
+                  className="w-4 h-4 text-green-500 bg-black bg-opacity-50 border-gray-600 rounded focus:ring-green-500 focus:ring-2"
+                />
+                <span className="ml-3 text-gray-300">{String(brand.name)}</span>
+              </label>
+            ))}
+            {allBrands.length > 4 && (
+              <button
+                onClick={() => setShowAllBrands(!showAllBrands)}
+                className="text-green-500 hover:text-green-400 text-sm font-medium transition-colors"
+              >
+                {showAllBrands ? "Show Less" : `Show All (${allBrands.length})`}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Rating Filter */}

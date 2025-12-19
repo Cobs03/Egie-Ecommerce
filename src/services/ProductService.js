@@ -176,12 +176,38 @@ export class ProductService {
     }
   }
 
+  // Helper function to get full image URL from Supabase storage or external URL
+  static getImageUrl(imagePath) {
+    if (!imagePath) return '/images/placeholder-product.png'
+    
+    // If it's already a full URL (external hosting like ImgBB), return as-is
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath
+    }
+    
+    // If it's a relative path starting with /, return as-is (local asset)
+    if (imagePath.startsWith('/')) {
+      return imagePath
+    }
+    
+    // Otherwise, construct Supabase Storage URL
+    const { data } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(imagePath)
+    
+    return data.publicUrl
+  }
+
   // Helper function to transform Supabase product data to match existing UI structure
   static transformProductData(product) {
     if (!product) return null
 
     // Extract data from metadata if available
     const metadata = product.metadata || {}
+
+    // Transform images to full URLs
+    const productImages = product.images || metadata.images || []
+    const imageUrls = productImages.map(img => this.getImageUrl(img))
 
     return {
       id: product.id,
@@ -197,10 +223,8 @@ export class ProductService {
       stockStatus: this.getStockStatus(product.stock_quantity),
       rating: product.rating || Math.floor(Math.random() * 5) + 1,
       reviews: product.review_count || Math.floor(Math.random() * 50) + 1,
-      imageUrl: (product.images && product.images.length > 0) ? product.images[0] : 
-                (metadata.images && metadata.images.length > 0) ? metadata.images[0] : 
-                '/images/placeholder-product.png',
-      images: product.images || metadata.images || [],
+      imageUrl: imageUrls.length > 0 ? imageUrls[0] : '/images/placeholder-product.png',
+      images: imageUrls,
       specs: this.transformSpecifications(product.specifications || metadata.specifications),
       features: product.features || [],
       variants: metadata.variants || product.variants || [],

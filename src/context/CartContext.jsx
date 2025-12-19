@@ -23,6 +23,7 @@ export const CartProvider = ({ children }) => {
   // Order checkout details
   const [orderNotes, setOrderNotes] = useState('');
   const [deliveryType, setDeliveryType] = useState(null); // 'local_delivery' or 'store_pickup'
+  const [appliedVoucher, setAppliedVoucher] = useState(null); // { code, voucherId, discountAmount, discountType, voucherValue }
 
   // Load cart when user logs in
   useEffect(() => {
@@ -46,6 +47,7 @@ export const CartProvider = ({ children }) => {
         setCartTotal(0);
         setOrderNotes('');
         setDeliveryType(null);
+        setAppliedVoucher(null);
       }
     });
 
@@ -166,13 +168,28 @@ export const CartProvider = ({ children }) => {
         toast.error('Failed to remove item', {
           description: error
         });
+        setLoading(false);
         return { success: false, error };
       }
 
-      console.log('CartContext: Item removed successfully, reloading cart...');
-      // Reload cart
-      await loadCart();
+      console.log('CartContext: Item removed successfully');
+      
+      // Update state immediately without reloading (smoother UX)
+      setCartItems(prevItems => {
+        const newItems = prevItems.filter(item => item.id !== cart_item_id);
+        return newItems;
+      });
+      
+      // Update cart count and total
+      setCartCount(prevCount => Math.max(0, prevCount - 1));
+      
+      // Recalculate total from remaining items
+      const removedItem = cartItems.find(item => item.id === cart_item_id);
+      if (removedItem) {
+        setCartTotal(prevTotal => Math.max(0, prevTotal - (removedItem.price_at_add * removedItem.quantity)));
+      }
 
+      setLoading(false);
       toast.success('Item removed from cart');
 
       return { success: true, data };
@@ -187,8 +204,9 @@ export const CartProvider = ({ children }) => {
 
   /**
    * Clear entire cart
+   * @param {boolean} showToast - Whether to show success toast (default: true)
    */
-  const clearCart = async () => {
+  const clearCart = async (showToast = true) => {
     if (!user) return { success: false, error: 'Not authenticated' };
 
     setLoading(true);
@@ -209,7 +227,10 @@ export const CartProvider = ({ children }) => {
       setOrderNotes('');
       setDeliveryType(null);
 
-      toast.success('Cart cleared');
+      // Only show toast if explicitly requested (when user manually clears cart)
+      if (showToast) {
+        toast.success('Cart cleared');
+      }
 
       return { success: true, data };
     } catch (error) {
@@ -237,6 +258,8 @@ export const CartProvider = ({ children }) => {
     setOrderNotes,
     deliveryType,
     setDeliveryType,
+    appliedVoucher,
+    setAppliedVoucher,
   };
 
   return (

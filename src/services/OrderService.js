@@ -15,10 +15,10 @@ class OrderService {
   
   /**
    * Create order from cart
-   * @param {Object} orderData - { delivery_type, shipping_address_id, customer_notes, payment_method }
+   * @param {Object} orderData - { delivery_type, shipping_address_id, customer_notes, payment_method, voucher }
    * @returns {Object} { data: { order_id, order_number, payment_id, transaction_id, total }, error }
    */
-  async createOrder({ delivery_type, shipping_address_id, customer_notes, payment_method }) {
+  async createOrder({ delivery_type, shipping_address_id, customer_notes, payment_method, voucher = null }) {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
@@ -40,13 +40,25 @@ class OrderService {
         return { data: null, error: 'Shipping address is required for local delivery' };
       }
 
+      // Prepare voucher parameters
+      const voucherParams = voucher ? {
+        p_voucher_id: voucher.voucherId,
+        p_voucher_code: voucher.code,
+        p_voucher_discount: voucher.discountAmount
+      } : {
+        p_voucher_id: null,
+        p_voucher_code: null,
+        p_voucher_discount: 0
+      };
+
       // Call database function to create order from cart
       const { data, error } = await supabase.rpc('create_order_from_cart', {
         p_user_id: user.id,
         p_delivery_type: delivery_type,
         p_shipping_address_id: shipping_address_id,
         p_customer_notes: customer_notes || null,
-        p_payment_method: payment_method
+        p_payment_method: payment_method,
+        ...voucherParams
       });
 
       if (error) {

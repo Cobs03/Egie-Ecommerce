@@ -1,30 +1,157 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import OrderTabs from "./Purchase Components/OrderTabs";
 import OrderCard from "./Purchase Components/OrdersCard";
-import purchaseData from "../Data/purchaseData";
-// Change this line in Purchases.jsx
-import { OrderProvider, useOrders } from './Purchase Components/OrderContext';
+import { UserOrderService } from "../../services/UserOrderService";
+import { getImageUrl } from "../../lib/supabase";
+import { OrderProvider } from './Purchase Components/OrderContext';
+import { toast } from "sonner";
 
-const Purchases = ({ orders, setOrders }) => {
+const Purchases = () => {
   const [activeTab, setActiveTab] = useState("All");
-  
-  const handleStatusChange = (orderIndex, newStatus, reason = "") => {
-    const updatedOrders = [...orders];
-    updatedOrders[orderIndex].status = newStatus;
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    if (newStatus === "Cancelled") {
-      updatedOrders[orderIndex].cancelReason = reason;
-      updatedOrders[orderIndex].subStatus = "Cancelled by you";
-    } else if (newStatus === "Completed") {
-      updatedOrders[orderIndex].subStatus = "Order Completed";
+  useEffect(() => {
+    loadOrders();
+  }, []);
+
+  const loadOrders = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await UserOrderService.getUserOrders();
+      
+      if (error) {
+        console.error('Error loading orders:', error);
+        setOrders([]);
+        return;
+      }
+
+      if (data && Array.isArray(data)) {
+        // Transform database orders to match component format
+        const transformedOrders = data.map(order => {
+          // Map status to purchase page statuses
+          let displayStatus = order.status;
+          let subStatus = '';
+          
+          const isPickup = order.delivery_type?.toLowerCase() === 'pickup';
+          
+          if (order.status === 'pending') {
+            displayStatus = isPickup ? 'To Pickup' : 'To Ship';
+            subStatus = 'Preparing Parts';
+          } else if (order.status === 'confirmed' || order.status === 'processing') {
+            displayStatus = isPickup ? 'To Pickup' : 'To Ship';
+            subStatus = 'Preparing Your Order';
+          } else if (order.status === 'ready_for_pickup') {
+            displayStatus = 'Ready for Pickup';
+            subStatus = 'Your order is ready! Come pick it up at our store';
+          } else if (order.status === 'shipped') {
+            displayStatus = 'To Receive';
+            subStatus = 'Parcel is on the way';
+          } else if (order.status === 'delivered' || order.status === 'completed') {
+            displayStatus = 'Completed';
+            subStatus = isPickup ? 'Store Pick-up Complete' : 'Order Completed';
+          } else if (order.status === 'cancelled') {
+            displayStatus = 'Cancelled';
+            subStatus = 'Cancelled by you';
+          }
+
+          // Process order items with images
+          const products = (order.order_items || []).map(item => {
+            // Get image URL using helper function
+            const imageUrl = getImageUrl(item.product_image);
+            
+            console.log('Processing purchase item:', {
+              product_name: item.product_name,
+              raw_image: item.product_image,
+              processed_url: imageUrl
+            });
+
+            // Safely handle price (use unit_price from order_items table)
+            const itemPrice = Number(item.unit_price) || 0;
+            const itemQuantity = Number(item.quantity) || 1;
+
+            return {
+              image: imageUrl,
+              title: item.product_name || 'Product',
+              quantity: itemQuantity,
+              price: itemPrice.toLocaleString(),
+              total: (item.total || (itemPrice * itemQuantity)).toLocaleString()
+            };
+          });
+
+          const totalAmount = order.total_amount || (order.subtotal || 0) - (order.discount || 0) + (order.shipping_fee || 0);
+
+          return {
+            id: order.id,
+            orderId: order.order_number,
+            status: displayStatus,
+            subStatus: subStatus,
+            products: products,
+            total: totalAmount,
+            note: order.order_notes || '',
+            cancelReason: order.order_notes || '',
+            deliveryType: order.delivery_type,
+            shippingAddress: order.shipping_addresses,
+            payment: order.payments?.[0],
+            courierName: order.courier_name,
+            trackingNumber: order.tracking_number,
+            createdAt: order.created_at,
+            rawData: order
+          };
+        });
+
+        setOrders(transformedOrders);
+      } else {
+        setOrders([]);
+      }
+    } catch (error) {
+      console.error('Error in loadOrders:', error);
+      setOrders([]);
+    } finally {
+      setLoading(false);
     }
-
-    setOrders(updatedOrders);
+  };
+  
+  const handleStatusChange = async (orderId, newStatus, reason = "") => {
+    if (newStatus === "Cancelled") {
+      const { error } = await UserOrderService.cancelOrder(orderId, reason);
+      if (error) {
+        console.error('Failed to cancel order:', error);
+        toast.error('Failed to cancel order', {
+          description: error
+        });
+        return;
+      }
+      toast.success('Order cancelled successfully!', {
+        description: 'Your order has been cancelled'
+      });
+    } else if (newStatus === "Completed") {
+      const { error } = await UserOrderService.markOrderReceived(orderId);
+      if (error) {
+        console.error('Failed to mark order received:', error);
+        toast.error('Failed to update order', {
+          description: error
+        });
+        return;
+      }
+      toast.success('Order marked as received!', {
+        description: 'Thank you for your purchase'
+      });
+    }
+    
+    // Reload orders to get fresh data
+    loadOrders();
   };
 
   const filteredOrders =
     activeTab === "All"
       ? orders
+      : activeTab === "Store Pick-up"
+      ? orders.filter((order) => {
+          const isPickupType = order.deliveryType?.toLowerCase().includes('pickup');
+          const isReadyStatus = order.status === "Ready for Pickup";
+          return isPickupType || isReadyStatus;
+        })
       : orders.filter((order) => order.status === activeTab);
 
   const getButtons = (status) => {
@@ -44,6 +171,21 @@ const Purchases = ({ orders, setOrders }) => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="w-full py-6 flex justify-center items-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-4">
+          <img
+            src="/EGIE LOGO.png"
+            alt="Loading"
+            className="w-20 h-15 object-contain"
+          />
+          <div className="w-24 h-24 border-8 border-gray-200 border-t-green-500 rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full py-6">
       <OrderTabs activeTab={activeTab} onChange={setActiveTab} />
@@ -51,11 +193,11 @@ const Purchases = ({ orders, setOrders }) => {
         {filteredOrders.length > 0 ? (
           filteredOrders.map((order, i) => (
             <OrderCard
-              key={i}
+              key={order.id}
               {...order}
               buttons={getButtons(order.status)}
               onStatusChange={(newStatus, reason) =>
-                handleStatusChange(i, newStatus, reason)
+                handleStatusChange(order.id, newStatus, reason)
               }
               cancelReason={order.cancelReason}
             />

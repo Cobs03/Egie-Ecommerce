@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaSearch, FaTimes } from "react-icons/fa";
 import { toast } from "sonner";
-import { components } from "../../Data/components";
+import { supabase } from "../../../lib/supabase";
 
 const ComparisonSelector = ({ addToComparison, existingProducts = [], selectedProduct, onClose }) => {
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -10,24 +10,129 @@ const ComparisonSelector = ({ addToComparison, existingProducts = [], selectedPr
   const [selectedProducts, setSelectedProducts] = useState(
     selectedProduct ? [selectedProduct] : []
   );
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Extract unique component types from your data
-  const componentTypes = [...new Set(components.map((component) => component.type))];
+  // Fetch categories from Supabase
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('product_categories')
+          .select('id, name')
+          .eq('is_active', true)
+          .order('name');
 
-  // Filter products based on search and category
-  const filteredProducts = components
-    .filter((category) => !selectedCategory || category.type === selectedCategory)
-    .flatMap((category) =>
-      category.products.filter(
-        (product) =>
-          product.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.subCategory.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    );
+        if (error) throw error;
+        setCategories(data || []);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        toast.error('Failed to load categories');
+      }
+    };
 
-  // Handle product selection
+    fetchCategories();
+  }, []);
+
+  // Fetch products from Supabase
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        
+        // Get products with their selected_components
+        let productsQuery = supabase
+          .from('products')
+          .select('id, name, price, stock_quantity, status, images, brand_id, specifications, metadata, selected_components')
+          .eq('status', 'active');
+
+        const { data: productsData, error: productsError } = await productsQuery;
+
+        if (productsError) throw productsError;
+
+        // Get brands
+        const brandIds = productsData.map(p => p.brand_id).filter(Boolean);
+        const { data: brands, error: brandsError } = await supabase
+          .from('brands')
+          .select('id, name')
+          .in('id', brandIds);
+
+        if (brandsError) console.error('Error fetching brands:', brandsError);
+
+        // Create brand lookup
+        const brandMap = (brands || []).reduce((acc, brand) => {
+          acc[brand.id] = brand.name;
+          return acc;
+        }, {});
+
+        // Get product_categories for filtering
+        const { data: categories, error: categoriesError } = await supabase
+          .from('product_categories')
+          .select('id, name');
+          
+        if (categoriesError) console.error('Error fetching categories for products:', categoriesError);
+
+        // Create category lookup
+        const categoryMap = (categories || []).reduce((acc, cat) => {
+          acc[cat.id] = cat.name;
+          return acc;
+        }, {});
+
+        // Transform data to match expected format
+        const transformedProducts = productsData
+          .map(product => {
+            // Extract category from selected_components (first component's type)
+            const selectedComponents = Array.isArray(product.selected_components) 
+              ? product.selected_components 
+              : [];
+            
+            const primaryComponent = selectedComponents[0];
+            const categoryId = primaryComponent?.id || null;
+            const categoryName = categoryId ? (categoryMap[categoryId] || primaryComponent?.type || 'Uncategorized') : 'Uncategorized';
+            
+            return {
+              id: product.id,
+              productName: product.name,
+              price: product.price,
+              imageUrl: Array.isArray(product.images) ? product.images[0] : product.images?.[0] || '',
+              brand: brandMap[product.brand_id] || 'Unknown',
+              category: categoryName,
+              categoryId: categoryId,
+              inStock: product.status === 'active' && product.stock_quantity > 0,
+              rating: product.metadata?.rating || product.specifications?.rating || null,
+              specifications: product.specifications || {},
+              ...product.specifications // Spread all specifications
+            };
+          })
+          .filter(product => {
+            // Filter by selected category if any
+            if (!selectedCategory) return true;
+            return product.categoryId === selectedCategory;
+          });
+
+        setProducts(transformedProducts);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        toast.error('Failed to load products');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [selectedCategory]);
+
+  // Filter products based on search query
+  const filteredProducts = products.filter(
+    (product) =>
+      product.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Handle product selection with category validation
   const handleAddProduct = (product) => {
     // Check if product is already selected
     if (selectedProducts.find((p) => p.id === product.id) || existingProducts.find((p) => p.id === product.id)) {
@@ -39,6 +144,19 @@ const ComparisonSelector = ({ addToComparison, existingProducts = [], selectedPr
     if (selectedProducts.length + existingProducts.length >= 3) {
       toast.error("You can only compare up to 3 products");
       return;
+    }
+
+    // Validate category match - all products must be from the same category
+    const allProducts = [...selectedProducts, ...existingProducts];
+    if (allProducts.length > 0) {
+      const existingCategory = allProducts[0].categoryId;
+      if (product.categoryId !== existingCategory) {
+        toast.error(
+          `Cannot compare different categories! All products must be from the same category (${allProducts[0].category}).`,
+          { duration: 5000 }
+        );
+        return;
+      }
     }
 
     setSelectedProducts([...selectedProducts, product]);
@@ -143,9 +261,9 @@ const ComparisonSelector = ({ addToComparison, existingProducts = [], selectedPr
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
                 <option value="">All Components</option>
-                {componentTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
                   </option>
                 ))}
               </select>
@@ -176,46 +294,55 @@ const ComparisonSelector = ({ addToComparison, existingProducts = [], selectedPr
           </div>
 
           {/* Product grid - UPDATED to 2 columns on mobile screens only */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="border border-gray-200 rounded-lg p-2 sm:p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="h-24 sm:h-28 flex items-center justify-center mb-2 sm:mb-3">
-                  <img
-                    src={product.imageUrl || "https://via.placeholder.com/100"}
-                    alt={product.productName}
-                    className="max-h-full max-w-full object-contain"
-                  />
-                </div>
-                <div className="mb-2 sm:mb-3">
-                  <p className="font-medium text-xs sm:text-sm line-clamp-2 h-8 sm:h-10">
-                    {product.productName}
-                  </p>
-                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
-                    {product.brand} - {product.subCategory}
-                  </p>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-green-600 font-bold text-xs sm:text-base">
-                    ${product.price}
-                  </span>
-                  <button
-                    onClick={() => handleAddProduct(product)}
-                    className="bg-green-500 hover:bg-green-600 text-white text-[10px] sm:text-xs py-1 px-2 sm:px-3 rounded transition-colors"
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {filteredProducts.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No products found matching your criteria
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+              <p className="text-gray-500 mt-4">Loading products...</p>
             </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
+                {filteredProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    className="border border-gray-200 rounded-lg p-2 sm:p-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="h-24 sm:h-28 flex items-center justify-center mb-2 sm:mb-3">
+                      <img
+                        src={product.imageUrl || "https://via.placeholder.com/100"}
+                        alt={product.productName}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </div>
+                    <div className="mb-2 sm:mb-3">
+                      <p className="font-medium text-xs sm:text-sm line-clamp-2 h-8 sm:h-10">
+                        {product.productName}
+                      </p>
+                      <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
+                        {product.brand} - {product.category}
+                      </p>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-green-600 font-bold text-xs sm:text-base">
+                        ${product.price}
+                      </span>
+                      <button
+                        onClick={() => handleAddProduct(product)}
+                        className="bg-green-500 hover:bg-green-600 text-white text-[10px] sm:text-xs py-1 px-2 sm:px-3 rounded transition-colors"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {filteredProducts.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  No products found matching your criteria
+                </div>
+              )}
+            </>
           )}
         </div>
 

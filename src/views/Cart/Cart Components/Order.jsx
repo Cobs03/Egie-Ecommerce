@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { TbTruckDelivery } from "react-icons/tb";
 import { TiThumbsOk } from "react-icons/ti";
 import { FaChevronUp, FaChevronDown, FaExclamationCircle } from "react-icons/fa";
+import { useCart } from "../../../context/CartContext";
 
 const Order = ({ subtotal, discount, total }) => {
-  // State to track selected delivery method - initially null (none selected)
-  const [deliveryMethod, setDeliveryMethod] = useState(null);
+  const { orderNotes, setOrderNotes, deliveryType, setDeliveryType } = useCart();
   // State to track if mobile order details are expanded
   const [isExpanded, setIsExpanded] = useState(false);
   // State to track error message
@@ -16,7 +16,7 @@ const Order = ({ subtotal, discount, total }) => {
 
   // Toggle function to select a delivery method
   const selectDeliveryMethod = (method) => {
-    setDeliveryMethod(method);
+    setDeliveryType(method === 'local' ? 'local_delivery' : 'store_pickup');
     setError(false); // Clear error when user selects a delivery method
   };
 
@@ -30,7 +30,7 @@ const Order = ({ subtotal, discount, total }) => {
   const handleCheckout = (e) => {
     e.preventDefault();
     
-    if (!deliveryMethod) {
+    if (!deliveryType) {
       setError(true);
       setIsExpanded(true); // Expand options when error occurs
       return;
@@ -50,6 +50,8 @@ const Order = ({ subtotal, discount, total }) => {
             className="w-full border border-gray-300 rounded p-2"
             placeholder="Write your note here..."
             rows={4}
+            value={orderNotes}
+            onChange={(e) => setOrderNotes(e.target.value)}
           ></textarea>
         </div>
 
@@ -75,7 +77,7 @@ const Order = ({ subtotal, discount, total }) => {
         <div className="flex justify-between mb-4">
           <button
             className={`px-4 py-2 rounded flex flex-col items-center gap-2 cursor-pointer transition-colors ${
-              deliveryMethod === "local"
+              deliveryType === "local_delivery"
                 ? "bg-white text-green-600 border-green-500 border-2 shadow shadow-green-800"
                 : "bg-white border border-gray-300 shadow hover:bg-gray-300"
             }`}
@@ -86,7 +88,7 @@ const Order = ({ subtotal, discount, total }) => {
           </button>
           <button
             className={`px-4 py-2 rounded flex flex-col items-center gap-2 cursor-pointer transition-colors ${
-              deliveryMethod === "pickup"
+              deliveryType === "store_pickup"
                 ? "bg-white text-green-600 border-green-500 border-2 shadow shadow-green-800"
                 : "bg-white border border-gray-300 shadow hover:bg-gray-300"
             }`}
@@ -134,6 +136,8 @@ const Order = ({ subtotal, discount, total }) => {
                   className="w-full border border-gray-300 rounded p-2"
                   placeholder="Write your note here..."
                   rows={3}
+                  value={orderNotes}
+                  onChange={(e) => setOrderNotes(e.target.value)}
                 ></textarea>
               </div>
 
@@ -148,7 +152,7 @@ const Order = ({ subtotal, discount, total }) => {
               <div className="flex justify-between mb-4">
                 <button
                   className={`px-3 py-2 rounded flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-                    deliveryMethod === "local"
+                    deliveryType === "local_delivery"
                       ? "bg-white text-green-600 border-green-500 border-2 shadow shadow-green-800"
                       : "bg-white border border-gray-300 shadow hover:bg-gray-300"
                   }`}
@@ -159,7 +163,7 @@ const Order = ({ subtotal, discount, total }) => {
                 </button>
                 <button
                   className={`px-3 py-2 rounded flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-                    deliveryMethod === "pickup"
+                    deliveryType === "store_pickup"
                       ? "bg-white text-green-600 border-green-500 border-2 shadow shadow-green-800"
                       : "bg-white border border-gray-300 shadow hover:bg-gray-300"
                   }`}

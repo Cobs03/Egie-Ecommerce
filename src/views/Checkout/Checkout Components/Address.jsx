@@ -1,47 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaMapMarkerAlt, FaPlus, FaTimes, FaPencilAlt, FaTrashAlt, FaChevronDown, FaExclamationTriangle } from "react-icons/fa";
+import OrderService from "../../../services/OrderService";
+import PhilippineAddressService from "../../../services/PhilippineAddressService";
+import { toast } from "sonner";
 
-const Address = () => {
-  // Mock data for cities in Bulacan
-  const cities = [
-    "Santa Maria", 
-    "Malolos", 
-    "Meycauayan", 
-    "San Jose Del Monte", 
-    "Bocaue", 
-    "Marilao", 
-    "Obando", 
-    "Baliwag"
-  ];
-
-  // Mock data for barangays (organized by city)
-  const barangaysByCity = {
-    "Santa Maria": ["Pulong Buhangin", "Bagbaguin", "Guyong", "Poblacion", "Balasing", "Catmon"],
-    "Malolos": ["Guinhawa", "Mambog", "Tikay", "Bulihan", "Balite"],
-    "Meycauayan": ["Bahay Pari", "Malhacan", "Calvario", "Lawa", "Perez"],
-    "San Jose Del Monte": ["Tungkong Mangga", "Muzon", "San Manuel", "Kaypian", "Santo Cristo"],
-    "Bocaue": ["Lolomboy", "Turo", "Bunlo", "Wakas", "Bundukan"],
-    "Marilao": ["Loma de Gato", "Ibayo", "Patubig", "Lambakin", "Tabing Ilog"],
-    "Obando": ["Pag-asa", "San Pascual", "Catangalan", "Paco", "Salambao"],
-    "Baliwag": ["Pagala", "Tibag", "Tarcan", "Pinagbarilan", "Sabang"]
-  };
+const Address = ({ onAddressSelect }) => {
+  // Philippine Address API data
+  const [provinces, setProvinces] = useState([]);
+  const [availableCities, setAvailableCities] = useState([]);
+  const [availableBarangays, setAvailableBarangays] = useState([]);
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState("");
+  const [selectedCityCode, setSelectedCityCode] = useState("");
+  
+  // Edit form address API data
+  const [editAvailableCities, setEditAvailableCities] = useState([]);
+  const [editAvailableBarangays, setEditAvailableBarangays] = useState([]);
+  const [editSelectedProvinceCode, setEditSelectedProvinceCode] = useState("");
+  const [editSelectedCityCode, setEditSelectedCityCode] = useState("");
+  
+  const [loadingLocations, setLoadingLocations] = useState(false);
 
   // State for the selected address
-  const [selectedAddress, setSelectedAddress] = useState({
-    id: 1,
-    name: "Mik ko",
-    phone: "(+63) 9184549421",
-    address: "Blk 69 LOT 96, Dyan Lang Sa Gedil Ng Kanto Poblacion Santa Maria",
-    region: "North Luzon, Philippines, Bulacan, Santa Maria, Poblacion",
-    isDefault: true,
-    // Additional fields for detailed address
-    streetAddress: "Blk 69 LOT 96",
-    province: "Bulacan",
-    city: "Santa Maria",
-    barangay: "Poblacion",
-    postalCode: "3022"
-  });
-
+  const [selectedAddress, setSelectedAddress] = useState(null);
+  
   // State for showing the address modal
   const [showAddressModal, setShowAddressModal] = useState(false);
   
@@ -56,70 +37,179 @@ const Address = () => {
   const [addressToDelete, setAddressToDelete] = useState(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   
-  // Mock addresses data
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      name: "Mik ko",
-      phone: "(+63) 9184549421",
-      address: "Blk 69 LOT 96, Dyan Lang Sa Gedil Ng Kanto Poblacion Santa Maria",
-      isDefault: true,
-      // Additional fields
-      streetAddress: "Blk 69 LOT 96",
-      region: "North Luzon, Philippines",
-      province: "Bulacan",
-      city: "Santa Maria",
-      barangay: "Poblacion",
-      postalCode: "3022"
-    },
-    {
-      id: 2,
-      name: "Jacob Gino Cruz",
-      phone: "(+63) 918 454 9421",
-      address: "306 km 37, Pulong Buhangin",
-      isDefault: false,
-      // Additional fields
-      streetAddress: "306 km 37",
-      region: "North Luzon, Philippines",
-      province: "Bulacan",
-      city: "Santa Maria",
-      barangay: "Pulong Buhangin",
-      postalCode: "3022"
-    }
-  ]);
+  // Addresses from database
+  const [addresses, setAddresses] = useState([]);
+  const [loading, setLoading] = useState(true);
   
   // Form state for new address
   const [newAddress, setNewAddress] = useState({
-    name: "",
+    full_name: "",
     phone: "",
-    address: "",
-    isDefault: false,
-    streetAddress: "",
-    region: "North Luzon, Philippines",
-    province: "Bulacan",
-    city: "",
+    email: "",
+    street_address: "",
     barangay: "",
-    postalCode: ""
+    city: "",
+    province: "",
+    postal_code: "",
+    country: "Philippines",
+    address_type: "home",
+    is_default: false
   });
-
-  // Available barangays based on selected city (for new address form)
-  const [availableBarangays, setAvailableBarangays] = useState([]);
-
-  // Available barangays based on selected city (for edit form)
-  const [editAvailableBarangays, setEditAvailableBarangays] = useState([]);
+  
+  // Load provinces on mount
+  useEffect(() => {
+    loadProvinces();
+  }, []);
+  
+  // Load provinces from API
+  const loadProvinces = async () => {
+    try {
+      const provinceData = await PhilippineAddressService.getProvinces();
+      setProvinces(provinceData);
+    } catch (error) {
+      console.error('Error loading provinces:', error);
+      toast.error('Failed to load provinces');
+    }
+  };
+  
+  // Handle province change for new address form
+  const handleProvinceChange = async (provinceName, provinceCode) => {
+    setNewAddress({ ...newAddress, province: provinceName, city: "", barangay: "" });
+    setSelectedProvinceCode(provinceCode);
+    setSelectedCityCode("");
+    setAvailableCities([]);
+    setAvailableBarangays([]);
+    
+    if (provinceCode) {
+      setLoadingLocations(true);
+      try {
+        const cityData = await PhilippineAddressService.getCitiesByProvince(provinceCode);
+        setAvailableCities(cityData);
+      } catch (error) {
+        console.error('Error loading cities:', error);
+        toast.error('Failed to load cities');
+      } finally {
+        setLoadingLocations(false);
+      }
+    }
+  };
+  
+  // Handle city change for new address form
+  const handleCityChange = async (cityName, cityCode) => {
+    setNewAddress({ ...newAddress, city: cityName, barangay: "" });
+    setSelectedCityCode(cityCode);
+    setAvailableBarangays([]);
+    
+    if (cityCode) {
+      setLoadingLocations(true);
+      try {
+        const barangayData = await PhilippineAddressService.getBarangaysByCity(cityCode);
+        setAvailableBarangays(barangayData);
+      } catch (error) {
+        console.error('Error loading barangays:', error);
+        toast.error('Failed to load barangays');
+      } finally {
+        setLoadingLocations(false);
+      }
+    }
+  };
+  
+  // Handle province change for edit form
+  const handleEditProvinceChange = async (provinceName, provinceCode) => {
+    setEditingAddress({ ...editingAddress, province: provinceName, city: "", barangay: "" });
+    setEditSelectedProvinceCode(provinceCode);
+    setEditSelectedCityCode("");
+    setEditAvailableCities([]);
+    setEditAvailableBarangays([]);
+    
+    if (provinceCode) {
+      setLoadingLocations(true);
+      try {
+        const cityData = await PhilippineAddressService.getCitiesByProvince(provinceCode);
+        setEditAvailableCities(cityData);
+      } catch (error) {
+        console.error('Error loading cities:', error);
+        toast.error('Failed to load cities');
+      } finally {
+        setLoadingLocations(false);
+      }
+    }
+  };
+  
+  // Handle city change for edit form
+  const handleEditCityChange = async (cityName, cityCode) => {
+    setEditingAddress({ ...editingAddress, city: cityName, barangay: "" });
+    setEditSelectedCityCode(cityCode);
+    setEditAvailableBarangays([]);
+    
+    if (cityCode) {
+      setLoadingLocations(true);
+      try {
+        const barangayData = await PhilippineAddressService.getBarangaysByCity(cityCode);
+        setEditAvailableBarangays(barangayData);
+      } catch (error) {
+        console.error('Error loading barangays:', error);
+        toast.error('Failed to load barangays');
+      } finally {
+        setLoadingLocations(false);
+      }
+    }
+  };
+  
+  // Load addresses on mount
+  useEffect(() => {
+    loadAddresses();
+  }, []);
+  
+  // Notify parent when address changes
+  useEffect(() => {
+    if (onAddressSelect && selectedAddress) {
+      onAddressSelect(selectedAddress);
+    }
+  }, [selectedAddress]);
+  
+  // Load addresses from database
+  const loadAddresses = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await OrderService.getShippingAddresses();
+      
+      if (error) {
+        console.error('Error loading addresses:', error);
+        toast.error('Failed to load addresses');
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        setAddresses(data);
+        // Select default address or first address
+        const defaultAddr = data.find(addr => addr.is_default);
+        setSelectedAddress(defaultAddr || data[0]);
+      }
+    } catch (error) {
+      console.error('Error in loadAddresses:', error);
+      toast.error('Failed to load addresses');
+    } finally {
+      setLoading(false);
+    }
+  };
   
   // Toggle an address as default
-  const setAddressAsDefault = (id) => {
-    const updatedAddresses = addresses.map(addr => ({
-      ...addr,
-      isDefault: addr.id === id
-    }));
-    setAddresses(updatedAddresses);
-    
-    // Update selected address if it's the one being set as default
-    const defaultAddress = updatedAddresses.find(addr => addr.id === id);
-    if (defaultAddress) {
-      setSelectedAddress(defaultAddress);
+  const setAddressAsDefault = async (id) => {
+    try {
+      const { error } = await OrderService.updateShippingAddress(id, { is_default: true });
+      
+      if (error) {
+        toast.error('Failed to set as default');
+        return;
+      }
+      
+      // Reload addresses to reflect changes
+      await loadAddresses();
+      toast.success('Default address updated');
+    } catch (error) {
+      console.error('Error setting default address:', error);
+      toast.error('Failed to set as default');
     }
   };
   
@@ -136,37 +226,53 @@ const Address = () => {
   };
   
   // Delete an address after confirmation
-  const deleteAddress = () => {
+  const deleteAddress = async () => {
     if (!addressToDelete) return;
     
-    const updatedAddresses = addresses.filter(addr => addr.id !== addressToDelete.id);
-    setAddresses(updatedAddresses);
-    
-    // If deleted address was selected, select the default one
-    if (selectedAddress.id === addressToDelete.id) {
-      const defaultAddress = updatedAddresses.find(addr => addr.isDefault);
-      if (defaultAddress) {
-        setSelectedAddress(defaultAddress);
-      } else if (updatedAddresses.length > 0) {
-        setSelectedAddress(updatedAddresses[0]);
+    try {
+      const { error } = await OrderService.deleteShippingAddress(addressToDelete.id);
+      
+      if (error) {
+        toast.error('Failed to delete address');
+        return;
       }
+      
+      toast.success('Address deleted');
+      
+      // Reload addresses
+      await loadAddresses();
+      
+      // Close confirmation and reset
+      setShowDeleteConfirmation(false);
+      setAddressToDelete(null);
+    } catch (error) {
+      console.error('Error deleting address:', error);
+      toast.error('Failed to delete address');
     }
-    
-    // Close confirmation and reset
-    setShowDeleteConfirmation(false);
-    setAddressToDelete(null);
   };
   
   // Start editing an address
-  const startEditing = (address) => {
+  const startEditing = async (address) => {
     setEditingAddress({...address});
     setShowEditForm(true);
     
-    // Set available barangays based on the city
-    if (address.city && barangaysByCity[address.city]) {
-      setEditAvailableBarangays(barangaysByCity[address.city]);
-    } else {
-      setEditAvailableBarangays([]);
+    // Load cities and barangays for editing
+    if (address.province) {
+      const province = await PhilippineAddressService.findProvinceByName(address.province);
+      if (province) {
+        setEditSelectedProvinceCode(province.code);
+        const cityData = await PhilippineAddressService.getCitiesByProvince(province.code);
+        setEditAvailableCities(cityData);
+
+        if (address.city) {
+          const city = cityData.find(c => c.name === address.city);
+          if (city) {
+            setEditSelectedCityCode(city.code);
+            const barangayData = await PhilippineAddressService.getBarangaysByCity(city.code);
+            setEditAvailableBarangays(barangayData);
+          }
+        }
+      }
     }
   };
   
@@ -179,16 +285,6 @@ const Address = () => {
       ...newAddress,
       [name]: type === 'checkbox' ? checked : value
     });
-    
-    // If city is changed, update available barangays
-    if (name === 'city' && value) {
-      setAvailableBarangays(barangaysByCity[value] || []);
-      // Reset barangay when city changes
-      setNewAddress(prev => ({
-        ...prev,
-        barangay: ''
-      }));
-    }
   };
   
   // Handle input change for editing an address
@@ -199,99 +295,83 @@ const Address = () => {
       ...editingAddress,
       [name]: type === 'checkbox' ? checked : value
     });
-    
-    // If city is changed, update available barangays
-    if (name === 'city' && value) {
-      setEditAvailableBarangays(barangaysByCity[value] || []);
-      // Reset barangay when city changes
-      setEditingAddress(prev => ({
-        ...prev,
-        barangay: ''
-      }));
-    }
   };
   
   // Handle form submission for new address
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Format the full address from components
-    const formattedAddress = {
-      ...newAddress,
-      address: `${newAddress.streetAddress}, ${newAddress.barangay}`,
-      region: `${newAddress.region}, ${newAddress.province}, ${newAddress.city}, ${newAddress.barangay}`,
-      id: Date.now()
-    };
-    
-    // If this is set as default, update all others to not be default
-    let updatedAddresses = [...addresses, formattedAddress];
-    if (newAddress.isDefault) {
-      updatedAddresses = updatedAddresses.map(addr => ({
-        ...addr,
-        isDefault: addr.id === formattedAddress.id
-      }));
+    try {
+      const { data, error } = await OrderService.createShippingAddress(newAddress);
       
-      // Set as selected address if it's default
-      setSelectedAddress(formattedAddress);
+      if (error) {
+        toast.error('Failed to add address');
+        return;
+      }
+      
+      toast.success('Address added successfully');
+      
+      // Reload addresses
+      await loadAddresses();
+      
+      // Reset form and close
+      setNewAddress({
+        full_name: "",
+        phone: "",
+        email: "",
+        street_address: "",
+        barangay: "",
+        city: "",
+        province: "",
+        postal_code: "",
+        country: "Philippines",
+        address_type: "home",
+        is_default: false
+      });
+      setSelectedProvinceCode("");
+      setSelectedCityCode("");
+      setAvailableCities([]);
+      setAvailableBarangays([]);
+      setShowNewAddressForm(false);
+    } catch (error) {
+      console.error('Error adding address:', error);
+      toast.error('Failed to add address');
     }
-    
-    setAddresses(updatedAddresses);
-    setNewAddress({
-      name: "",
-      phone: "",
-      address: "",
-      isDefault: false,
-      streetAddress: "",
-      region: "North Luzon, Philippines",
-      province: "Bulacan",
-      city: "",
-      barangay: "",
-      postalCode: ""
-    });
-    setShowNewAddressForm(false);
-    setAvailableBarangays([]);
   };
   
   // Handle form submission for editing an address
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
     
-    // Format the full address from components
-    const formattedAddress = {
-      ...editingAddress,
-      address: `${editingAddress.streetAddress}, ${editingAddress.barangay}`,
-      region: `${editingAddress.region}, ${editingAddress.province}, ${editingAddress.city}, ${editingAddress.barangay}`
-    };
-    
-    // Update the address in the list
-    const updatedAddresses = addresses.map(addr => 
-      addr.id === formattedAddress.id ? formattedAddress : addr
-    );
-    
-    // If this address is set as default, update all others
-    if (formattedAddress.isDefault && !addresses.find(a => a.id === formattedAddress.id).isDefault) {
-      updatedAddresses.forEach(addr => {
-        if (addr.id !== formattedAddress.id) {
-          addr.isDefault = false;
-        }
-      });
+    try {
+      const { error } = await OrderService.updateShippingAddress(editingAddress.id, editingAddress);
+      
+      if (error) {
+        toast.error('Failed to update address');
+        return;
+      }
+      
+      toast.success('Address updated successfully');
+      
+      // Reload addresses
+      await loadAddresses();
+      
+      setEditingAddress(null);
+      setShowEditForm(false);
+      setEditAvailableBarangays([]);
+    } catch (error) {
+      console.error('Error updating address:', error);
+      toast.error('Failed to update address');
     }
-    
-    setAddresses(updatedAddresses);
-    
-    // If the edited address was the selected one, update it
-    if (selectedAddress.id === formattedAddress.id) {
-      setSelectedAddress(formattedAddress);
-    }
-    
-    setEditingAddress(null);
-    setShowEditForm(false);
-    setEditAvailableBarangays([]);
   };
 
   // Function to get formatted address for display
   const getFormattedAddress = (address) => {
-    return `${address.streetAddress}, ${address.barangay}, ${address.city}, ${address.province}, ${address.region} ${address.postalCode}`;
+    if (!address) return '';
+    const parts = [address.street_address];
+    if (address.barangay) parts.push(address.barangay);
+    parts.push(`${address.city}, ${address.province} ${address.postal_code}`);
+    return parts.join(', ');
   };
 
   return (
@@ -300,41 +380,70 @@ const Address = () => {
         Order Summary
       </h2>
 
-      <div className="flex items-start justify-between flex-row">
-        <div className="flex items-start gap-3">
-          <FaMapMarkerAlt className="text-red-600 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-600">
-              Delivery Address
-            </p>
-            <p className="text-sm font-semibold">
-              {selectedAddress.name}{" "}
-              <span className="text-black font-normal">
-                {selectedAddress.phone}
-              </span>
-            </p>
-            <p className="text-sm text-gray-700">
-              {getFormattedAddress(selectedAddress)}
-            </p>
-          </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+          <p className="ml-3 text-gray-600">Loading addresses...</p>
         </div>
+      ) : !selectedAddress ? (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-sm text-yellow-800 mb-3">
+            No delivery address found. Please add an address to continue.
+          </p>
+          <button
+            onClick={() => {
+              setShowAddressModal(true);
+              setShowNewAddressForm(true);
+            }}
+            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 text-sm"
+          >
+            Add Address
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-start justify-between flex-row">
+            <div className="flex items-start gap-3">
+              <FaMapMarkerAlt className="text-red-600 mt-1" />
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Delivery Address
+                </p>
+                <p className="text-sm font-semibold">
+                  {selectedAddress.full_name}{" "}
+                  <span className="text-black font-normal">
+                    {selectedAddress.phone}
+                  </span>
+                </p>
+                <p className="text-sm text-gray-700">
+                  {getFormattedAddress(selectedAddress)}
+                </p>
+                {selectedAddress.is_default && (
+                  <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mt-1">
+                    Default
+                  </span>
+                )}
+              </div>
+            </div>
 
-        <button
-          onClick={() => setShowAddressModal(true)}
-          className="text-sm text-blue-600 hover:bg-green-500 p-3 hover:text-white rounded transition cursor-pointer"
-        >
-          Change
-        </button>
-      </div>
-      <hr
-        className="border-0 h-1 mt-4
-        bg-[repeating-linear-gradient(135deg,#dc2626_0_12px,#ffffff_12px_14px,#0284c7_14px_26px)] 
-        rounded"
-      />
+            <button
+              onClick={() => setShowAddressModal(true)}
+              className="text-sm text-blue-600 hover:bg-green-500 p-3 hover:text-white rounded transition cursor-pointer"
+            >
+              Change
+            </button>
+          </div>
+          <hr
+            className="border-0 h-1 mt-4
+            bg-[repeating-linear-gradient(135deg,#dc2626_0_12px,#ffffff_12px_14px,#0284c7_14px_26px)] 
+            rounded"
+          />
+        </>
+      )}
 
       {/* Address Selection Modal */}
       {showAddressModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 top-32 max-md:top-20">
+        <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
           <div className="bg-white rounded-lg w-full max-w-md flex flex-col max-h-[80vh]">
             {/* Fixed Header */}
             <div className="flex justify-between items-center p-4 border-b sticky top-0 bg-white z-10 rounded-t-lg">
@@ -365,8 +474,8 @@ const Address = () => {
                     <label className="text-sm text-gray-500">Full Name</label>
                     <input
                       type="text"
-                      name="name"
-                      value={editingAddress.name}
+                      name="full_name"
+                      value={editingAddress.full_name}
                       onChange={handleEditChange}
                       className="w-full border rounded px-3 py-2 mt-1"
                       required
@@ -385,28 +494,56 @@ const Address = () => {
                     />
                   </div>
                   
+                  {/* Email (optional) */}
+                  <div>
+                    <label className="text-sm text-gray-500">Email (Optional)</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={editingAddress.email || ''}
+                      onChange={handleEditChange}
+                      className="w-full border rounded px-3 py-2 mt-1"
+                    />
+                  </div>
+                  
                   {/* Region - Non-editable */}
                   <div>
                     <label className="text-sm text-gray-500">Region</label>
                     <input
                       type="text"
                       name="region"
-                      value="North Luzon, Philippines"
+                      value="Philippines"
                       className="w-full border rounded px-3 py-2 mt-1 bg-gray-100"
                       disabled
                     />
                   </div>
                   
-                  {/* Province - Non-editable */}
+                  {/* Province - Dropdown */}
                   <div>
                     <label className="text-sm text-gray-500">Province</label>
-                    <input
-                      type="text"
-                      name="province"
-                      value="Bulacan"
-                      className="w-full border rounded px-3 py-2 mt-1 bg-gray-100"
-                      disabled
-                    />
+                    <div className="relative">
+                      <select
+                        name="province"
+                        value={editingAddress.province}
+                        onChange={(e) => {
+                          const selectedProvince = provinces.find(p => p.name === e.target.value);
+                          if (selectedProvince) {
+                            handleEditProvinceChange(selectedProvince.name, selectedProvince.code);
+                          }
+                        }}
+                        className="w-full border rounded px-3 py-2 mt-1 appearance-none pr-10 cursor-pointer"
+                        disabled={loadingLocations}
+                        required
+                      >
+                        <option value="">Select Province</option>
+                        {provinces.map((province) => (
+                          <option key={province.code} value={province.name}>
+                            {province.name}
+                          </option>
+                        ))}
+                      </select>
+                      <FaChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
                   </div>
                   
                   {/* City - Dropdown */}
@@ -416,13 +553,19 @@ const Address = () => {
                       <select
                         name="city"
                         value={editingAddress.city}
-                        onChange={handleEditChange}
+                        onChange={(e) => {
+                          const selectedCity = editAvailableCities.find(c => c.name === e.target.value);
+                          if (selectedCity) {
+                            handleEditCityChange(selectedCity.name, selectedCity.code);
+                          }
+                        }}
                         className="w-full border rounded px-3 py-2 mt-1 appearance-none pr-10 cursor-pointer"
+                        disabled={!editSelectedProvinceCode || loadingLocations}
                         required
                       >
                         <option value="">Select City</option>
-                        {cities.map((city) => (
-                          <option key={city} value={city}>{city}</option>
+                        {editAvailableCities.map((city) => (
+                          <option key={city.code} value={city.name}>{city.name}</option>
                         ))}
                       </select>
                       <FaChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -435,15 +578,14 @@ const Address = () => {
                     <div className="relative">
                       <select
                         name="barangay"
-                        value={editingAddress.barangay}
+                        value={editingAddress.barangay || ''}
                         onChange={handleEditChange}
                         className="w-full border rounded px-3 py-2 mt-1 appearance-none pr-10 cursor-pointer"
-                        required
-                        disabled={!editingAddress.city}
+                        disabled={!editSelectedCityCode || loadingLocations}
                       >
                         <option value="">Select Barangay</option>
                         {editAvailableBarangays.map((barangay) => (
-                          <option key={barangay} value={barangay}>{barangay}</option>
+                          <option key={barangay.code} value={barangay.name}>{barangay.name}</option>
                         ))}
                       </select>
                       <FaChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -454,8 +596,8 @@ const Address = () => {
                     <label className="text-sm text-gray-500">Postal Code</label>
                     <input
                       type="text"
-                      name="postalCode"
-                      value={editingAddress.postalCode}
+                      name="postal_code"
+                      value={editingAddress.postal_code}
                       onChange={handleEditChange}
                       className="w-full border rounded px-3 py-2 mt-1"
                       required
@@ -466,8 +608,8 @@ const Address = () => {
                     <label className="text-sm text-gray-500">Street Name, Building, House No.</label>
                     <input
                       type="text"
-                      name="streetAddress"
-                      value={editingAddress.streetAddress}
+                      name="street_address"
+                      value={editingAddress.street_address}
                       onChange={handleEditChange}
                       className="w-full border rounded px-3 py-2 mt-1"
                       required
@@ -478,8 +620,8 @@ const Address = () => {
                     <input
                       type="checkbox"
                       id="editDefaultAddress"
-                      name="isDefault"
-                      checked={editingAddress.isDefault}
+                      name="is_default"
+                      checked={editingAddress.is_default}
                       onChange={handleEditChange}
                       className="mr-2 cursor-pointer"
                     />
@@ -512,13 +654,13 @@ const Address = () => {
                 <div
                   key={address.id}
                   className={`mb-4 p-4 border rounded ${
-                    address.isDefault ? "border-green-500" : "border-gray-200"
+                    address.is_default ? "border-green-500" : "border-gray-200"
                   }`}
                 >
                   <div className="flex justify-between">
                     <div>
                       <p className="font-medium">
-                        {address.name}{" "}
+                        {address.full_name}{" "}
                         <span className="font-normal text-gray-600">
                           {address.phone}
                         </span>
@@ -526,7 +668,7 @@ const Address = () => {
                       <p className="text-sm text-gray-600">
                         {getFormattedAddress(address)}
                       </p>
-                      {address.isDefault && (
+                      {address.is_default && (
                         <span className="inline-block mt-1 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded">
                           Default
                         </span>
@@ -554,7 +696,7 @@ const Address = () => {
                     >
                       Select
                     </button>
-                    {!address.isDefault && (
+                    {!address.is_default && (
                       <button
                         onClick={() => setAddressAsDefault(address.id)}
                         className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 cursor-pointer"
@@ -580,8 +722,8 @@ const Address = () => {
                     </label>
                     <input
                       type="text"
-                      name="name"
-                      value={newAddress.name}
+                      name="full_name"
+                      value={newAddress.full_name}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-1 focus:ring-green-500"
                       required
@@ -602,6 +744,19 @@ const Address = () => {
                     />
                   </div>
 
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email (Optional)
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={newAddress.email}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+                    />
+                  </div>
+
                   {/* Region - Non-editable */}
                   <div className="mb-3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -609,23 +764,40 @@ const Address = () => {
                     </label>
                     <input
                       type="text"
-                      value="North Luzon, Philippines"
+                      value="Philippines"
                       className="w-full px-3 py-2 border rounded bg-gray-100"
                       disabled
                     />
                   </div>
 
-                  {/* Province - Non-editable */}
+                  {/* Province - Dropdown */}
                   <div className="mb-3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Province
                     </label>
-                    <input
-                      type="text"
-                      value="Bulacan"
-                      className="w-full px-3 py-2 border rounded bg-gray-100"
-                      disabled
-                    />
+                    <div className="relative">
+                      <select
+                        name="province"
+                        value={newAddress.province}
+                        onChange={(e) => {
+                          const selectedProvince = provinces.find(p => p.name === e.target.value);
+                          if (selectedProvince) {
+                            handleProvinceChange(selectedProvince.name, selectedProvince.code);
+                          }
+                        }}
+                        className="w-full px-3 py-2 border rounded appearance-none pr-10 focus:outline-none focus:ring-1 focus:ring-green-500 cursor-pointer"
+                        disabled={loadingLocations}
+                        required
+                      >
+                        <option value="">Select Province</option>
+                        {provinces.map((province) => (
+                          <option key={province.code} value={province.name}>
+                            {province.name}
+                          </option>
+                        ))}
+                      </select>
+                      <FaChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
                   </div>
 
                   {/* City - Dropdown */}
@@ -637,13 +809,19 @@ const Address = () => {
                       <select
                         name="city"
                         value={newAddress.city}
-                        onChange={handleInputChange}
+                        onChange={(e) => {
+                          const selectedCity = availableCities.find(c => c.name === e.target.value);
+                          if (selectedCity) {
+                            handleCityChange(selectedCity.name, selectedCity.code);
+                          }
+                        }}
                         className="w-full px-3 py-2 border rounded appearance-none pr-10 focus:outline-none focus:ring-1 focus:ring-green-500 cursor-pointer"
+                        disabled={!selectedProvinceCode || loadingLocations}
                         required
                       >
                         <option value="">Select City</option>
-                        {cities.map((city) => (
-                          <option key={city} value={city}>{city}</option>
+                        {availableCities.map((city) => (
+                          <option key={city.code} value={city.name}>{city.name}</option>
                         ))}
                       </select>
                       <FaChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -658,15 +836,14 @@ const Address = () => {
                     <div className="relative">
                       <select
                         name="barangay"
-                        value={newAddress.barangay}
+                        value={newAddress.barangay || ''}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border rounded appearance-none pr-10 focus:outline-none focus:ring-1 focus:ring-green-500 cursor-pointer"
-                        required
-                        disabled={!newAddress.city}
+                        disabled={!selectedCityCode || loadingLocations}
                       >
                         <option value="">Select Barangay</option>
                         {availableBarangays.map((barangay) => (
-                          <option key={barangay} value={barangay}>{barangay}</option>
+                          <option key={barangay.code} value={barangay.name}>{barangay.name}</option>
                         ))}
                       </select>
                       <FaChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -679,8 +856,8 @@ const Address = () => {
                     </label>
                     <input
                       type="text"
-                      name="postalCode"
-                      value={newAddress.postalCode}
+                      name="postal_code"
+                      value={newAddress.postal_code}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-1 focus:ring-green-500"
                       required
@@ -693,8 +870,8 @@ const Address = () => {
                     </label>
                     <input
                       type="text"
-                      name="streetAddress"
-                      value={newAddress.streetAddress}
+                      name="street_address"
+                      value={newAddress.street_address}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-1 focus:ring-green-500"
                       required
@@ -704,14 +881,14 @@ const Address = () => {
                   <div className="mb-4 flex items-center">
                     <input
                       type="checkbox"
-                      name="isDefault"
-                      id="isDefault"
-                      checked={newAddress.isDefault}
+                      name="is_default"
+                      id="is_default"
+                      checked={newAddress.is_default}
                       onChange={handleInputChange}
                       className="mr-2 cursor-pointer"
                     />
                     <label
-                      htmlFor="isDefault"
+                      htmlFor="is_default"
                       className="text-sm text-gray-700 cursor-pointer"
                     >
                       Set as default address

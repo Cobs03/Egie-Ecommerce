@@ -106,13 +106,13 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
                   <input
                     type="checkbox"
                     id="officeSchool"
-                    className="mt-1"
+                    className="mt-1 w-4 h-4 text-[#39FC1D] bg-gray-100 border-gray-300 rounded focus:ring-[#39FC1D] focus:ring-2 accent-[#39FC1D] cursor-pointer"
                     checked={formData.pcPurpose.includes("Office / School")}
                     onChange={() =>
                       handleCheckboxChange("pcPurpose", "Office / School")
                     }
                   />
-                  <label htmlFor="officeSchool" className="ml-2">
+                  <label htmlFor="officeSchool" className="ml-2 cursor-pointer">
                     Office / School (Word, Excel, Browsing)
                   </label>
                 </div>
@@ -121,13 +121,13 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
                   <input
                     type="checkbox"
                     id="casualGaming"
-                    className="mt-1"
+                    className="mt-1 w-4 h-4 text-[#39FC1D] bg-gray-100 border-gray-300 rounded focus:ring-[#39FC1D] focus:ring-2 accent-[#39FC1D] cursor-pointer"
                     checked={formData.pcPurpose.includes("Casual Gaming")}
                     onChange={() =>
                       handleCheckboxChange("pcPurpose", "Casual Gaming")
                     }
                   />
-                  <label htmlFor="casualGaming" className="ml-2">
+                  <label htmlFor="casualGaming" className="ml-2 cursor-pointer">
                     Casual Gaming
                   </label>
                 </div>

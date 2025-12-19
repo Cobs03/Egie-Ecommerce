@@ -7,19 +7,19 @@ const Description = ({ product }) => {
   return (
     <>
       <h1 className="text-2xl font-bold mb-4 mt-4">
-        {product?.title || "Coolermaster MWE850 V2 ATX 3.1 FM MPE-8501-AFAG-3E12 850watts Fully Modular 80+ Gold Power Supply"}
+        {product?.name || product?.title || "Product Name"}
       </h1>
-      <div className="flex flex-row mb-4">
-        <h2 className="text-xl font-semibold">Brand: </h2>
-        <span className="mb-4 ml-1">{product?.brand || "Coolermaster"}</span>
+      
+      <div className="mb-4">
+        <span className="font-semibold">Brand:</span>{" "}
+        {typeof product?.brand === 'object' ? product?.brand?.name : product?.brand || "Brand"}
       </div>
 
       {/* Product Description */}
       <div className="desc">
         <h2 className="text-lg font-semibold mb-2">Product Description</h2>
-        <p className="mb-4">
-          {product?.description || 
-            "Power your rig with the Cooler Master MWE850 V2 ATX 1 FM Power Supply. Offering 850W of reliable energy with 80+ Gold efficiency, it ensures optimal performance and low heat output..."}
+        <p className="mb-4 whitespace-pre-line">
+          {product?.description || "No description available."}
         </p>
       </div>
 
@@ -95,24 +95,77 @@ const Description = ({ product }) => {
         <h2 className="text-lg font-semibold mb-2">
           {isBundle ? "Additional Specifications" : "Product Specifications"}
         </h2>
-        {product?.specs ? (
-          <ul className="list-disc list-inside mb-4">
-            {product.specs.map((spec, index) => (
-              <li key={index}>{spec.name}: {spec.value}</li>
-            ))}
-          </ul>
+        {product?.specifications && Object.keys(product.specifications).length > 0 ? (
+          <div className="mb-4">
+            {Object.entries(product.specifications).map(([componentId, specs], compIndex) => {
+              // Handle if specs is an object with nested specifications
+              if (typeof specs === 'object' && specs !== null) {
+                return (
+                  <div key={componentId} className="mb-4">
+                    {Object.entries(specs)
+                      .filter(([field, value]) => value && value !== '')
+                      .map(([field, value], index) => {
+                        // Format field name (convert camelCase to readable format)
+                        const formattedField = field
+                          .replace(/([A-Z])/g, ' $1')
+                          .replace(/^./, str => str.toUpperCase())
+                          .trim();
+                        
+                        const valueStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                        
+                        // Special handling for 'specifications' field - it's pre-formatted with line breaks
+                        if (field === 'specifications') {
+                          // Split the specifications by line and make labels bold
+                          const lines = valueStr.split('\n');
+                          return (
+                            <div key={`${componentId}-${field}-${index}`} className="mb-2">
+                              <div className="font-semibold mb-1">{formattedField}:</div>
+                              <div className="whitespace-pre-wrap">
+                                {lines.map((line, lineIndex) => {
+                                  // Check if line has a colon (label: value format)
+                                  const colonIndex = line.indexOf(':');
+                                  if (colonIndex > 0) {
+                                    const label = line.substring(0, colonIndex);
+                                    const value = line.substring(colonIndex + 1);
+                                    return (
+                                      <div key={lineIndex}>
+                                        <span className="font-bold">{label}:</span>{value}
+                                      </div>
+                                    );
+                                  }
+                                  // Line without colon, just display as-is
+                                  return <div key={lineIndex}>{line}</div>;
+                                })}
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        // Regular fields display inline
+                        return (
+                          <div key={`${componentId}-${field}-${index}`} className="mb-1">
+                            <span className="font-semibold">{formattedField}:</span> {valueStr}
+                          </div>
+                        );
+                      })}
+                  </div>
+                );
+              }
+              
+              // Handle simple string values (fallback)
+              if (specs) {
+                return (
+                  <div key={componentId} className="mb-1 whitespace-pre-wrap">
+                    <span className="font-semibold">{componentId}:</span> {String(specs)}
+                  </div>
+                );
+              }
+              
+              return null;
+            })}
+          </div>
         ) : (
-          <ul className="list-disc list-inside mb-4">
-            <li>Model: MPE-8501-AFAG-3E</li>
-            <li>ATX Version: ATX 12V v2.4</li>
-            <li>PFC: Active PFC</li>
-            <li>Input Voltage: 100-240V</li>
-            <li>Input Current: 13A</li>
-            <li>Input Frequency: 50-60Hz</li>
-            <li>Dimensions (L x W x H): 180 x 150 x 86 mm</li>
-            <li>Fan Size: 120mm</li>
-            <li>Fan Bearing: HDB</li>
-          </ul>
+          <p className="text-gray-500 italic mb-4">No specifications available for this product.</p>
         )}
       </div>
 

@@ -1,75 +1,90 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useCart } from "../../../context/CartContext";
+import VoucherService from "../../../services/VoucherService";
+import { toast } from "sonner";
 
 const OrderSum = () => {
-  const products = [
-    {
-      name: 'Lenovo V15 G4 IRU 15.6" FHD Intel Core i5-1335U/8GB DDR4/512GB M.2 SSD',
-      price: 29495,
-      image: "https://via.placeholder.com/150",
-    },
-    {
-      name: "ASUS VivoBook 14 M415DA AMD Ryzen 5/8GB/256GB SSD",
-      price: 23995,
-      image: "https://via.placeholder.com/150",
-    },
-    {
-      name: "Acer Aspire 3 Intel Core i3 11th Gen/8GB/512GB SSD",
-      price: 20495,
-      image: "https://via.placeholder.com/150",
-    },
-  ];
-
-  const [discountCode, setDiscountCode] = useState("");
-  const [discountError, setDiscountError] = useState(null);
-  const [appliedDiscount, setAppliedDiscount] = useState(null);
+  const { cartItems: dbCartItems, cartTotal, deliveryType, orderNotes, loadCart, appliedVoucher, setAppliedVoucher } = useCart();
   
-  const availableDiscounts = [
-    { code: "WELCOME10", discount: 0.1, expired: false, usageLimit: 100, currentUsage: 5 },
-    { code: "SUMMER20", discount: 0.2, expired: false, usageLimit: 50, currentUsage: 50 },
-    { code: "FLASH15", discount: 0.15, expired: true, usageLimit: 200, currentUsage: 45 },
-  ];
+  useEffect(() => {
+    loadCart();
+  }, []);
 
-  const shippingFee = 50;
-  const subtotal = products.reduce((sum, item) => sum + item.price, 0);
-  const discountAmount = appliedDiscount ? Math.round(subtotal * appliedDiscount.discount) : 0;
-  const total = subtotal + shippingFee - discountAmount;
+  // Transform database cart items for display
+  const products = dbCartItems.map(item => ({
+    id: item.id,
+    name: item.product_name,
+    variant: item.variant_name,
+    price: item.price_at_add,
+    quantity: item.quantity,
+    image: item.product_image || "https://via.placeholder.com/150",
+  }));
 
-  const handleApplyDiscount = () => {
-    setDiscountError(null);
+  const [voucherCode, setVoucherCode] = useState("");
+  const [voucherError, setVoucherError] = useState(null);
+  const [isValidating, setIsValidating] = useState(false);
+
+  // Calculate shipping fee based on delivery type
+  const shippingFee = deliveryType === 'store_pickup' ? 0 : 100;
+  const subtotal = cartTotal;
+  const voucherDiscount = appliedVoucher ? appliedVoucher.discountAmount : 0;
+  const total = subtotal + shippingFee - voucherDiscount;
+
+  const handleApplyVoucher = async () => {
+    setVoucherError(null);
     
-    const trimmedCode = discountCode.trim();
+    const trimmedCode = voucherCode.trim();
     
     if (!trimmedCode) {
-      setDiscountError("Please enter a discount code");
+      setVoucherError("Please enter a voucher code");
       return;
     }
+
+    setIsValidating(true);
     
-    const foundDiscount = availableDiscounts.find(
-      discount => discount.code.toLowerCase() === trimmedCode.toLowerCase()
-    );
-    
-    if (!foundDiscount) {
-      setDiscountError("Invalid discount code");
-      return;
+    try {
+      const result = await VoucherService.validateVoucher(trimmedCode, subtotal);
+      
+      if (result.success && result.data.valid) {
+        // Store voucher info in cart context
+        setAppliedVoucher({
+          code: trimmedCode.toUpperCase(),
+          voucherId: result.data.voucherId,
+          discountAmount: result.data.discountAmount,
+          discountType: result.data.discountType,
+          voucherValue: result.data.voucherValue
+        });
+        
+        toast.success(`Voucher applied! You saved ₱${result.data.discountAmount.toLocaleString()}`);
+        setVoucherCode("");
+      } else {
+        setVoucherError(result.error || result.data.message);
+        toast.error(result.error || result.data.message);
+      }
+    } catch (error) {
+      console.error('Error applying voucher:', error);
+      setVoucherError('Failed to apply voucher. Please try again.');
+      toast.error('Failed to apply voucher');
+    } finally {
+      setIsValidating(false);
     }
-    
-    if (foundDiscount.expired) {
-      setDiscountError("This discount code has expired");
-      return;
-    }
-    
-    if (foundDiscount.currentUsage >= foundDiscount.usageLimit) {
-      setDiscountError("This discount code has reached its usage limit");
-      return;
-    }
-    
-    setAppliedDiscount(foundDiscount);
   };
 
-  const getErrorStyle = () => {
-    if (!discountError) return "";
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    setVoucherCode("");
+    setVoucherError(null);
+    toast.info('Voucher removed');
+  };
+
+  const formatVoucherDisplay = () => {
+    if (!appliedVoucher) return '';
     
-    return "text-sm text-red-600 mt-1";
+    if (appliedVoucher.discountType === 'percent') {
+      return `${appliedVoucher.voucherValue}%`;
+    } else {
+      return `₱${appliedVoucher.voucherValue.toLocaleString()}`;
+    }
   };
 
   return (
@@ -88,53 +103,96 @@ const OrderSum = () => {
       </p>
 
       <hr className="my-4 stroke-black" />
-      <div className="space-y-4">
-        {products.map((item, index) => (
-          <div key={index} className="flex items-center">
-            <div className="h-24 w-24 bg-amber-400 rounded mr-4 overflow-hidden">
-              <img
-                src={item.image}
-                alt="Product"
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            <div className="flex-1">
-              <h3 className="font-semibold text-sm">{item.name}</h3>
-              <p className="text-sm text-gray-800">
-                ₱{item.price.toLocaleString()}
-              </p>
-            </div>
+      
+      {/* Display delivery type and order notes */}
+      <div className="mb-4 space-y-2">
+        <div className="flex items-center text-sm">
+          <span className="font-semibold mr-2">Delivery:</span>
+          <span className="text-gray-700">
+            {deliveryType === 'local_delivery' ? 'Local Delivery' : 
+             deliveryType === 'store_pickup' ? 'Store Pickup' : 
+             'Not selected'}
+          </span>
+        </div>
+        {orderNotes && (
+          <div className="text-sm">
+            <span className="font-semibold">Order Notes:</span>
+            <p className="text-gray-700 mt-1 italic">{orderNotes}</p>
           </div>
-        ))}
+        )}
+      </div>
+      
+      <hr className="my-4 stroke-black" />
+      
+      <div className="space-y-4">
+        {products.length === 0 ? (
+          <p className="text-gray-500 text-center py-4">Your cart is empty</p>
+        ) : (
+          products.map((item, index) => (
+            <div key={index} className="flex items-center">
+              <div className="h-24 w-24 bg-amber-400 rounded mr-4 overflow-hidden">
+                <img
+                  src={item.image}
+                  alt="Product"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div className="flex-1">
+                <h3 className="font-semibold text-sm">{item.name}</h3>
+                {item.variant && (
+                  <p className="text-xs text-gray-600">Variant: {item.variant}</p>
+                )}
+                <p className="text-sm text-gray-800">
+                  ₱{item.price.toLocaleString()} × {item.quantity}
+                </p>
+                <p className="text-sm font-semibold text-gray-900">
+                  ₱{(item.price * item.quantity).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       <div className="mt-6">
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Discount code or gift card"
-            className={`border rounded-md p-2 w-full ${discountError ? 'border-red-500' : 'border-gray-300'}`}
-            value={discountCode}
-            onChange={(e) => setDiscountCode(e.target.value)}
+            placeholder="Enter voucher code"
+            className={`border rounded-md p-2 w-full ${voucherError ? 'border-red-500' : 'border-gray-300'}`}
+            value={voucherCode}
+            onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+            disabled={appliedVoucher || isValidating}
+            maxLength={20}
           />
-          <button 
-            className="bg-green-500 text-white px-2 rounded-lg hover:bg-green-600 cursor-pointer"
-            onClick={handleApplyDiscount}
-          >
-            Apply
-          </button>
+          {!appliedVoucher ? (
+            <button 
+              className="bg-green-500 text-white px-4 rounded-lg hover:bg-green-600 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
+              onClick={handleApplyVoucher}
+              disabled={isValidating || !voucherCode.trim()}
+            >
+              {isValidating ? 'Validating...' : 'Apply'}
+            </button>
+          ) : (
+            <button 
+              className="bg-red-500 text-white px-4 rounded-lg hover:bg-red-600 cursor-pointer"
+              onClick={handleRemoveVoucher}
+            >
+              Remove
+            </button>
+          )}
         </div>
         
-        {discountError && (
-          <div className={getErrorStyle()}>
-            {discountError}
+        {voucherError && (
+          <div className="text-sm text-red-600 mt-1">
+            {voucherError}
           </div>
         )}
         
-        {appliedDiscount && !discountError && (
-          <div className="text-sm text-green-600 mt-1">
-            Discount code applied: {appliedDiscount.code} ({appliedDiscount.discount * 100}% off)
+        {appliedVoucher && !voucherError && (
+          <div className="text-sm text-green-600 mt-1 font-medium">
+            ✓ Voucher "{appliedVoucher.code}" applied: {formatVoucherDisplay()} off
           </div>
         )}
       </div>
@@ -145,10 +203,10 @@ const OrderSum = () => {
           <span>₱{subtotal.toLocaleString()}</span>
         </div>
         
-        {appliedDiscount && (
-          <div className="flex justify-between text-green-600">
-            <span>Discount ({appliedDiscount.discount * 100}%)</span>
-            <span>-₱{discountAmount.toLocaleString()}</span>
+        {appliedVoucher && (
+          <div className="flex justify-between text-green-600 font-medium">
+            <span>Voucher Discount ({appliedVoucher.code})</span>
+            <span>-₱{voucherDiscount.toLocaleString()}</span>
           </div>
         )}
         
