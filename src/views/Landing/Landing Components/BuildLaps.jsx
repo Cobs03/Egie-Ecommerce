@@ -1,8 +1,9 @@
-import React from "react";
-
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ProductModal from "../../Products/ProductGrid/ProductModal/ProductModal";
 import { Link } from "react-router-dom";
+import { supabase } from "../../../lib/supabase";
+import ReviewService from "../../../services/ReviewService";
+import { ProductService } from "../../../services/ProductService";
 import {
   Carousel,
   CarouselContent,
@@ -13,6 +14,8 @@ import {
 
 const BuildLaps = ({ set }) => {
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Helper function to determine stock status based on quantity
   const getStockStatus = (stockQuantity) => {
@@ -35,146 +38,75 @@ const BuildLaps = ({ set }) => {
     }
   };
 
-  const productsSetOne = [
-    {
-      id: 1,
-      title: 'MSI Pro 16 Flex-036AU 15.6" Touch All-In-One',
-      price: "$499.00",
-      oldPrice: "$599.00",
-      reviews: 4,
-      stock: 25,
-      stockStatus: "In Stock",
-      imageUrl:
-        "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400&h=300&fit=crop",
-    },
-    {
-      id: 2,
-      title: 'HP ProOne 440 G6 23.8" Touch All-In-One',
-      price: "$699.00",
-      oldPrice: "$749.00",
-      reviews: 5,
-      stock: 8,
-      stockStatus: "Low Stock",
-      imageUrl:
-        "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=400&h=300&fit=crop",
-    },
-    {
-      id: 3,
-      title: 'Dell OptiPlex 3280 21.5" All-In-One',
-      price: "$599.00",
-      oldPrice: "$699.00",
-      reviews: 3,
-      stock: 0,
-      stockStatus: "Out of Stock",
-      imageUrl:
-        "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=400&h=300&fit=crop",
-    },
-    {
-      id: 4,
-      title: "Lenovo ThinkCentre M90a AIO Gen 3",
-      price: "$899.00",
-      oldPrice: "$999.00",
-      reviews: 5,
-      stock: 15,
-      stockStatus: "In Stock",
-      imageUrl:
-        "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=400&h=300&fit=crop",
-    },
-    {
-      id: 5,
-      title: 'Acer Aspire C24-1700 23.8" All-In-One',
-      price: "$499.00",
-      oldPrice: "$599.00",
-      reviews: 4,
-      stock: 3,
-      stockStatus: "Low Stock",
-      imageUrl:
-        "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=300&fit=crop",
-    },
-    {
-      id: 6,
-      title: 'Apple iMac 24" M1 Chip 2021',
-      price: "$1,299.00",
-      oldPrice: "$1,499.00",
-      reviews: 5,
-      stock: 12,
-      stockStatus: "In Stock",
-      imageUrl:
-        "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=400&h=300&fit=crop",
-    },
-  ];
+  // Fetch products from database based on set type
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch all active products
+        const { data: allProducts, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('status', 'active');
 
-  const productsSetTwo = [
-    {
-      id: 7,
-      title: 'Asus V222FAK-BA037T 22" All-In-One',
-      price: "$549.00",
-      oldPrice: "$649.00",
-      reviews: 4,
-      stock: 20,
-      stockStatus: "In Stock",
-      imageUrl:
-        "https://images.unsplash.com/photo-1547082299-de196ea013d6?w=400&h=300&fit=crop",
-    },
-    {
-      id: 8,
-      title: "Lenovo IdeaCentre AIO 3 24ADA6",
-      price: "$649.00",
-      oldPrice: "$749.00",
-      reviews: 4,
-      stock: 7,
-      stockStatus: "Low Stock",
-      imageUrl:
-        "https://images.unsplash.com/photo-1593642634315-48f5414c3ad9?w=400&h=300&fit=crop",
-    },
-    {
-      id: 9,
-      title: "HP All-in-One 22-df0130z",
-      price: "$499.00",
-      oldPrice: "$599.00",
-      reviews: 3,
-      stock: 0,
-      stockStatus: "Out of Stock",
-      imageUrl:
-        "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=400&h=300&fit=crop",
-    },
-    {
-      id: 10,
-      title: "Dell Inspiron 24 5410 All-In-One",
-      price: "$799.00",
-      oldPrice: "$899.00",
-      reviews: 5,
-      stock: 18,
-      stockStatus: "In Stock",
-      imageUrl:
-        "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=400&h=300&fit=crop",
-    },
-    {
-      id: 11,
-      title: 'MSI Modern AM242TP 23.8" Touch',
-      price: "$899.00",
-      oldPrice: "$999.00",
-      reviews: 4,
-      stock: 2,
-      stockStatus: "Low Stock",
-      imageUrl:
-        "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=300&fit=crop",
-    },
-    {
-      id: 12,
-      title: 'Apple iMac 27" Retina 5K Display',
-      price: "$1,799.00",
-      oldPrice: "$1,999.00",
-      reviews: 5,
-      stock: 30,
-      stockStatus: "In Stock",
-      imageUrl:
-        "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=400&h=300&fit=crop",
-    },
-  ];
+        if (error) throw error;
 
-  // Conditional loading of products
-  const products = set === "two" ? productsSetTwo : productsSetOne;
+        let filteredProducts = [];
+
+        if (set === "two") {
+          // For custom builds, show all products (or you can filter by PC components category)
+          filteredProducts = allProducts;
+        } else {
+          // For laptops, filter by laptop category
+          const { data: categories } = await supabase
+            .from('product_categories')
+            .select('id, name')
+            .ilike('name', '%laptop%')
+            .limit(1);
+          
+          if (categories && categories.length > 0) {
+            const laptopCategoryId = categories[0].id;
+            filteredProducts = allProducts.filter(product => {
+              const components = product.selected_components || [];
+              return components.some(comp => comp.id === laptopCategoryId);
+            });
+          }
+        }
+
+        // Fetch review counts for each product
+        const productsWithReviews = await Promise.all(
+          filteredProducts.map(async (product) => {
+            // Transform product data using ProductService
+            const transformedProduct = ProductService.transformProductData(product);
+            
+            // Get review summary
+            const { data: summary } = await ReviewService.getProductRatingSummary(product.id);
+            
+            return {
+              ...transformedProduct,
+              reviews: summary?.total_reviews || 0,
+              averageRating: summary?.average_rating || 0,
+              displayPrice: `₱${transformedProduct.price.toLocaleString()}`,
+              displayOldPrice: transformedProduct.oldPrice ? `₱${transformedProduct.oldPrice.toLocaleString()}` : null,
+            };
+          })
+        );
+
+        setProducts(productsWithReviews);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [set]);
+
+  // Use the same products array for both sections (now dynamically filtered)
+  const displayProducts = products;
 
   const title = set === "two" ? "Custom   Builds" : "Laptops";
 
@@ -187,7 +119,7 @@ const BuildLaps = ({ set }) => {
     <div className="product-display flex flex-col lg:flex-row p-4 sm:p-6 lg:p-8">
       {/* Custom Build Section */}
       <div
-        className="mb-6 lg:mb-0 lg:mr-8 w-full lg:w-auto mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center bg-amber-800 rounded-lg p-4 sm:p-6 bg-cover bg-center"
+        className="mb-6 lg:mb-0 lg:mr-8 w-full lg:w-64 mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center bg-amber-800 rounded-lg p-4 sm:p-6 bg-cover bg-center flex-shrink-0"
         style={{ backgroundImage: `url(${background})` }}
       >
         <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-100 mb-2 mt-4 lg:mt-30">
@@ -202,9 +134,14 @@ const BuildLaps = ({ set }) => {
       </div>
 
       <div className="flex-1">
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <p className="text-gray-500">Loading {set === "two" ? "products" : "laptops"}...</p>
+          </div>
+        ) : (
         <Carousel className="w-full">
           <CarouselContent className="-ml-2 md:-ml-4">
-            {products.map((product, index) => (
+            {displayProducts.map((product, index) => (
               <CarouselItem
                 key={index}
                 className="pl-2 md:pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/4 xl:basis-1/5"
@@ -217,7 +154,7 @@ const BuildLaps = ({ set }) => {
                   <img
                     src={product.imageUrl}
                     alt={product.title}
-                    className="rounded-md mb-3 sm:mb-4 object-cover h-32 sm:h-36 md:h-40 w-full bg-green-700"
+                    className="rounded-md mb-3 sm:mb-4 object-contain h-32 sm:h-36 md:h-40 w-full bg-gray-100"
                   />
                   <div className="flex flex-col flex-grow justify-between">
                     <span
@@ -236,11 +173,13 @@ const BuildLaps = ({ set }) => {
                     </span>
                     <div className="mt-auto">
                       <div className="flex items-center space-x-2">
+                        {product.displayOldPrice && (
                         <span className="line-through text-gray-400 text-xs sm:text-sm select-none">
-                          {product.oldPrice}
+                          {product.displayOldPrice}
                         </span>
+                        )}
                         <span className="text-indigo-600 font-bold text-sm sm:text-base lg:text-lg select-none">
-                          {product.price}
+                          {product.displayPrice}
                         </span>
                       </div>
                     </div>
@@ -252,6 +191,7 @@ const BuildLaps = ({ set }) => {
           <CarouselPrevious className="flex" />
           <CarouselNext className="flex" />
         </Carousel>
+        )}
 
         {selectedProduct && (
           <ProductModal

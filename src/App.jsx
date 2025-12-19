@@ -12,6 +12,7 @@ import SignIn from "./views/SignIn/SignIn";
 import Footer from "./views/Components/Footer/Footer";
 import Products from "./views/Products/Products";
 import ProductDetails from "./views/Products/ProductGrid/ProductDetails/ProductDetails";
+import BundleDetails from "./views/Products/ProductGrid/ProductDetails/BundleDetails";
 import Cart from "./views/Cart/Cart";
 import Checkout from "./views/Checkout/Checkout";
 import ThankYou from "./views/Checkout/Thankyou";
@@ -21,11 +22,11 @@ import ContactUs from "./views/ContactUs/ContactUs";
 import Notification from "./views/Notifications/Notification";
 import Purchases from "./views/Purchases/Purchases";
 import OrderDetails from "./views/Purchases/Purchase Components/OrderDetails";
+import MyInquiries from "./views/MyInquiries/MyInquiries";
 import LoadingSpinner from "./components/LoadingSpinner";
 import AIChatBox from "./components/AIChatBox";
 import { OrderProvider } from "./views/Purchases/Purchase Components/OrderContext";
 import { AuthProvider } from "./contexts/AuthContext";
-import purchaseData from "./views/Data/purchaseData";
 import Tracking from "./views/Purchases/Purchase Components/Tracking";
 import Notfound from "./views/Notfound/Notfound";
 import Compare from "./views/Compare/Compare";
@@ -34,27 +35,30 @@ import ResetPassword from "./views/ResetPassword/ResetPassword";
 import Terms from "./views/Policy and Terms/Terms";
 import Policy from "./views/Policy and Terms/Policy";
 import Settings from "./views/Settings/Settings";
+import PaymentSuccess from "./views/Payment/PaymentSuccess";
+import PaymentFailed from "./views/Payment/PaymentFailed";
 
 import { Toaster } from "../src/components/ui/sonner";
+import { CartProvider } from "./context/CartContext";
 
 function App() {
-  const [orders, setOrders] = useState(purchaseData);
-
   return (
     <AuthProvider>
-      <Router>
-        <OrderProvider initialOrders={orders} updateOrders={setOrders}>
-          <div className="bg-[#F3F7F6] min-h-screen">
-            <Main orders={orders} setOrders={setOrders} />
-          </div>
-        </OrderProvider>
-      </Router>
+      <CartProvider>
+        <Router>
+          <OrderProvider>
+            <div className="bg-[#F3F7F6] min-h-screen">
+              <Main />
+            </div>
+          </OrderProvider>
+        </Router>
+      </CartProvider>
     </AuthProvider>
   );
 }
 
 // Separate component so we can access route info
-const Main = ({ orders, setOrders }) => {
+const Main = () => {
   const location = useLocation();
 
   // Detect if current route is sign-in/sign-up page
@@ -130,6 +134,14 @@ const Main = ({ orders, setOrders }) => {
             }
           />
           <Route
+            path="/products/bundle-details/:bundleId"
+            element={
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+                <BundleDetails />
+              </div>
+            }
+          />
+          <Route
             path="/cart"
             element={
               <div className="mt-32.5 max-md:mt-22.5 container-responsive">
@@ -152,6 +164,14 @@ const Main = ({ orders, setOrders }) => {
                 <ThankYou />
               </div>
             }
+          />
+          <Route
+            path="/payment-success"
+            element={<PaymentSuccess />}
+          />
+          <Route
+            path="/payment-failed"
+            element={<PaymentFailed />}
           />
           <Route
             path="/buildpc"
@@ -181,7 +201,7 @@ const Main = ({ orders, setOrders }) => {
             path="/purchases"
             element={
               <div className="mt-32.5 max-md:mt-22.5 container-responsive">
-                <Purchases orders={orders} setOrders={setOrders} />
+                <Purchases />
               </div>
             }
           />
@@ -198,6 +218,14 @@ const Main = ({ orders, setOrders }) => {
             element={
               <div className="mt-32.5 max-md:mt-22.5 container-responsive">
                 <Tracking />
+              </div>
+            }
+          />
+          <Route
+            path="/my-inquiries"
+            element={
+              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+                <MyInquiries />
               </div>
             }
           />

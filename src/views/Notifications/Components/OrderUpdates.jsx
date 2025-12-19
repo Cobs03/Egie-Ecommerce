@@ -1,15 +1,40 @@
 import React from "react";
 import { FiPackage } from "react-icons/fi";
+import { supabase } from "../../../lib/supabase";
 
 const OrderUpdates = ({ notifications, onNotificationClick }) => {
+  // Helper to get full image URL from Supabase storage
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return "https://via.placeholder.com/40";
+    
+    // If it's already a full URL, return it
+    if (imagePath.startsWith('http')) return imagePath;
+    
+    // If it's a storage path, get the public URL
+    const { data } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(imagePath);
+    
+    return data?.publicUrl || "https://via.placeholder.com/40";
+  };
+
   const getTypeColor = (type) => {
     switch (type) {
       case "Order placed":
+      case "Order Placed":
         return "text-green-600";
       case "Order Shipped":
         return "text-blue-600";
       case "Package Delivered":
         return "text-purple-600";
+      case "Order Confirmed":
+        return "text-green-700";
+      case "Order Processing":
+        return "text-yellow-600";
+      case "Ready for Pickup":
+        return "text-orange-600";
+      case "Order Cancelled":
+        return "text-red-600";
       default:
         return "text-gray-800";
     }
@@ -51,21 +76,35 @@ const OrderUpdates = ({ notifications, onNotificationClick }) => {
                 {notification.description}
               </p>
               
-              {/* Product Thumbnails */}
-              <div className="flex space-x-2">
-                {notification.products?.map(product => (
-                  <div 
-                    key={product.id} 
-                    className="w-10 h-10 bg-gray-200 rounded overflow-hidden"
-                  >
-                    <img 
-                      src="https://via.placeholder.com/40" 
-                      alt={product.alt}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
+              {/* Product Thumbnails - Show all products from order */}
+              {notification.products && notification.products.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {notification.products.map((product, idx) => (
+                    <div 
+                      key={`${notification.id}-product-${idx}`} 
+                      className="w-12 h-12 bg-gray-200 rounded border border-gray-300 overflow-hidden flex-shrink-0"
+                      title={product.alt}
+                    >
+                      <img 
+                        src={getImageUrl(product.image)} 
+                        alt={product.alt}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.src = "https://via.placeholder.com/48?text=Product";
+                        }}
+                      />
+                    </div>
+                  ))}
+                  {/* Show count if more than 4 products */}
+                  {notification.products.length > 4 && (
+                    <div className="w-12 h-12 bg-gray-300 rounded border border-gray-400 flex items-center justify-center">
+                      <span className="text-xs font-bold text-gray-700">
+                        +{notification.products.length - 4}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           

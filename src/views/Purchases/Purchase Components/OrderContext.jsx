@@ -1,17 +1,10 @@
 // src/contexts/OrderContext.jsx
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useState, useContext } from "react";
 
 const OrderContext = createContext();
 
-export function OrderProvider({ children, initialOrders, updateOrders }) {
-  const [orders, setOrders] = useState(initialOrders || []);
-  
-  // Keep orders in sync with parent state if provided
-  useEffect(() => {
-    if (initialOrders) {
-      setOrders(initialOrders);
-    }
-  }, [initialOrders]);
+export function OrderProvider({ children }) {
+  const [orders, setOrders] = useState([]);
 
   const updateOrderStatus = (orderId, newStatus, reason = "") => {
     const updatedOrders = orders.map((order) =>
@@ -31,9 +24,6 @@ export function OrderProvider({ children, initialOrders, updateOrders }) {
     );
     
     setOrders(updatedOrders);
-    if (updateOrders) {
-      updateOrders(updatedOrders);
-    }
   };
 
   return (
@@ -48,5 +38,5 @@ export function useOrders() {
   if (!context) {
     throw new Error("useOrders must be used within an OrderProvider");
   }
-  return context; // Return the context VALUE, not the context object
+  return context;
 }

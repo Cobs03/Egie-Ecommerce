@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { FaUser, FaLock, FaCreditCard, FaBell, FaMapMarkerAlt, FaHistory } from "react-icons/fa";
+import { FaUser, FaLock, FaBell, FaMapMarkerAlt } from "react-icons/fa";
 import { IoMdEyeOff, IoMdEye } from "react-icons/io";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
+import OrderService from "../../services/OrderService";
+import PhilippineAddressService from "../../services/PhilippineAddressService";
+import { toast } from "sonner";
 
 const Settings = () => {
   const { user } = useAuth();
@@ -20,6 +23,12 @@ const Settings = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
+  // Philippine address API data
+  const [provinces, setProvinces] = useState([]);
+  const [availableCities, setAvailableCities] = useState([]);
+  const [availableBarangays, setAvailableBarangays] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+  
   // User profile data from Supabase
   const [userData, setUserData] = useState({
     firstName: "",
@@ -29,27 +38,125 @@ const Settings = () => {
     avatar: `https://ui-avatars.io/api/?name=${user?.email?.charAt(0).toUpperCase() || "U"}&background=000000&color=ffffff&size=150`
   });
 
+  // Address management states
+  const [addresses, setAddresses] = useState([]);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(null);
+  const [addressForm, setAddressForm] = useState({
+    full_name: "",
+    phone: "",
+    email: "",
+    street_address: "",
+    barangay: "",
+    city: "",
+    province: "",
+    postal_code: "",
+    country: "Philippines",
+    address_type: "home",
+    is_default: false
+  });
+
+  // Store province and city codes for API calls
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState("");
+  const [selectedCityCode, setSelectedCityCode] = useState("");
+
+  // Notification preferences states
+  const [notificationPreferences, setNotificationPreferences] = useState({
+    email_order_updates: true,
+    email_promotions: true,
+    email_stock_alerts: false,
+    push_order_updates: true,
+    push_promotions: false
+  });
+  const [savingNotifications, setSavingNotifications] = useState(false);
+
+  // Load provinces on component mount
+  useEffect(() => {
+    loadProvinces();
+  }, []);
+
   // Load user profile data on component mount
   useEffect(() => {
     if (user) {
       loadUserProfile();
+      loadAddresses();
+      loadNotificationPreferences();
     }
   }, [user]);
+
+  // Load provinces from API
+  const loadProvinces = async () => {
+    try {
+      const provinceData = await PhilippineAddressService.getProvinces();
+      setProvinces(provinceData);
+    } catch (error) {
+      console.error('Error loading provinces:', error);
+      toast.error('Failed to load provinces');
+    }
+  };
+
+  // Load cities when province changes
+  const handleProvinceChange = async (provinceName, provinceCode) => {
+    setLoadingLocations(true);
+    try {
+      setAddressForm(prev => ({ ...prev, province: provinceName, city: "", barangay: "" }));
+      setSelectedProvinceCode(provinceCode);
+      setAvailableCities([]);
+      setAvailableBarangays([]);
+      
+      const cityData = await PhilippineAddressService.getCitiesByProvince(provinceCode);
+      setAvailableCities(cityData);
+    } catch (error) {
+      console.error('Error loading cities:', error);
+      toast.error('Failed to load cities');
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
+
+  // Load barangays when city changes
+  const handleCityChange = async (cityName, cityCode) => {
+    setLoadingLocations(true);
+    try {
+      setAddressForm(prev => ({ ...prev, city: cityName, barangay: "" }));
+      setSelectedCityCode(cityCode);
+      setAvailableBarangays([]);
+      
+      const barangayData = await PhilippineAddressService.getBarangaysByCity(cityCode);
+      setAvailableBarangays(barangayData);
+    } catch (error) {
+      console.error('Error loading barangays:', error);
+      toast.error('Failed to load barangays');
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
 
   const loadUserProfile = async () => {
     try {
       setLoading(true);
-      
+      setError(""); // Clear any previous errors
+
       // Get user profile from Supabase
-      const { data, error } = await supabase
+      const { data, error} = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
-        // PGRST116 is "not found" error, which is fine for new users
-        console.error('Error loading profile:', error);
+      console.log('Profile load result:', { data, error }); // Debug log
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No profile found - this is okay for new users
+          console.log('No profile found, user might be new');
+          setError("Profile not found. Please try updating your information to create it.");
+        } else {
+          // Other errors
+          console.error('Error loading profile:', error);
+          setError(`Error loading profile: ${error.message}`);
+        }
         return;
       }
 
@@ -61,9 +168,11 @@ const Settings = () => {
           phone: data.phone || "",
           avatar: data.avatar_url || `https://ui-avatars.io/api/?name=${user?.email?.charAt(0).toUpperCase() || "U"}&background=000000&color=ffffff&size=150`
         }));
+        setError(""); // Clear errors on successful load
       }
     } catch (error) {
-      console.error('Error loading profile:', error.message);
+      console.error('Unexpected error loading profile:', error);
+      setError(`Failed to load profile: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -72,7 +181,7 @@ const Settings = () => {
   // Form handling
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!userData.firstName.trim() || !userData.lastName.trim()) {
       setError("First name and last name are required");
       return;
@@ -88,23 +197,28 @@ const Settings = () => {
         .from('profiles')
         .upsert({
           id: user.id,
+          email: user.email, // Include required email field
           first_name: userData.firstName.trim(),
           last_name: userData.lastName.trim(),
           phone: userData.phone.trim(),
+          avatar_url: userData.avatar, // Preserve current avatar
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'id'
-        });
+          onConflict: 'id',
+          ignoreDuplicates: false
+        })
+        .select() // Important: add select() to get the response
+        .single();
 
       if (error) {
         throw error;
       }
 
       setMessage("Profile updated successfully!");
-      
+
       // Clear message after 3 seconds
       setTimeout(() => setMessage(""), 3000);
-      
+
     } catch (error) {
       console.error('Error updating profile:', error);
       setError("Failed to update profile. Please try again.");
@@ -146,21 +260,73 @@ const Settings = () => {
       }
 
       setMessage("Password updated successfully!");
-      
+
       // Reset password fields
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      
+
       // Clear message after 3 seconds
       setTimeout(() => setMessage(""), 3000);
-      
+
     } catch (error) {
       console.error('Error updating password:', error);
       setError(error.message || "Failed to update password. Please try again.");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Load notification preferences
+  const loadNotificationPreferences = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('notification_preferences')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data && data.notification_preferences) {
+        setNotificationPreferences(data.notification_preferences);
+      }
+    } catch (error) {
+      console.error('Error loading notification preferences:', error);
+      // Keep default preferences if loading fails
+    }
+  };
+
+  // Save notification preferences
+  const handleSaveNotifications = async () => {
+    try {
+      setSavingNotifications(true);
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          notification_preferences: notificationPreferences,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast.success('Notification preferences saved successfully!');
+    } catch (error) {
+      console.error('Error saving notification preferences:', error);
+      toast.error('Failed to save notification preferences');
+    } finally {
+      setSavingNotifications(false);
+    }
+  };
+
+  // Toggle notification preference
+  const toggleNotification = (key) => {
+    setNotificationPreferences(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
   };
 
   // Handle profile image upload
@@ -192,7 +358,10 @@ const Settings = () => {
       // Upload image to Supabase storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('profiles')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true // Allow overwrite if file exists
+        });
 
       if (uploadError) {
         throw uploadError;
@@ -204,10 +373,11 @@ const Settings = () => {
         .getPublicUrl(filePath);
 
       // Update profile with new avatar URL
-      const { error: updateError } = await supabase
+      const { data: updateData, error: updateError } = await supabase
         .from('profiles')
         .upsert({
           id: user.id,
+          email: user.email, // Include required email field
           first_name: userData.firstName,
           last_name: userData.lastName,
           phone: userData.phone,
@@ -215,7 +385,9 @@ const Settings = () => {
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'id'
-        });
+        })
+        .select()
+        .single();
 
       if (updateError) {
         throw updateError;
@@ -238,6 +410,164 @@ const Settings = () => {
     }
   };
 
+  // Address management functions
+  const loadAddresses = async () => {
+    try {
+      setLoadingAddresses(true);
+      const { data, error } = await OrderService.getShippingAddresses();
+      if (error) {
+        console.error('Error loading addresses:', error);
+        toast.error('Failed to load addresses');
+        setAddresses([]);
+      } else {
+        setAddresses(data || []);
+      }
+    } catch (error) {
+      console.error('Error loading addresses:', error);
+      toast.error('Failed to load addresses');
+      setAddresses([]);
+    } finally {
+      setLoadingAddresses(false);
+    }
+  };
+
+  const handleAddAddress = () => {
+    setEditingAddress(null);
+    setAddressForm({
+      full_name: "",
+      phone: "",
+      email: "",
+      street_address: "",
+      barangay: "",
+      city: "",
+      province: "",
+      postal_code: "",
+      country: "Philippines",
+      address_type: "home",
+      is_default: addresses.length === 0 // First address is default
+    });
+    setAvailableCities([]);
+    setAvailableBarangays([]);
+    setSelectedProvinceCode("");
+    setSelectedCityCode("");
+    setShowAddressModal(true);
+  };
+
+  const handleEditAddress = async (address) => {
+    setEditingAddress(address);
+    setAddressForm({
+      full_name: address.full_name || "",
+      phone: address.phone || "",
+      email: address.email || "",
+      street_address: address.street_address || "",
+      barangay: address.barangay || "",
+      city: address.city || "",
+      province: address.province || "",
+      postal_code: address.postal_code || "",
+      country: address.country || "Philippines",
+      address_type: address.address_type || "home",
+      is_default: address.is_default || false
+    });
+
+    // Load cities and barangays for editing
+    if (address.province) {
+      const province = await PhilippineAddressService.findProvinceByName(address.province);
+      if (province) {
+        setSelectedProvinceCode(province.code);
+        const cityData = await PhilippineAddressService.getCitiesByProvince(province.code);
+        setAvailableCities(cityData);
+
+        if (address.city) {
+          const city = cityData.find(c => c.name === address.city);
+          if (city) {
+            setSelectedCityCode(city.code);
+            const barangayData = await PhilippineAddressService.getBarangaysByCity(city.code);
+            setAvailableBarangays(barangayData);
+          }
+        }
+      }
+    }
+
+    setShowAddressModal(true);
+  };
+
+  const handleSaveAddress = async () => {
+    try {
+      // Validate required fields
+      if (!addressForm.full_name || !addressForm.phone || !addressForm.street_address ||
+          !addressForm.barangay || !addressForm.city || !addressForm.province || !addressForm.postal_code) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+
+      setLoading(true);
+
+      let result;
+      if (editingAddress) {
+        // Update existing address
+        result = await OrderService.updateShippingAddress(editingAddress.id, addressForm);
+      } else {
+        // Create new address
+        result = await OrderService.createShippingAddress(addressForm);
+      }
+
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success(editingAddress ? 'Address updated successfully' : 'Address added successfully');
+        setShowAddressModal(false);
+        loadAddresses(); // Reload addresses
+      }
+    } catch (error) {
+      console.error('Error saving address:', error);
+      toast.error('Failed to save address');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAddress = async (addressId) => {
+    if (!window.confirm('Are you sure you want to delete this address?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { error } = await OrderService.deleteShippingAddress(addressId);
+
+      if (error) {
+        toast.error(error);
+      } else {
+        toast.success('Address deleted successfully');
+        loadAddresses(); // Reload addresses
+      }
+    } catch (error) {
+      console.error('Error deleting address:', error);
+      toast.error('Failed to delete address');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetDefaultAddress = async (addressId) => {
+    try {
+      setLoading(true);
+      const { error } = await OrderService.updateShippingAddress(addressId, { is_default: true });
+
+      if (error) {
+        toast.error(error);
+      } else {
+        toast.success('Default address updated');
+        loadAddresses(); // Reload addresses
+      }
+    } catch (error) {
+      console.error('Error setting default address:', error);
+      toast.error('Failed to set default address');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 pt-20 pb-10 px-4">
       <div className="max-w-6xl mx-auto">
@@ -256,6 +586,9 @@ const Settings = () => {
                       src={userData.avatar}
                       alt="Profile"
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = `https://ui-avatars.io/api/?name=${user?.email?.charAt(0).toUpperCase() || "U"}&background=000000&color=ffffff&size=150`;
+                      }}
                     />
                   </div>
                   <div>
@@ -295,19 +628,6 @@ const Settings = () => {
                   </li>
                   <li>
                     <button
-                      onClick={() => setActiveTab("payment")}
-                      className={`flex items-center w-full px-4 py-3 rounded-lg text-left ${
-                        activeTab === "payment"
-                          ? "bg-green-50 text-green-600"
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      <FaCreditCard className="mr-3" />
-                      <span>Payment Methods</span>
-                    </button>
-                  </li>
-                  <li>
-                    <button
                       onClick={() => setActiveTab("addresses")}
                       className={`flex items-center w-full px-4 py-3 rounded-lg text-left ${
                         activeTab === "addresses"
@@ -330,19 +650,6 @@ const Settings = () => {
                     >
                       <FaBell className="mr-3" />
                       <span>Notifications</span>
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() => setActiveTab("order-history")}
-                      className={`flex items-center w-full px-4 py-3 rounded-lg text-left ${
-                        activeTab === "order-history"
-                          ? "bg-green-50 text-green-600"
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      <FaHistory className="mr-3" />
-                      <span>Order History</span>
                     </button>
                   </li>
                 </ul>
@@ -679,83 +986,7 @@ const Settings = () => {
               </div>
             )}
 
-            {/* Payment Methods Tab */}
-            {activeTab === "payment" && (
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-800">
-                    Payment Methods
-                  </h2>
-                  <button
-                    type="button"
-                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-                  >
-                    Add New Card
-                  </button>
-                </div>
 
-                <div className="space-y-4">
-                  <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="bg-blue-100 p-2 rounded mr-4">
-                          <FaCreditCard className="text-blue-600 text-xl" />
-                        </div>
-                        <div>
-                          <p className="font-medium">•••• •••• •••• 4242</p>
-                          <p className="text-sm text-gray-500">Expires 12/25</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded mr-2">
-                          Default
-                        </span>
-                        <button className="text-gray-400 hover:text-gray-600">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="bg-red-100 p-2 rounded mr-4">
-                          <FaCreditCard className="text-red-600 text-xl" />
-                        </div>
-                        <div>
-                          <p className="font-medium">•••• •••• •••• 5555</p>
-                          <p className="text-sm text-gray-500">Expires 08/26</p>
-                        </div>
-                      </div>
-                      <div>
-                        <button className="text-gray-400 hover:text-gray-600">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="mt-4 text-sm text-gray-500">
-                  Your payment information is encrypted and securely stored.
-                </p>
-              </div>
-            )}
 
             {/* Addresses Tab */}
             {activeTab === "addresses" && (
@@ -766,64 +997,76 @@ const Settings = () => {
                   </h2>
                   <button
                     type="button"
+                    onClick={handleAddAddress}
                     className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
                   >
                     Add New Address
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center mb-2">
-                          <span className="font-medium mr-2">Home</span>
-                          <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                            Default
-                          </span>
-                        </div>
-                        <p className="text-gray-600">Bruce Wayne</p>
-                        <p className="text-gray-600">1007 Mountain Drive</p>
-                        <p className="text-gray-600">Gotham City, 12345</p>
-                        <p className="text-gray-600">Philippines</p>
-                        <p className="text-gray-600">+63 915 123 4567</p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button className="text-blue-600 hover:text-blue-800">
-                          Edit
-                        </button>
-                        <button className="text-red-600 hover:text-red-800">
-                          Delete
-                        </button>
-                      </div>
-                    </div>
+                {loadingAddresses ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Loading addresses...</p>
                   </div>
-
-                  <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center mb-2">
-                          <span className="font-medium mr-2">Office</span>
-                        </div>
-                        <p className="text-gray-600">Bruce Wayne</p>
-                        <p className="text-gray-600">
-                          Wayne Tower, 1 Enterprise Ave
-                        </p>
-                        <p className="text-gray-600">Gotham City, 12345</p>
-                        <p className="text-gray-600">Philippines</p>
-                        <p className="text-gray-600">+63 915 123 8910</p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button className="text-blue-600 hover:text-blue-800">
-                          Edit
-                        </button>
-                        <button className="text-red-600 hover:text-red-800">
-                          Delete
-                        </button>
-                      </div>
-                    </div>
+                ) : addresses.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 mb-4">No addresses found</p>
+                    <button
+                      onClick={handleAddAddress}
+                      className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                    >
+                      Add Your First Address
+                    </button>
                   </div>
-                </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {addresses.map((address) => (
+                      <div key={address.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center mb-2">
+                              <span className="font-medium mr-2">{address.address_type === 'home' ? 'Home' : address.address_type === 'work' ? 'Office' : 'Other'}</span>
+                              {address.is_default && (
+                                <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-gray-600">{address.full_name}</p>
+                            <p className="text-gray-600">{address.street_address}</p>
+                            {address.barangay && <p className="text-gray-600">{address.barangay}</p>}
+                            <p className="text-gray-600">{address.city}, {address.province} {address.postal_code}</p>
+                            <p className="text-gray-600">{address.country}</p>
+                            <p className="text-gray-600">{address.phone}</p>
+                            {address.email && <p className="text-gray-600 text-sm">{address.email}</p>}
+                          </div>
+                          <div className="flex flex-col space-y-2">
+                            {!address.is_default && (
+                              <button
+                                onClick={() => handleSetDefaultAddress(address.id)}
+                                className="text-green-600 hover:text-green-800 text-sm"
+                              >
+                                Set Default
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleEditAddress(address)}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAddress(address.id)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -850,9 +1093,9 @@ const Settings = () => {
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
-                            value=""
+                            checked={notificationPreferences.email_order_updates}
+                            onChange={() => toggleNotification('email_order_updates')}
                             className="sr-only peer"
-                            defaultChecked
                           />
                           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
                         </label>
@@ -868,9 +1111,9 @@ const Settings = () => {
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
-                            value=""
+                            checked={notificationPreferences.email_promotions}
+                            onChange={() => toggleNotification('email_promotions')}
                             className="sr-only peer"
-                            defaultChecked
                           />
                           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
                         </label>
@@ -887,7 +1130,8 @@ const Settings = () => {
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
-                            value=""
+                            checked={notificationPreferences.email_stock_alerts}
+                            onChange={() => toggleNotification('email_stock_alerts')}
                             className="sr-only peer"
                           />
                           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
@@ -911,9 +1155,9 @@ const Settings = () => {
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
-                            value=""
+                            checked={notificationPreferences.push_order_updates}
+                            onChange={() => toggleNotification('push_order_updates')}
                             className="sr-only peer"
-                            defaultChecked
                           />
                           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
                         </label>
@@ -930,7 +1174,8 @@ const Settings = () => {
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
-                            value=""
+                            checked={notificationPreferences.push_promotions}
+                            onChange={() => toggleNotification('push_promotions')}
                             className="sr-only peer"
                           />
                           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
@@ -943,148 +1188,227 @@ const Settings = () => {
                 <div className="flex justify-end mt-6">
                   <button
                     type="button"
-                    className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                    onClick={handleSaveNotifications}
+                    disabled={savingNotifications}
+                    className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Save Preferences
+                    {savingNotifications ? 'Saving...' : 'Save Preferences'}
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Order History Tab */}
-            {activeTab === "order-history" && (
-              <div className="p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                  Order History
-                </h2>
 
-                <div className="space-y-4">
-                  <div className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition">
-                    <div className="p-4 bg-gray-50 border-b border-gray-200">
-                      <div className="flex flex-wrap items-center justify-between">
-                        <div className="mb-2 sm:mb-0">
-                          <p className="text-sm text-gray-500">Order #12345</p>
-                          <p className="font-medium">September 15, 2023</p>
-                        </div>
-                        <div className="flex items-center">
-                          <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                            Delivered
-                          </span>
-                          <button className="ml-4 text-blue-600 hover:text-blue-800 text-sm font-medium">
-                            View Details
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <div className="flex flex-wrap items-center justify-between">
-                        <div className="flex items-center mb-2 sm:mb-0">
-                          <div className="w-16 h-16 rounded overflow-hidden mr-4">
-                            <img
-                              src="https://placehold.co/100x100/333/white?text=GPU"
-                              alt="Product"
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div>
-                            <p className="font-medium">
-                              NVIDIA GeForce RTX 3080
-                            </p>
-                            <p className="text-sm text-gray-500">Qty: 1</p>
-                          </div>
-                        </div>
-                        <div className="font-medium">₱45,999.00</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition">
-                    <div className="p-4 bg-gray-50 border-b border-gray-200">
-                      <div className="flex flex-wrap items-center justify-between">
-                        <div className="mb-2 sm:mb-0">
-                          <p className="text-sm text-gray-500">Order #12346</p>
-                          <p className="font-medium">August 28, 2023</p>
-                        </div>
-                        <div className="flex items-center">
-                          <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                            Delivered
-                          </span>
-                          <button className="ml-4 text-blue-600 hover:text-blue-800 text-sm font-medium">
-                            View Details
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <div className="flex flex-wrap items-center justify-between">
-                        <div className="flex items-center mb-2 sm:mb-0">
-                          <div className="w-16 h-16 rounded overflow-hidden mr-4">
-                            <img
-                              src="https://placehold.co/100x100/333/white?text=CPU"
-                              alt="Product"
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div>
-                            <p className="font-medium">AMD Ryzen 9 5900X</p>
-                            <p className="text-sm text-gray-500">Qty: 1</p>
-                          </div>
-                        </div>
-                        <div className="font-medium">₱28,500.00</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition">
-                    <div className="p-4 bg-gray-50 border-b border-gray-200">
-                      <div className="flex flex-wrap items-center justify-between">
-                        <div className="mb-2 sm:mb-0">
-                          <p className="text-sm text-gray-500">Order #12347</p>
-                          <p className="font-medium">July 10, 2023</p>
-                        </div>
-                        <div className="flex items-center">
-                          <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                            Delivered
-                          </span>
-                          <button className="ml-4 text-blue-600 hover:text-blue-800 text-sm font-medium">
-                            View Details
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <div className="flex flex-wrap items-center justify-between">
-                        <div className="flex items-center mb-2 sm:mb-0">
-                          <div className="w-16 h-16 rounded overflow-hidden mr-4">
-                            <img
-                              src="https://placehold.co/100x100/333/white?text=RAM"
-                              alt="Product"
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div>
-                            <p className="font-medium">
-                              Corsair Vengeance RGB Pro 32GB
-                            </p>
-                            <p className="text-sm text-gray-500">Qty: 2</p>
-                          </div>
-                        </div>
-                        <div className="font-medium">₱12,800.00</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex justify-center">
-                  <button className="text-green-600 hover:text-green-800 font-medium">
-                    Load More Orders
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
+
+      {/* Address Modal */}
+      {showAddressModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold mb-4">
+                {editingAddress ? 'Edit Address' : 'Add New Address'}
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Address Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={addressForm.address_type}
+                    onChange={(e) => setAddressForm({ ...addressForm, address_type: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="home">Home</option>
+                    <option value="work">Office/Work</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={addressForm.full_name}
+                    onChange={(e) => setAddressForm({ ...addressForm, full_name: e.target.value })}
+                    placeholder="Full name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={addressForm.phone}
+                    onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                    placeholder="e.g., +63 915 123 4567"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email (Optional)
+                  </label>
+                  <input
+                    type="email"
+                    value={addressForm.email}
+                    onChange={(e) => setAddressForm({ ...addressForm, email: e.target.value })}
+                    placeholder="Email address"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Street Address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={addressForm.street_address}
+                    onChange={(e) => setAddressForm({ ...addressForm, street_address: e.target.value })}
+                    placeholder="Street address, apartment, suite, etc."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Province <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={addressForm.province}
+                      onChange={(e) => {
+                        const selectedProvince = provinces.find(p => p.name === e.target.value);
+                        if (selectedProvince) {
+                          handleProvinceChange(selectedProvince.name, selectedProvince.code);
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      disabled={loadingLocations}
+                    >
+                      <option value="">Select Province</option>
+                      {provinces.map((province) => (
+                        <option key={province.code} value={province.name}>
+                          {province.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      City/Municipality <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={addressForm.city}
+                      onChange={(e) => {
+                        const selectedCity = availableCities.find(c => c.name === e.target.value);
+                        if (selectedCity) {
+                          handleCityChange(selectedCity.name, selectedCity.code);
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      disabled={!selectedProvinceCode || loadingLocations}
+                    >
+                      <option value="">Select City/Municipality</option>
+                      {availableCities.map((city) => (
+                        <option key={city.code} value={city.name}>
+                          {city.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Barangay <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={addressForm.barangay}
+                    onChange={(e) => setAddressForm({ ...addressForm, barangay: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    disabled={!selectedCityCode || loadingLocations}
+                  >
+                    <option value="">Select Barangay</option>
+                    {availableBarangays.map((barangay) => (
+                      <option key={barangay.code} value={barangay.name}>
+                        {barangay.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Postal Code <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={addressForm.postal_code}
+                      onChange={(e) => setAddressForm({ ...addressForm, postal_code: e.target.value })}
+                      placeholder="Postal code"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Country
+                    </label>
+                    <input
+                      type="text"
+                      value={addressForm.country}
+                      onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="setDefault"
+                    checked={addressForm.is_default}
+                    onChange={(e) => setAddressForm({ ...addressForm, is_default: e.target.checked })}
+                    className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                  />
+                  <label htmlFor="setDefault" className="ml-2 text-sm text-gray-700">
+                    Set as default address
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowAddressModal(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveAddress}
+                  disabled={loading}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition disabled:opacity-50"
+                >
+                  {loading ? 'Saving...' : 'Save Address'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

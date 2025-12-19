@@ -2,131 +2,93 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import OrderUpdates from "./Components/OrderUpdates";
 import Promotions from "./Components/Promotions";
+import NotificationService from "../../services/NotificationService";
 
 const Notification = () => {
   const [activeTab, setActiveTab] = useState("Order Updates");
+  const [loading, setLoading] = useState(true);
+  const [notificationsState, setNotificationsState] = useState([]);
+  const [promotionsState, setPromotionsState] = useState([]);
   const navigate = useNavigate();
-  
-  // Initial notification data
-  const initialNotifications = [
-    {
-      id: 1,
-      type: "Order placed",
-      description: "Your package (GE#568333) was submitted. Thanks for shopping with EGIE GameShop!",
-      time: "18m",
-      products: [
-        { id: 1, image: "/path/to/product1.jpg", alt: "Gaming Mouse" },
-        { id: 2, image: "/path/to/product2.jpg", alt: "Gaming Headset" },
-      ],
-      orderId: 1
-    },
-    {
-      id: 2,
-      type: "Order Shipped",
-      description: "Your package (GE#591889) was shipped and will be delivered by J&T. Thanks for shopping with EGIE GameShop!",
-      time: "8hr",
-      products: [
-        { id: 3, image: "/path/to/product3.jpg", alt: "Gaming Keyboard" },
-        { id: 4, image: "/path/to/product4.jpg", alt: "Gaming Monitor" },
-      ],
-      orderId: 2
-    },
-    {
-      id: 3,
-      type: "Order Shipped",
-      description: "Your package (GE#591889) was shipped and will be delivered by J&T. Thanks for shopping with EGIE GameShop!",
-      time: "8hr",
-      products: [
-        { id: 3, image: "/path/to/product3.jpg", alt: "Gaming Keyboard" },
-        { id: 4, image: "/path/to/product4.jpg", alt: "Gaming Monitor" },
-      ],
-      isRead: false
-    },
-    {
-      id: 4,
-      type: "Package Delivered",
-      description: "Your package (GE#591889) was shipped and will be delivered by J&T. Thanks for shopping with EGIE GameShop!",
-      time: "04/28/25",
-      products: [
-        { id: 3, image: "/path/to/product3.jpg", alt: "Gaming Keyboard" },
-        { id: 4, image: "/path/to/product4.jpg", alt: "Gaming Monitor" },
-      ],
-      isRead: false
-    },
-    {
-      id: 5,
-      type: "Package Delivered",
-      description: "Your package (GE#591889) was shipped and will be delivered by J&T. Thanks for shopping with EGIE GameShop!",
-      time: "04/28/25",
-      products: [
-        { id: 3, image: "/path/to/product3.jpg", alt: "Gaming Keyboard" },
-        { id: 4, image: "/path/to/product4.jpg", alt: "Gaming Monitor" },
-      ],
-      isRead: true
-    }
-  ];
-  
-  // Initialize state from localStorage or default data
-  const [notificationsState, setNotificationsState] = useState(() => {
-    // Try to get read status from localStorage
-    const readStatus = JSON.parse(localStorage.getItem('notificationReadStatus') || '{}');
-    
-    // Apply read status to notifications
-    return initialNotifications.map(notification => ({
-      ...notification,
-      isRead: readStatus[notification.id] || notification.isRead || false
-    }));
-  });
-  
-  // Initial promotions data
-  const initialPromotions = [
-    {
-      id: 1,
-      type: "New Sale",
-      description: "Check out our summer sale! Up to 50% off on gaming peripherals.",
-      time: "1d",
-      isRead: false
-    },
-    {
-      id: 2,
-      type: "Special Offer",
-      description: "Buy one get one free on selected gaming chairs this weekend only!",
-      time: "2d",
-      isRead: false
-    }
-  ];
-  
-  // Initialize promotions state from localStorage
-  const [promotionsState, setPromotionsState] = useState(() => {
-    const readStatus = JSON.parse(localStorage.getItem('promotionReadStatus') || '{}');
-    
-    return initialPromotions.map(promotion => ({
-      ...promotion,
-      isRead: readStatus[promotion.id] || promotion.isRead || false
-    }));
-  });
 
-  // Save read status to localStorage whenever notifications change
+  // Fetch notifications from database
   useEffect(() => {
-    const readStatus = {};
-    notificationsState.forEach(notification => {
-      readStatus[notification.id] = notification.isRead;
+    fetchNotifications();
+    
+    // Subscribe to real-time updates
+    const subscription = NotificationService.subscribeToNotifications((payload) => {
+      console.log('Notification update:', payload);
+      fetchNotifications(); // Refetch when notifications change
     });
-    localStorage.setItem('notificationReadStatus', JSON.stringify(readStatus));
-  }, [notificationsState]);
-  
-  // Save promotion read status to localStorage
-  useEffect(() => {
-    const readStatus = {};
-    promotionsState.forEach(promotion => {
-      readStatus[promotion.id] = promotion.isRead;
-    });
-    localStorage.setItem('promotionReadStatus', JSON.stringify(readStatus));
-  }, [promotionsState]);
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Fetch notifications based on active tab
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch order updates
+      const { data: orderData, error: orderError } = await NotificationService.getUserNotifications('order_update', null, 50);
+      console.log('Order notifications fetched:', { data: orderData, error: orderError });
+      
+      if (!orderError && orderData) {
+        // Transform data to match component format
+        const transformedOrders = orderData.map(notification => ({
+          id: notification.id,
+          type: notification.title,
+          description: notification.message,
+          time: NotificationService.formatNotificationTime(notification.created_at),
+          products: (notification.product_images || []).map((img, idx) => ({
+            id: idx,
+            image: img,
+            alt: `Product ${idx + 1}`
+          })),
+          orderId: notification.order_id,
+          orderNumber: notification.order_number,
+          isRead: notification.is_read,
+          actionType: notification.action_type,
+          actionData: notification.action_data
+        }));
+        setNotificationsState(transformedOrders);
+      }
+
+      // Fetch promotions
+      const { data: promoData, error: promoError } = await NotificationService.getUserNotifications('promotion', null, 50);
+      console.log('Promotion notifications fetched:', { data: promoData, error: promoError });
+      
+      if (!promoError && promoData) {
+        // Transform data to match component format
+        const transformedPromos = promoData.map(notification => ({
+          id: notification.id,
+          type: notification.title,
+          description: notification.message,
+          time: NotificationService.formatNotificationTime(notification.created_at),
+          isRead: notification.is_read,
+          actionType: notification.action_type,
+          actionData: notification.action_data,
+          voucherId: notification.voucher_id,
+          discountId: notification.discount_id
+        }));
+        console.log('Transformed promotions:', transformedPromos);
+        setPromotionsState(transformedPromos);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handle notification click - mark as read and navigate
-  const handleNotificationClick = (notification) => {
-    // Mark this notification as read
+  const handleNotificationClick = async (notification) => {
+    // Mark as read in database
+    await NotificationService.markAsRead(notification.id);
+    
+    // Update local state
     setNotificationsState(prevNotifications => 
       prevNotifications.map(n => 
         n.id === notification.id 
@@ -135,14 +97,21 @@ const Notification = () => {
       )
     );
     
-    // Navigate to tracking page
-    if (notification.orderId) {
+    // Force refresh notification count in navbar
+    window.dispatchEvent(new CustomEvent('notificationRead'));
+    
+    // Navigate based on action type
+    if (notification.actionType === 'view_order' && notification.orderId) {
       navigate(`/purchases/tracking/${notification.orderId}`);
     }
   };
   
   // Handle promotion click
-  const handlePromotionClick = (promotion) => {
+  const handlePromotionClick = async (promotion) => {
+    // Mark as read in database
+    await NotificationService.markAsRead(promotion.id);
+    
+    // Update local state
     setPromotionsState(prevPromotions => 
       prevPromotions.map(p => 
         p.id === promotion.id 
@@ -150,18 +119,37 @@ const Notification = () => {
           : p
       )
     );
+
+    // Force refresh notification count in navbar
+    window.dispatchEvent(new CustomEvent('notificationRead'));
+
+    // Handle action if exists
+    if (promotion.actionType === 'view_products' && promotion.actionData?.category) {
+      navigate(`/products?category=${promotion.actionData.category}`);
+    }
   };
   
   // Mark all as read
-  const handleMarkAllAsRead = () => {
-    if (activeTab === "Order Updates") {
-      setNotificationsState(prevNotifications => 
-        prevNotifications.map(n => ({ ...n, isRead: true }))
-      );
-    } else {
-      setPromotionsState(prevPromotions => 
-        prevPromotions.map(p => ({ ...p, isRead: true }))
-      );
+  const handleMarkAllAsRead = async () => {
+    const category = activeTab === "Order Updates" ? "order_update" : "promotion";
+    
+    // Mark all as read in database
+    const { count } = await NotificationService.markAllAsRead(category);
+    
+    if (count > 0) {
+      // Update local state
+      if (activeTab === "Order Updates") {
+        setNotificationsState(prevNotifications => 
+          prevNotifications.map(n => ({ ...n, isRead: true }))
+        );
+      } else {
+        setPromotionsState(prevPromotions => 
+          prevPromotions.map(p => ({ ...p, isRead: true }))
+        );
+      }
+      
+      // Force refresh notification count in navbar
+      window.dispatchEvent(new CustomEvent('notificationRead'));
     }
   };
 
@@ -198,27 +186,36 @@ const Notification = () => {
           <button
             onClick={handleMarkAllAsRead}
             className="ml-auto text-sm text-gray-600 hover:text-green-600"
+            disabled={loading}
           >
             Mark all as Read
           </button>
         </div>
 
-        {/* Notifications Content */}
-        <div className="bg-white rounded-lg shadow">
-          {activeTab === "Order Updates" && (
-            <OrderUpdates 
-              notifications={notificationsState}
-              onNotificationClick={handleNotificationClick}
-            />
-          )}
+        {/* Loading state */}
+        {loading ? (
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading notifications...</p>
+          </div>
+        ) : (
+          /* Notifications Content */
+          <div className="bg-white rounded-lg shadow">
+            {activeTab === "Order Updates" && (
+              <OrderUpdates 
+                notifications={notificationsState}
+                onNotificationClick={handleNotificationClick}
+              />
+            )}
 
-          {activeTab === "Promotions" && (
-            <Promotions 
-              promotions={promotionsState}
-              onPromotionClick={handlePromotionClick}
-            />
-          )}
-        </div>
+            {activeTab === "Promotions" && (
+              <Promotions 
+                promotions={promotionsState}
+                onPromotionClick={handlePromotionClick}
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

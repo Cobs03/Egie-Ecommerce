@@ -2,10 +2,26 @@ import React from "react";
 import { FaPlus } from "react-icons/fa";
 
 const ComparisonTable = ({ products, onRemoveProduct, onAddProduct }) => {
-  // Keep all existing detection and spec mapping functions
+  // Detect category based on product data
   const getComponentType = (product) => {
     if (!product) return "unknown";
     
+    // Use category from product if available
+    if (product.category) {
+      const category = product.category.toLowerCase();
+      
+      // Map category names to types
+      if (category.includes("processor") || category.includes("cpu")) return "cpu";
+      if (category.includes("graphics") || category.includes("gpu") || category.includes("video card")) return "gpu";
+      if (category.includes("memory") || category.includes("ram")) return "ram";
+      if (category.includes("motherboard")) return "motherboard";
+      if (category.includes("storage") || category.includes("ssd") || category.includes("hdd")) return "storage";
+      if (category.includes("power") || category.includes("psu")) return "psu";
+      if (category.includes("case") || category.includes("chassis")) return "case";
+      if (category.includes("cooling") || category.includes("cooler")) return "cooling";
+    }
+    
+    // Fallback to name-based detection
     const name = (product.productName || product.name || "").toLowerCase();
     
     if (name.includes("cpu") || name.includes("processor") || name.includes("ryzen") || name.includes("intel") || name.includes("core i")) {
@@ -176,12 +192,108 @@ const ComparisonTable = ({ products, onRemoveProduct, onAddProduct }) => {
   };
   
   const getPropertyValue = (product, spec) => {
-    if (product[spec.property] !== undefined) {
+    // Try direct property first
+    if (product[spec.property] !== undefined && product[spec.property] !== null) {
       return spec.format ? spec.format(product[spec.property]) : product[spec.property];
-    } else if (spec.fallback && product[spec.fallback] !== undefined) {
+    }
+    
+    // Try fallback property
+    if (spec.fallback && product[spec.fallback] !== undefined && product[spec.fallback] !== null) {
       return spec.format ? spec.format(product[spec.fallback]) : product[spec.fallback];
     }
+    
+    // Try nested specifications object (for Supabase data)
+    if (product.specifications && product.specifications[spec.property] !== undefined && product.specifications[spec.property] !== null) {
+      const value = product.specifications[spec.property];
+      
+      // If it's an object, extract the actual values we want to display
+      if (typeof value === 'object' && value !== null) {
+        // Look for common specification fields
+        const specFields = ['specifications', 'name', 'model', 'value'];
+        for (const field of specFields) {
+          if (value[field]) {
+            return spec.format ? spec.format(value[field]) : value[field];
+          }
+        }
+        // If no specific field found, try to format the object nicely
+        return Object.entries(value)
+          .filter(([key, val]) => val && val !== '')
+          .map(([key, val]) => `${key}: ${val}`)
+          .join(', ') || "N/A";
+      }
+      
+      return spec.format ? spec.format(value) : value;
+    }
+    
     return "N/A";
+  };
+
+  // Helper function to extract and format specifications like in product details
+  const extractSpecifications = (product) => {
+    const specs = [];
+    
+    if (product.specifications && typeof product.specifications === 'object') {
+      // Iterate through each component in specifications (matching product details logic)
+      Object.entries(product.specifications).forEach(([componentId, specData]) => {
+        if (typeof specData === 'object' && specData !== null) {
+          // Extract each field from the specification object
+          Object.entries(specData)
+            .filter(([field, value]) => value && value !== '' && field.toLowerCase() !== 'brand') // Skip brand field
+            .forEach(([field, value]) => {
+              // Format field name (convert camelCase to readable format)
+              const formattedField = field
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/^./, str => str.toUpperCase())
+                .trim();
+              
+              const valueStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
+              
+              specs.push({
+                label: formattedField,
+                value: valueStr,
+                isMultiLine: field === 'specifications' // Special handling for specifications field
+              });
+            });
+        }
+      });
+    }
+    
+    return specs;
+  };
+
+  // Helper function to render a single specification value
+  const renderSpecificationValue = (specItem) => {
+    if (specItem.isMultiLine) {
+      // Handle multi-line specifications (like in product details)
+      const lines = specItem.value.split('\n');
+      return (
+        <span className="whitespace-pre-wrap inline">
+          {lines.map((line, lineIndex) => {
+            const colonIndex = line.indexOf(':');
+            if (colonIndex > 0 && colonIndex < line.length - 1) {
+              const label = line.substring(0, colonIndex);
+              const value = line.substring(colonIndex + 1);
+              return (
+                <span key={lineIndex}>
+                  {lineIndex > 0 && <br />}
+                  <span className="font-semibold">{label}:</span>
+                  <span>{value}</span>
+                </span>
+              );
+            }
+            return line ? (
+              <span key={lineIndex}>
+                {lineIndex > 0 && <br />}
+                {line}
+              </span>
+            ) : null;
+          })}
+        </span>
+      );
+    }
+    
+    // Regular single-line value
+    return specItem.value;
   };
   
   const getStyleClass = (product, spec) => {
@@ -190,9 +302,68 @@ const ComparisonTable = ({ products, onRemoveProduct, onAddProduct }) => {
     }
     return "";
   };
+
+  // Generate dynamic specifications from all products' JSON specifications
+  const getDynamicSpecifications = () => {
+    // Collect all unique specification keys from all products
+    const allSpecKeys = new Set();
+    
+    products.forEach(product => {
+      if (product.specifications && typeof product.specifications === 'object') {
+        Object.keys(product.specifications).forEach(key => allSpecKeys.add(key));
+      }
+      // Also check top-level properties that might be specifications
+      Object.keys(product).forEach(key => {
+        if (!['id', 'productName', 'name', 'imageUrl', 'image', 'images', 'category', 'categoryId', 'specifications'].includes(key)) {
+          allSpecKeys.add(key);
+        }
+      });
+    });
+
+    // Create specification definitions
+    const dynamicSpecs = [
+      { label: "Brand", property: "brand" },
+      { label: "Price", property: "price", format: (value) => `₱${Number(value).toLocaleString()}` },
+    ];
+
+    // Add all collected specifications
+    allSpecKeys.forEach(key => {
+      // Skip keys that are already added
+      if (['brand', 'price', 'inStock'].includes(key)) return;
+      
+      // Format the label (convert camelCase to Title Case)
+      const label = key
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/_/g, ' ')
+        .replace(/^./, str => str.toUpperCase())
+        .trim();
+      
+      dynamicSpecs.push({
+        label,
+        property: key,
+        format: (value) => {
+          if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+          if (typeof value === 'number') return value.toLocaleString();
+          if (typeof value === 'object') return JSON.stringify(value);
+          return value;
+        }
+      });
+    });
+
+    // Add availability at the end
+    dynamicSpecs.push({
+      label: "Availability",
+      property: "inStock",
+      format: (value) => value ? "In Stock" : "Out of Stock",
+      styleClass: (value) => value ? "text-green-600" : "text-red-600"
+    });
+
+    return dynamicSpecs;
+  };
   
   const componentType = getComponentType(products[0]);
-  const specs = getSpecifications(componentType);
+  // Use dynamic specifications from JSON instead of hardcoded specs
+  const specs = getDynamicSpecifications();
   
   // Define product colors - 3 shades of green
   const productColors = [
@@ -315,65 +486,102 @@ const ComparisonTable = ({ products, onRemoveProduct, onAddProduct }) => {
 
       {/* Specifications - Desktop View */}
       <div className="hidden md:block">
-        {specs.map((spec, index) => (
-          <div key={index} className="mb-4">
-            <div className="text-left mb-2 text-gray-700">
-              {spec.label}
-            </div>
-            <div className="flex justify-between">
-              {products.map((product, productIndex) => (
-                <React.Fragment key={`${product.id}-${spec.property}`}>
-                  {/* Spec Value Card */}
-                  <div className={`rounded-lg shadow p-4 flex-1 text-center border-t-2 ${getProductColorClass(productIndex)}`}>
-                    <div className={getStyleClass(product, spec)}>
-                      {getPropertyValue(product, spec)}
+        <div className="flex justify-between gap-4">
+          {products.map((product, productIndex) => (
+            <div key={`specs-${product.id}`} className="flex-1">
+              {/* Combined Specifications Box */}
+              <div className={`rounded-xl shadow-md p-5 border-t-4 ${getProductColorClass(productIndex)}`}>
+                {/* Brand & Price Section */}
+                <div className="mb-4 pb-4 border-b border-gray-200">
+                  <div className="mb-3">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Brand</div>
+                    <div className="text-lg font-semibold text-gray-800">{product.brand}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Price</div>
+                    <div className="text-2xl font-bold text-green-600">₱{Number(product.price).toLocaleString()}</div>
+                  </div>
+                </div>
+
+                {/* Specifications Section */}
+                <div className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+                  Specifications
+                </div>
+                <div className="space-y-2">
+                  {extractSpecifications(product).map((specItem, specIndex) => (
+                    <div key={`${product.id}-${specIndex}`} className="text-sm">
+                      <span className="font-semibold text-gray-700">{specItem.label}:</span>{" "}
+                      <span className="text-gray-600">{renderSpecificationValue(specItem)}</span>
                     </div>
-                  </div>
-                  
-                  {/* Spacing between cards */}
-                  {productIndex < products.length - 1 && <div className="w-4"></div>}
-                </React.Fragment>
-              ))}
-              
-              {/* Add empty spec slots for the "Add Product" position */}
-              {products.length < 3 && (
-                <>
-                  <div className="w-4"></div>
-                  <div className="bg-white rounded-lg shadow p-4 flex-1 text-center opacity-50">
-                    <div className="text-gray-400">—</div>
-                  </div>
-                </>
-              )}
+                  ))}
+                  {extractSpecifications(product).length === 0 && (
+                    <div className="text-sm text-gray-400 italic text-center py-4">
+                      No specifications available
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+          
+          {/* Add Product Placeholder */}
+          {products.length < 3 && (
+            <div className="flex-1">
+              <div className="bg-white rounded-xl shadow-md p-5 mb-4 border-2 border-dashed border-gray-300 opacity-50 h-32 flex items-center justify-center">
+                <div className="text-gray-400 text-center">
+                  <FaPlus className="mx-auto mb-2 text-2xl" />
+                  <div className="text-sm">Add Product</div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl shadow-md p-5 border-2 border-dashed border-gray-300 opacity-50 min-h-[200px]"></div>
+            </div>
+          )}
+        </div>
       </div>
       
       {/* Mobile Specifications - Stacked View */}
-      <div className="md:hidden">
+      <div className="md:hidden space-y-6">
         {products.map((product, productIndex) => (
           <div 
             key={`mobile-product-${product.id}`}
-            className={`mb-6 rounded-lg overflow-hidden border-2 ${getProductColorClass(productIndex)}`}
+            className="space-y-4"
           >
-            {/* Product title bar */}
-            <div className={`${getProductColorClass(productIndex)} p-2 font-medium text-center text-sm border-b`}>
+            {/* Product Title Bar */}
+            <div className={`rounded-xl p-3 text-center font-semibold shadow-md border-t-4 ${getProductColorClass(productIndex)}`}>
               {product.productName || product.name}
             </div>
-            
-            {/* Product specs */}
-            <div className="bg-white">
-              {specs.map((spec, specIndex) => (
-                <div 
-                  key={`mobile-spec-${product.id}-${spec.property}`}
-                  className="p-3 flex justify-between border-b last:border-b-0"
-                >
-                  <div className="text-xs text-gray-600">{spec.label}</div>
-                  <div className={`text-sm font-medium ${getStyleClass(product, spec)}`}>
-                    {getPropertyValue(product, spec)}
-                  </div>
+
+            {/* Combined Specifications Box */}
+            <div className={`rounded-xl shadow-md p-5 border-t-4 ${getProductColorClass(productIndex)}`}>
+              {/* Brand & Price Section */}
+              <div className="mb-4 pb-4 border-b border-gray-200">
+                <div className="mb-3">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Brand</div>
+                  <div className="text-lg font-semibold text-gray-800">{product.brand}</div>
                 </div>
-              ))}
+                <div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Price</div>
+                  <div className="text-2xl font-bold text-green-600">₱{Number(product.price).toLocaleString()}</div>
+                </div>
+              </div>
+
+              {/* Specifications Section */}
+              <div className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+                Specifications
+              </div>
+              <div className="space-y-2">
+                {extractSpecifications(product).map((specItem, specIndex) => (
+                  <div key={`mobile-spec-${product.id}-${specIndex}`} className="text-sm">
+                    <span className="font-semibold text-gray-700">{specItem.label}:</span>{" "}
+                    <span className="text-gray-600">{renderSpecificationValue(specItem)}</span>
+                  </div>
+                ))}
+                {extractSpecifications(product).length === 0 && (
+                  <div className="text-sm text-gray-400 italic text-center py-4">
+                    No specifications available
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -383,10 +591,10 @@ const ComparisonTable = ({ products, onRemoveProduct, onAddProduct }) => {
           <div className="text-center mt-6">
             <button
               onClick={onAddProduct}
-              className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md inline-flex items-center"
+              className="bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-6 rounded-xl inline-flex items-center shadow-md transition-colors"
             >
               <FaPlus className="mr-2" />
-              Add Product
+              Add Product to Compare
             </button>
           </div>
         )}

@@ -25,6 +25,7 @@ const OrderCard = ({
   cancelReason,
   id,
   products,
+  rawData,
 }) => {
   const navigate = useNavigate();
   const { updateOrderStatus } = useOrders();
@@ -59,7 +60,7 @@ const OrderCard = ({
         setIsCancelOpen(true);
         break;
       case "Order Received":
-        updateOrderStatus(id, "Completed");
+        onStatusChange("Completed");
         break;
       default:
         break;
@@ -69,12 +70,20 @@ const OrderCard = ({
   return (
     <div className="border-b p-4 md:p-6 bg-white rounded-lg shadow-sm">
       {/* Header */}
-      <div className="flex justify-between text-xs text-green-600 font-semibold mb-2">
-        <div className="flex items-center gap-2 text-xs text-green-600 font-semibold">
+      <div className="flex justify-between text-xs font-semibold mb-2">
+        <div className={`flex items-center gap-2 text-xs font-semibold ${
+          status === "CANCELLED" || status === "Cancelled" 
+            ? "text-red-600" 
+            : "text-green-600"
+        }`}>
           <div>{status.toUpperCase()}</div>
 
           {/* Divider */}
-          <div className="w-px h-3 bg-green-600" />
+          <div className={`w-px h-3 ${
+            status === "CANCELLED" || status === "Cancelled" 
+              ? "bg-red-600" 
+              : "bg-green-600"
+          }`} />
 
           <div>{subStatus}</div>
         </div>
@@ -95,14 +104,11 @@ const OrderCard = ({
           className="flex justify-between items-center gap-3 flex-1 mb-2"
         >
           <div className="flex items-center gap-3">
-            <div className="w-15 h-15 bg-gray-200 rounded overflow-hidden">
-              {/* <img src={product.image} alt="Product" /> */}
+            <div className="w-20 h-20 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+              <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
             </div>
             <div className="flex flex-col text-sm text-gray-700">
               <span className="font-semibold">{product.title}</span>
-              <span className="text-xs text-gray-400">
-                Product details here
-              </span>
             </div>
             <div className="text-xs">x{product.quantity}</div>
           </div>
@@ -115,7 +121,7 @@ const OrderCard = ({
 
       <hr className="my-4 border-t border-black" />
 
-      {/* Total */}
+      {/* Total with Voucher Info */}
       <div className="flex justify-between items-center text-sm mb-3">
         {status === "Cancelled" && cancelReason ? (
           <p className="text-xs text-gray-500 text-right">
@@ -126,11 +132,22 @@ const OrderCard = ({
         ) : (
           <div></div>
         )}
-        <div className="ml-auto">
-          <span className="mr-2">Order Total:</span>
-          <span className="text-green-600 font-semibold">
-            ₱{orderTotal.toLocaleString()}
-          </span>
+        
+        <div className="ml-auto flex flex-col items-end gap-1">
+          {/* Show voucher savings if applicable */}
+          {rawData?.voucher_discount > 0 && (
+            <div className="text-xs text-green-600">
+              Voucher Savings: -₱{rawData.voucher_discount.toLocaleString()}
+              {rawData?.voucher_code && ` (${rawData.voucher_code})`}
+            </div>
+          )}
+          
+          <div>
+            <span className="mr-2">Order Total:</span>
+            <span className="text-green-600 font-semibold">
+              ₱{orderTotal.toLocaleString()}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -151,8 +168,8 @@ const OrderCard = ({
       </div>
 
       {/* Cancel Order Dialog */}
-      <Dialog open={isCancelOpen} onOpenChange={setIsCancelOpen} className="">
-        <DialogContent className="sm:max-w-[500px] mt-10">
+      <Dialog open={isCancelOpen} onOpenChange={setIsCancelOpen}>
+        <DialogContent className="sm:max-w-[500px] bg-white">
           <DialogHeader>
             <DialogTitle>Select Cancellation Reason</DialogTitle>
           </DialogHeader>

@@ -9,45 +9,79 @@ import CompComponents from "./DetailsComponents/CompComponents";
 import Warranty from "./DetailsComponents/Warranty";
 import Bundles from "./DetailsComponents/Bundles";
 
-// Import the placeholder data
-import { getItemById } from "../../../../data/placeholderData";
+// Import Supabase service
+import { ProductService } from "../../../../services/ProductService";
 
 const ProductDetails = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const type = queryParams.get("type") || "product"; 
-  const id = queryParams.get("id") || "product-1"; // Default to first product if no ID
+  const id = queryParams.get("id"); // Get product ID from URL
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Simulate API fetch with a small delay
-    setLoading(true);
-    setTimeout(() => {
-      const fetchedProduct = getItemById(id);
-      setProduct(fetchedProduct);
-      setLoading(false);
-    }, 300);
+    const fetchProduct = async () => {
+      if (!id) {
+        setError("No product ID provided");
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Fetch product from database
+        const result = await ProductService.getProductById(id);
+        
+        if (result.success && result.data) {
+          setProduct(result.data);
+        } else {
+          setError(result.error || "Product not found");
+        }
+      } catch (err) {
+        console.error("Error fetching product:", err);
+        setError(err.message || "Failed to load product");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
   }, [id]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+          <div className="text-xl text-gray-600">Loading product details...</div>
+        </div>
       </div>
     );
   }
 
-  if (!product) {
+  if (error || !product) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Product not found</div>
+        <div className="text-center p-8">
+          <div className="text-2xl font-bold text-red-500 mb-2">Product not found</div>
+          <p className="text-gray-600 mb-4">{error || "The product you're looking for doesn't exist."}</p>
+          <a 
+            href="/products" 
+            className="inline-block bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 transition"
+          >
+            Back to Products
+          </a>
+        </div>
       </div>
     );
   }
 
-  const isBundle = id.startsWith('bundle-');
+  const isBundle = type === 'bundle';
 
   return (
     <div className="mt-10">

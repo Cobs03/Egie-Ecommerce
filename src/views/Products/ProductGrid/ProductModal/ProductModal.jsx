@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
@@ -17,21 +17,27 @@ import { AiFillInstagram } from "react-icons/ai";
 import { FaXTwitter } from "react-icons/fa6";
 
 import { toast } from "sonner";
+import { useCart } from "../../../../context/CartContext";
 
 const ProductModal = ({ product, onClose }) => {
-  const [currentImage, setCurrentImage] = useState(0);
-  const [selectedVariation, setSelectedVariation] = useState("83A10024US");
-  const images = [
-    "image1.jpg",
-    "image2.jpg",
-    "image3.jpg",
-    "image4.jpg",
-    "image5.jpg",
-    "image6.jpg",
-    "image7.jpg",
+  const { addToCart, user } = useCart();
+  const navigate = useNavigate();
+  
+  // Parse product images from database
+  const productImages = product?.images || [];
+  const images = productImages.length > 0 ? productImages : [
+    product?.imageUrl || "https://images.unsplash.com/photo-1591370874773-6702e8f12fd8?auto=format&fit=crop&w=800&q=80"
   ];
 
-  const variations = ["83A10024US", "83A1002MMX", "83A1A021KR", "83A1A019PH"];
+  // Parse variants from database
+  const productVariants = product?.variants || [];
+  const variations = productVariants.map(v => v.sku || v.name).filter(Boolean);
+  
+  const [currentImage, setCurrentImage] = useState(0);
+  const [selectedVariation, setSelectedVariation] = useState(
+    variations.length > 0 ? variations[0] : null
+  );
+  const [addingToCart, setAddingToCart] = useState(false);
 
   const [nav1, setNav1] = useState(null);
   const [nav2, setNav2] = useState(null);
@@ -61,23 +67,35 @@ const ProductModal = ({ product, onClose }) => {
     </div>
   );
 
+  // Get current variant details
+  const currentVariant = productVariants.find(v => 
+    (v.sku || v.name) === selectedVariation
+  ) || productVariants[0];
+
+  // Calculate stock and pricing
+  const stock = currentVariant?.stock || product?.stock_quantity || product?.stock || 0;
+  const price = currentVariant?.price || product?.price || 0;
+  const oldPrice = currentVariant?.comparePrice || product?.metadata?.officialPrice || product?.oldPrice || price;
+  
+  // Calculate price range if multiple variants
+  const priceRange = productVariants.length > 1 ? {
+    min: Math.min(...productVariants.map(v => v.price || 0)),
+    max: Math.max(...productVariants.map(v => v.price || 0))
+  } : null;
+
+  // Stock status
+  const getStockStatus = () => {
+    if (stock === 0) return { text: "Out of Stock", color: "text-red-500" };
+    if (stock <= 10) return { text: "Low Stock", color: "text-orange-500" };
+    return { text: "In Stock", color: "text-green-500" };
+  };
+  const stockStatus = getStockStatus();
+
   // Helper function to get stock status color
-  const getStockStatusColor = (stockStatus) => {
-    switch (stockStatus) {
-      case "In Stock":
-        return "text-green-500";
-      case "Low Stock":
-        return "text-orange-500";
-      case "Out of Stock":
-        return "text-red-500";
-      default:
-        return "text-gray-500";
-    }
+  const getStockStatusColor = (status) => {
+    return status.color;
   };
 
-  // Use product stock data if available, otherwise fallback to default
-  const stock = product?.stock || 1404;
-  const stockStatus = product?.stockStatus || "In Stock";
   const [quantity, setQuantity] = useState(1);
 
   return (
@@ -149,11 +167,11 @@ const ProductModal = ({ product, onClose }) => {
               >
                 {images.map((image, index) => (
                   <div key={index} className="px-1">
-                    <div className="bg-white rounded-lg p-2 h-20 flex items-center justify-center cursor-pointer hover:opacity-80 transition">
+                    <div className="bg-white rounded-lg p-2 h-20 cursor-pointer hover:opacity-80 transition flex items-center justify-center">
                       <img
                         src={image}
                         alt={`Thumbnail ${index + 1}`}
-                        className="object-contain max-h-full max-w-full"
+                        className="object-contain h-full w-full"
                       />
                     </div>
                   </div>
@@ -164,58 +182,76 @@ const ProductModal = ({ product, onClose }) => {
 
           {/* Product Details */}
           <div className="w-full lg:w-1/2 bg-black p-4 rounded-lg">
-            <h1 className="text-xl font-semibold mb-2 text-white">
-              HP IRU 15.6" FHD Intel Core i5- 1335U/8GB DDR4/512GB M.2 SSD
-              Laptop MN
+            <h1 className="text-2xl font-normal mb-2 text-white" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              {product?.name || product?.title || "Product Name"}
             </h1>
 
-            <div className="flex justify-between text-sm text-gray-400 mb-4">
+            <div className="flex justify-between text-sm text-gray-400 mb-4" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               <div>
                 <span>No Ratings Yet</span> · <span>0 Sold</span>
               </div>
             </div>
 
-            <div className="text-3xl font-bold text-green-500 mb-4">
-              ₱29,495.00 - ₱39,920.00
+            <div className="text-3xl font-normal text-green-500 mb-2" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              {priceRange && priceRange.min !== priceRange.max ? (
+                `₱${priceRange.min.toLocaleString()} - ₱${priceRange.max.toLocaleString()}`
+              ) : (
+                `₱${price.toLocaleString()}`
+              )}
             </div>
 
-            <div className="mb-4">
-              <span className="text-green-500 font-semibold">
-                Available: In Stock
+            {oldPrice > price && (
+              <div className="text-base text-gray-500 line-through mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                ₱{oldPrice.toLocaleString()}
+              </div>
+            )}
+
+            <div className="mb-4" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              <span className={`${stockStatus.color} font-normal text-base`}>
+                Available: {stockStatus.text}
               </span>
+              {stock > 0 && stock <= 10 && (
+                <span className="text-orange-500 text-sm ml-2">
+                  (Only {stock} left!)
+                </span>
+              )}
             </div>
 
             {/* Variations */}
-            <div className="mb-6">
-              <label className="block font-medium mb-3 text-white">
-                Variation
-              </label>
-              <div className="flex gap-2 flex-wrap">
-                {variations.map((variation) => (
-                  <button
-                    key={variation}
-                    onClick={() => setSelectedVariation(variation)}
-                    className={`border px-4 py-2 rounded text-sm transition cursor-pointer ${
-                      selectedVariation === variation
-                        ? "border-green-500 bg-green-500 text-white"
-                        : "border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
-                    }`}
-                  >
-                    {variation}
-                  </button>
-                ))}
+            {variations.length > 0 && (
+              <div className="mb-4">
+                <label className="block font-normal mb-2 text-white text-base" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  Variation
+                </label>
+                <div className="flex gap-3 flex-wrap">
+                  {variations.map((variation) => (
+                    <button
+                      key={variation}
+                      onClick={() => setSelectedVariation(variation)}
+                      className={`border px-4 py-2.5 rounded text-sm transition cursor-pointer font-normal ${
+                        selectedVariation === variation
+                          ? "border-green-500 bg-green-500 text-white"
+                          : "border-gray-600 text-gray-300 hover:border-green-500 hover:text-green-500"
+                      }`}
+                      style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                    >
+                      {variation}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Quantity */}
-            <div className="mb-6">
-              <label className="block font-medium mb-3 text-white">
+            <div className="mb-4">
+              <label className="block font-normal mb-2 text-white text-base" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 Quantity
               </label>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setQuantity((prev) => Math.max(prev - 1, 1))}
-                  className="px-3 py-2 border border-green-500 rounded text-green-500 hover:bg-green-500 hover:text-white transition cursor-pointer"
+                  className="px-4 py-2 border border-gray-600 rounded text-gray-300 hover:border-green-500 hover:text-green-500 transition cursor-pointer font-normal"
+                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                   disabled={stock === 0}
                 >
                   −
@@ -224,18 +260,20 @@ const ProductModal = ({ product, onClose }) => {
                   type="text"
                   readOnly
                   value={quantity}
-                  className="w-16 text-center border border-green-500 rounded py-2 bg-transparent text-white"
+                  className="w-20 text-center border border-gray-600 rounded py-2 bg-black text-white font-normal"
+                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                 />
                 <button
                   onClick={() =>
                     setQuantity((prev) => Math.min(prev + 1, stock))
                   }
-                  className="px-3 py-2 border border-green-500 rounded text-green-500 hover:bg-green-500 hover:text-white transition cursor-pointer"
+                  className="px-4 py-2 border border-gray-600 rounded text-gray-300 hover:border-green-500 hover:text-green-500 transition cursor-pointer font-normal"
+                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                   disabled={stock === 0}
                 >
                   +
                 </button>
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-gray-400 font-normal" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                   {stock} pieces available
                 </span>
               </div>
@@ -244,7 +282,8 @@ const ProductModal = ({ product, onClose }) => {
             {/* View More Details */}
             <Link
               to={`/products/details?type=product&id=${product?.id || ''}`}
-              className="block text-blue-400 hover:underline mb-6 text-sm cursor-pointer text-center"
+              className="block text-blue-400 hover:underline mb-4 text-sm cursor-pointer text-center font-normal"
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               VIEW MORE DETAILS
             </Link>
@@ -252,14 +291,39 @@ const ProductModal = ({ product, onClose }) => {
             {/* Action Buttons */}
             <div className="flex gap-3">
               <button
-                onClick={() => {
-                  toast.success("Added to cart!", {
-                    description: "Your product has been successfully added.",
+                onClick={async () => {
+                  if (!user) {
+                    toast.error('Please login to add items to cart');
+                    return;
+                  }
+
+                  if (variations.length > 0 && !selectedVariation) {
+                    toast.error('Please select a variant');
+                    return;
+                  }
+
+                  setAddingToCart(true);
+                  await addToCart({
+                    product_id: product.id,
+                    product_name: product.title,
+                    variant_name: selectedVariation,
+                    price: price,
+                    quantity: quantity
                   });
+                  setAddingToCart(false);
                 }}
-                className="flex-1 bg-green-500 text-white font-medium py-3 rounded hover:bg-green-600 transition text-center cursor-pointer"
+                disabled={addingToCart}
+                className="flex-1 bg-green-500 text-white font-normal py-3 rounded hover:bg-green-600 transition text-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
-                Add To Cart
+                {addingToCart ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                    Adding...
+                  </>
+                ) : (
+                  'Add To Cart'
+                )}
               </button>
 
               <button
@@ -268,17 +332,42 @@ const ProductModal = ({ product, onClose }) => {
                     description: "Product added to comparison list.",
                   });
                 }}
-                className="flex-1 bg-blue-500 text-white font-medium py-3 rounded hover:bg-blue-600 transition text-center cursor-pointer"
+                className="flex-1 bg-gray-600 text-white font-normal py-3 rounded hover:bg-gray-700 transition text-center cursor-pointer"
+                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 Compare
               </button>
 
-              <Link
-                to="/cart"
-                className="flex-1 bg-green-500 text-white font-medium py-3 rounded hover:bg-green-600 transition text-center cursor-pointer"
+              <button
+                onClick={async () => {
+                  if (!user) {
+                    toast.error('Please login to purchase');
+                    return;
+                  }
+
+                  if (variations.length > 0 && !selectedVariation) {
+                    toast.error('Please select a variant');
+                    return;
+                  }
+
+                  setAddingToCart(true);
+                  await addToCart({
+                    product_id: product.id,
+                    product_name: product.title,
+                    variant_name: selectedVariation,
+                    price: price,
+                    quantity: quantity
+                  });
+                  setAddingToCart(false);
+                  onClose();
+                  navigate('/checkout');
+                }}
+                disabled={addingToCart}
+                className="flex-1 bg-blue-500 text-white font-normal py-3 rounded hover:bg-blue-600 transition text-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
-                Buy Now
-              </Link>
+                Buy
+              </button>
             </div>
           </div>
         </div>

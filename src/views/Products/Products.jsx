@@ -122,7 +122,11 @@ const Products = () => {
                 </svg>
               </button>
             </div>
-            <SearchFill filters={filters} onChange={handleFilterChange} />
+            <SearchFill 
+              filters={filters} 
+              onChange={handleFilterChange} 
+              selectedCategory={selectedCategory}
+            />
           </div>
         </div>
 

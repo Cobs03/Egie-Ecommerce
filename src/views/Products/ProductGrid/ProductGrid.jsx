@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import ProductModal from "./ProductModal/ProductModal";
-
-import { components } from "../../Data/components";
+import { useProducts } from "../../../hooks/useProducts";
+import { useCart } from "../../../context/CartContext";
+import { toast } from "sonner";
+import { ShoppingCart } from "lucide-react";
+import ReviewService from "../../../services/ReviewService";
+import StarRating from "../../../components/StarRating";
 
 import {
   Pagination,
@@ -17,6 +21,80 @@ import { Badge } from "@/components/ui/badge";
 
 const ProductGrid = ({ selectedCategory, filters }) => {
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [addingToCart, setAddingToCart] = useState(null);
+  const [productRatings, setProductRatings] = useState({});
+  
+  const { addToCart, user } = useCart();
+
+  // Handle Add to Cart from grid
+  const handleAddToCart = async (e, product) => {
+    e.stopPropagation(); // Prevent opening the modal
+    
+    // Check if user is logged in
+    if (!user) {
+      toast.error('Please login to add items to cart');
+      return;
+    }
+
+    // Auto-select first variant if product has variants
+    let selectedVariant = null;
+    if (product.variants && product.variants.length > 0) {
+      // Get first variant's SKU or name
+      selectedVariant = product.variants[0].sku || product.variants[0].name || null;
+    }
+
+    // Add to cart with first variant (or null if no variants)
+    setAddingToCart(product.id);
+    await addToCart({
+      product_id: product.id,
+      product_name: product.title,
+      variant_name: selectedVariant,
+      price: product.price,
+      quantity: 1
+    });
+    setAddingToCart(null);
+  };
+
+  // Prepare filters for Supabase
+  const supabaseFilters = {
+    category: selectedCategory,
+    brands: filters.brands, // Pass brand IDs array
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    inStock: true // Only show products with stock
+  };
+
+  // Use Supabase hook for products
+  const { 
+    products, 
+    loading, 
+    error, 
+    setFilters 
+  } = useProducts(supabaseFilters);
+
+  // Update filters when they change
+  useEffect(() => {
+    setFilters(supabaseFilters);
+  }, [selectedCategory, filters.brands, filters.minPrice, filters.maxPrice, setFilters]);
+
+  // Load ratings for all products
+  useEffect(() => {
+    const loadRatings = async () => {
+      if (!products || products.length === 0) return;
+      
+      const ratings = {};
+      for (const product of products) {
+        const { data } = await ReviewService.getProductRatingSummary(product.id);
+        if (data) {
+          ratings[product.id] = data;
+        }
+      }
+      setProductRatings(ratings);
+    };
+    
+    loadRatings();
+  }, [products]);
 
   // Helper function to determine stock status based on quantity
   const getStockStatus = (stockQuantity) => {
@@ -39,73 +117,26 @@ const ProductGrid = ({ selectedCategory, filters }) => {
     }
   };
 
-  const products = components.flatMap((comp) =>
-    comp.products.map((p, index) => ({
-      ...p,
-      id: `${comp.type}-${index}`, // Unique ID
-      type: comp.type,
-      title: p.productName,
-      price: p.price,
-      oldPrice: Math.floor(p.price * 0.8), // 20% discount for demo
-      rating: p.ratings || Math.floor(Math.random() * 5) + 1,
-      reviews: Math.floor(Math.random() * 50) + 1,
-      newArrival: Math.random() < 0.3, // Example random flag
-      // Add stock information - you can replace this with actual data
-      stock: p.stock || Math.floor(Math.random() * 50), // Random stock for demo
-      stockStatus: getStockStatus(p.stock || Math.floor(Math.random() * 50)),
-    }))
-  );
+  // Use products from database (already filtered by Supabase)
+  const allProducts = products || [];
+  let filteredProducts = allProducts;
 
-  let filteredProducts = products;
-
-  if (selectedCategory) {
-    filteredProducts = filteredProducts.filter(
-      (p) => p.type === selectedCategory
-    );
-  }
-
-  if (filters.minPrice != null) {
-    filteredProducts = filteredProducts.filter(
-      (p) => p.price >= filters.minPrice
-    );
-  }
-
-  if (filters.maxPrice != null) {
-    filteredProducts = filteredProducts.filter(
-      (p) => p.price <= filters.maxPrice
-    );
-  }
-
-  if (filters.brands.length > 0) {
-    filteredProducts = filteredProducts.filter((p) =>
-      filters.brands.includes(p.brand)
-    );
-  }
-
+  // Apply additional client-side filters if needed (for filters not handled by Supabase)
   if (filters.rating != null) {
     filteredProducts = filteredProducts.filter(
       (p) => p.rating >= filters.rating
     );
   }
 
-  if (filters.discounts.length > 0) {
-    // Optional: apply based on a property like `discount` in your data
-  }
-
   const itemsPerPage = 20; // Match the 4x5 grid from the image
-  const [currentPage, setCurrentPage] = useState(1);
-
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const startIdx = (currentPage - 1) * itemsPerPage;
-  const paginatedItems = filteredProducts.slice(
-    startIdx,
-    startIdx + itemsPerPage
-  );
+  const paginatedItems = filteredProducts.slice(startIdx, startIdx + itemsPerPage);
 
   // 🟡 Reset page when filter changes (optional UX boost)
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory]);
+  }, [selectedCategory, products]);
 
   const getPagination = (total, current, delta = 1) => {
     const range = [];
@@ -121,9 +152,35 @@ const ProductGrid = ({ selectedCategory, filters }) => {
     return range;
   };
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex flex-col w-full">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error message if there's an error
+  if (error) {
+    return (
+      <div className="flex flex-col w-full">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-red-500 text-center">
+            <p>Error loading products: {error}</p>
+            <p className="text-sm text-gray-500 mt-2">Please try refreshing the page</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="flex flex-col w-full">
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {paginatedItems.map((product, index) => (
             <div
@@ -138,14 +195,36 @@ const ProductGrid = ({ selectedCategory, filters }) => {
                   className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-200"
                   draggable="false"
                 />
+                {/* Add to Cart Icon Button - Shows on hover */}
+                <button
+                  onClick={(e) => handleAddToCart(e, product)}
+                  disabled={addingToCart === product.id}
+                  className="absolute top-2 right-2 bg-green-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-green-600 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Add to Cart"
+                >
+                  {addingToCart === product.id ? (
+                    <div className="animate-spin h-[18px] w-[18px] border-2 border-white border-t-transparent rounded-full" />
+                  ) : (
+                    <ShoppingCart size={18} />
+                  )}
+                </button>
               </div>
               <div className="p-3">
                 <p className="text-sm font-medium text-gray-800 select-none line-clamp-2 mb-2">
                   {product.title}
                 </p>
-                <p className="text-xs text-gray-500 select-none mb-2">
-                  Reviews ({product.reviews})
-                </p>
+                {/* Real ratings from database */}
+                <div className="flex items-center gap-1 mb-2">
+                  <StarRating 
+                    rating={productRatings[product.id]?.average_rating || 0} 
+                    size={14} 
+                  />
+                  <span className="text-xs text-gray-500">
+                    {productRatings[product.id]?.total_reviews > 0 
+                      ? `(${productRatings[product.id].total_reviews})`
+                      : '(0)'}
+                  </span>
+                </div>
                 <div className="flex items-center gap-2 mb-2">
                   <p className="text-lg font-bold text-green-600 select-none">
                     ₱{product.price.toLocaleString()}
