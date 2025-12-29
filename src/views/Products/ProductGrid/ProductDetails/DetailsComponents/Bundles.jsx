@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../../../../lib/supabase";
 import BundleModal from "../../ProductModal/BundleModal";
+import { useScrollAnimation } from "../../../../../hooks/useScrollAnimation";
 
 const Bundles = () => {
+  const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 });
   const [bundles, setBundles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -53,32 +55,30 @@ const Bundles = () => {
     setSelectedProduct(bundle);
   };
 
-  // Don't render if no bundles or still loading
-  if (loading) {
-    return (
-      <div className="bg-white p-4 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Best Bundles</h2>
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (bundles.length === 0) {
+  // Don't render if no bundles
+  if (!loading && bundles.length === 0) {
     return null; // Hide section if no bundles
   }
 
   return (
-    <>
-      {/* Best Bundles Section */}
-      <div className="bg-white p-4 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Best Bundles</h2>
-        <div className="grid grid-cols-2 md:grid-cols-1 gap-6">
+    <div ref={ref} className={`transition-all duration-1000 ${
+      isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+    }`}>
+      {loading ? (
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Best Bundles</h2>
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Best Bundles</h2>
+          <div className="grid grid-cols-2 md:grid-cols-1 gap-6">
           {bundles.map((bundle, index) => (
             <div
               key={bundle.id || index}
-              className="bg-white rounded-lg shadow p-4 hover:shadow-md transition cursor-pointer"
+              className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-all cursor-pointer active:scale-95"
               onClick={() => handleBundleClick(bundle)}
             >
               <img
@@ -110,6 +110,7 @@ const Bundles = () => {
           ))}
         </div>
       </div>
+      )}
 
       {/* Bundle Modal */}
       {selectedProduct && (
@@ -118,7 +119,7 @@ const Bundles = () => {
           onClose={() => setSelectedProduct(null)}
         />
       )}
-    </>
+    </div>
   );
 };
 

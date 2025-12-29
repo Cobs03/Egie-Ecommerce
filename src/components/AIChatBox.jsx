@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { MessageCircle, X, Send, Bot, Camera, ChevronUp, ChevronDown, Maximize2, Minimize2, ShoppingCart, Mic, MicOff, Image as ImageIcon, Globe } from "lucide-react";
+import { MessageCircle, X, Send, Bot, Maximize2, Minimize2, ShoppingCart, Mic, MicOff, Image as ImageIcon, Globe } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
-import { useNavigate } from "react-router-dom";
-import PCBuildQuestionnaire from "../views/Question/Question";
+import { useNavigate, useLocation } from "react-router-dom";
 import AIService from "../services/AIService";
 import VisionService from "../services/VisionService";
 import CartService from "../services/CartService";
@@ -461,7 +460,7 @@ const formatCurrency = (value) => {
 
 const AIChatBox = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isMenuExpanded, setIsMenuExpanded] = useState(false);
+  const [isClosing, setIsClosing] = useState(false); // For exit animation
   const [isExpanded, setIsExpanded] = useState(false); // For fullscreen mode
   const [messages, setMessages] = useState([
     {
@@ -499,15 +498,33 @@ const AIChatBox = () => {
   const [isRecording, setIsRecording] = useState(false); // Voice input state
   const [selectedLanguage, setSelectedLanguage] = useState('en'); // Multi-language support
   const [uploadedImage, setUploadedImage] = useState(null); // Image upload for visual search
+  const [helpMessageIndex, setHelpMessageIndex] = useState(0); // Rotating help messages
   const fileInputRef = useRef(null);
   const recognitionRef = useRef(null);
 
+  // Rotating help messages for speech bubble
+  const helpMessages = [
+    "Need some help? 💬",
+    "Looking for PC parts? 🖥️",
+    "Ask me anything! 🤖",
+    "Build your dream PC! 🎮",
+    "Got questions? I'm here! ✨"
+  ];
+
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const menuRef = useRef(null);
   const navigate = useNavigate();
-  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const location = useLocation();
   const { loadCart, addToCart } = useCart(); // Get cart functions from CartContext
+
+  // Hide chatbox on sign-in/sign-up pages
+  const isAuthPage = location.pathname === '/signin' || location.pathname === '/signup' || 
+                      location.pathname === '/sign-in' || location.pathname === '/sign-up' ||
+                      location.pathname.includes('/auth');
+  
+  if (isAuthPage) {
+    return null;
+  }
 
   const ensureProductsLoaded = useCallback(async () => {
     if (catalog.products.length) return catalog.products;
@@ -1022,20 +1039,6 @@ const AIChatBox = () => {
     return lastProducts[0];
   };
 
-  // Close menu when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setIsMenuExpanded(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [menuRef]);
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -1054,6 +1057,16 @@ const AIChatBox = () => {
     ensureProductsLoaded();
     ensureCategoriesLoaded();
   }, [ensureProductsLoaded, ensureCategoriesLoaded]);
+
+  // Rotate help messages every 4 seconds when chat is closed
+  useEffect(() => {
+    if (!isOpen) {
+      const interval = setInterval(() => {
+        setHelpMessageIndex((prev) => (prev + 1) % helpMessages.length);
+      }, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [isOpen, helpMessages.length]);
 
   // Manual load chat history function
   const loadChatHistory = async () => {
@@ -3945,76 +3958,17 @@ Rules:
     });
   };
 
-  const handleCameraClick = () => {
-    setShowQuestionnaire(true);
-    setIsMenuExpanded(false);
-    if (isOpen) setIsOpen(false);
-  };
-
   const handleChatToggle = () => {
     setIsOpen(!isOpen);
-    setIsMenuExpanded(false);
   };
 
-  const handleQuestionnaireSubmit = async (formData) => {
-    console.log("PC Build Questionnaire submitted:", formData);
-
-    // Extract processor preference from preferredBrands
-    const enhancedFormData = { ...formData };
-    if (formData.preferredBrands && !formData.processorPreference) {
-      const hasIntel = formData.preferredBrands.includes('Intel');
-      const hasAMD = formData.preferredBrands.includes('AMD');
-      if (hasIntel && !hasAMD) {
-        enhancedFormData.processorPreference = 'Intel';
-      } else if (hasAMD && !hasIntel) {
-        enhancedFormData.processorPreference = 'AMD';
-      } else if (hasIntel && hasAMD) {
-        enhancedFormData.processorPreference = 'Intel or AMD';
-      }
-    }
-
-    // Store user preferences
-    setUserPreferences(enhancedFormData);
-    setShowQuestionnaire(false);
-
-    // Open chat and get AI recommendations
-    setIsOpen(true);
-    setIsTyping(true);
-
-    try {
-      // Get personalized build recommendations
-      const response = await AIService.getBuildRecommendations(enhancedFormData);
-      console.log("AI Build Recommendations Response:", response);
-
-      setTimeout(() => {
-        // Check if response has recommendation text
-        const recommendationText = response.recommendation || response.message ||
-          "Thank you for completing the questionnaire! Based on your preferences, I'll help you find the perfect PC components. What would you like to start with?";
-
-        const aiResponse = {
-          id: Date.now(),
-          text: recommendationText,
-          sender: "ai",
-          timestamp: new Date(),
-          products: response.products ? response.products.slice(0, 5) : null, // Attach up to 5 products
-          isGeneralQuestion: false, // This is personalized, don't show "View More"
-        };
-        setMessages((prev) => [...prev, aiResponse]);
-        setIsTyping(false);
-      }, 500);
-    } catch (error) {
-      console.error("Error getting recommendations:", error);
-      setTimeout(() => {
-        const aiResponse = {
-          id: Date.now(),
-          text: "Thank you for completing the PC Build Questionnaire! I'm ready to help you find the perfect components. What type of component would you like to start with? (GPU, CPU, Motherboard, RAM, etc.)",
-          sender: "ai",
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, aiResponse]);
-        setIsTyping(false);
-      }, 500);
-    }
+  // Handle closing with animation
+  const handleCloseChat = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsOpen(false);
+      setIsClosing(false);
+    }, 280); // Match animation duration
   };
 
   // Add to cart function
@@ -4109,100 +4063,61 @@ Rules:
 
   return (
     <>
-      {/* PC Build Questionnaire Modal with Close Button */}
-      {showQuestionnaire && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="relative w-full max-w-4xl">
-            <button
-              onClick={() => setShowQuestionnaire(false)}
-              className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-3 shadow-xl z-[60] transition-all hover:scale-110 border-2 border-white"
-              aria-label="Close Questionnaire"
-            >
-              <X size={24} strokeWidth={3} />
-            </button>
-            <PCBuildQuestionnaire onSubmit={handleQuestionnaireSubmit} />
+      {/* AI Chat Button - Only show when chat is closed */}
+      {!isOpen && (
+        <div className="fixed bottom-6 [@media(min-width:761px)]:bottom-8 right-4 [@media(min-width:761px)]:right-6 z-[600] flex items-end gap-3">
+          {/* Speech Bubble */}
+          <div className="animate-bounce-slow mb-1">
+            <div className="relative">
+              <div 
+                key={helpMessageIndex}
+                className="bg-[#1E90FF] text-white text-sm font-medium px-5 py-3 rounded-2xl shadow-lg whitespace-nowrap animate-fade-in-left"
+              >
+                {helpMessages[helpMessageIndex]}
+              </div>
+              {/* Triangle tail pointing to button */}
+              <div className="absolute top-1/2 -right-2 transform -translate-y-1/2">
+                <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[10px] border-l-[#1E90FF]"></div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Chat Button */}
+          <div className="animate-bounce-slow">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleChatToggle}
+                  className="bg-[#39FC1D] hover:bg-[#2dd817] rounded-full p-1.5 [@media(min-width:761px)]:p-2 shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-green-500/30 animate-pulse-glow overflow-hidden"
+                  aria-label="AI Chatbox"
+                >
+                  <video
+                    src="/Logo/gif.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-10 h-10 [@media(min-width:761px)]:w-12 [@media(min-width:761px)]:h-12 rounded-full object-cover"
+                  />
+                </button>
+              </TooltipTrigger>
+
+            </Tooltip>
           </div>
         </div>
       )}
 
-      {/* Collapsible Button Stack */}
-      <div
-        ref={menuRef}
-        className="fixed bottom-4 [@media(min-width:761px)]:bottom-6 right-4 [@media(min-width:761px)]:right-6 z-40 flex flex-col items-center gap-2"
-      >
-        {/* Stack of Additional Buttons - Shown when menu is expanded */}
-        <div className={`flex flex-col gap-2 items-center transition-all duration-300 ${
-          isMenuExpanded
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-10 pointer-events-none"
-        }`}>
-          {/* Chat Button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={handleChatToggle}
-                className={`${isOpen ? 'bg-red-500 hover:bg-red-600' : 'bg-[#39FC1D] hover:bg-[#2dd817]'} text-white rounded-full p-2 [@media(min-width:761px)]:p-4 shadow-lg transition-all duration-300 hover:scale-110`}
-                aria-label={isOpen ? "Close AI Chat" : "Open AI Chat"}
-              >
-                {isOpen ?
-                  <X size={20} className="[@media(min-width:761px)]:w-6 [@media(min-width:761px)]:h-6" /> :
-                  <MessageCircle size={20} className="[@media(min-width:761px)]:w-6 [@media(min-width:761px)]:h-6" />
-                }
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{isOpen ? "Close AI Chat" : "Open AI Chat"}</p>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Camera/Questionnaire Button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={handleCameraClick}
-                className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 [@media(min-width:761px)]:p-4 shadow-lg transition-all duration-300 hover:scale-110"
-                aria-label="PC Build Questionnaire"
-              >
-                <Camera size={20} className="[@media(min-width:761px)]:w-6 [@media(min-width:761px)]:h-6" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>PC Build Questionnaire</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-
-        {/* Main Button - Toggles the menu */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={() => setIsMenuExpanded(!isMenuExpanded)}
-              className="bg-green-500 hover:bg-green-600 text-white rounded-full p-3 [@media(min-width:761px)]:p-4 shadow-lg transition-all duration-300 hover:scale-110 z-50"
-              aria-label={isMenuExpanded ? "Close menu" : "Open menu"}
-            >
-              {isMenuExpanded ?
-                <ChevronDown size={20} className="[@media(min-width:761px)]:w-6 [@media(min-width:761px)]:h-6" /> :
-                <ChevronUp size={20} className="[@media(min-width:761px)]:w-6 [@media(min-width:761px)]:h-6" />
-              }
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{isMenuExpanded ? "Close menu" : "Show options"}</p>
-          </TooltipContent>
-        </Tooltip>
-      </div>
-
       {/* Chat Window - Enhanced with Expand/Collapse */}
-      {isOpen && (
-        <div className={`fixed bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col transition-all duration-300 ${
+      {(isOpen || isClosing) && (
+        <div className={`fixed bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col transition-all duration-300 ${isClosing ? 'animate-slide-down' : 'animate-slide-up'} ${
           isExpanded
-            ? 'bottom-16 md:bottom-24 right-2 md:right-6 w-[calc(100%-32px)] md:w-[800px] h-[500px] md:h-[600px] z-50' // Expanded: wider but same height
-            : 'bottom-16 md:bottom-24 right-2 md:right-6 w-[calc(100%-16px)] md:w-96 max-w-[400px] h-[500px] md:h-[600px] z-50' // Normal mode
+            ? 'bottom-16 md:bottom-24 right-2 md:right-6 w-[calc(100%-32px)] md:w-[800px] h-[60vh] min-h-[300px] max-h-[calc(100vh-120px)] sm:h-[65vh] md:h-[70vh] lg:h-[75vh] z-[600]'
+            : 'bottom-16 md:bottom-24 right-2 md:right-6 w-[calc(100%-16px)] md:w-96 max-w-[400px] h-[55vh] min-h-[280px] max-h-[calc(100vh-120px)] sm:h-[60vh] md:h-[65vh] lg:h-[70vh] z-[600]'
         }`}>
           {/* Header */}
           <div className="bg-green-500 text-white p-3 md:p-4 rounded-t-lg flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center animate-spin-slow">
                 <Bot size={18} className="text-[#39FC1D]" />
               </div>
               <div>
@@ -4221,7 +4136,7 @@ Rules:
               </button>
               {/* Close Button */}
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={handleCloseChat}
                 className="hover:bg-green-600 hover:bg-opacity-30 rounded-full p-2 transition-colors cursor-pointer bg-white bg-opacity-20"
                 aria-label="Close chat"
               >

@@ -18,17 +18,27 @@ const Purchases = () => {
   const loadOrders = async () => {
     setLoading(true);
     try {
+      console.log('🔄 Loading orders...');
       const { data, error } = await UserOrderService.getUserOrders();
       
+      console.log('📦 Orders response:', { data, error });
+      
       if (error) {
-        console.error('Error loading orders:', error);
+        console.error('❌ Error loading orders:', error);
+        toast.error('Failed to load orders', {
+          description: error
+        });
         setOrders([]);
         return;
       }
 
       if (data && Array.isArray(data)) {
+        console.log(`✅ Found ${data.length} orders`);
+        
         // Transform database orders to match component format
         const transformedOrders = data.map(order => {
+          console.log('🔄 Transforming order:', order.order_number, 'Status:', order.status);
+          
           // Map status to purchase page statuses
           let displayStatus = order.status;
           let subStatus = '';
@@ -100,12 +110,17 @@ const Purchases = () => {
           };
         });
 
+        console.log('✅ Transformed orders:', transformedOrders);
         setOrders(transformedOrders);
       } else {
+        console.log('⚠️ No data or data is not an array:', data);
         setOrders([]);
       }
     } catch (error) {
-      console.error('Error in loadOrders:', error);
+      console.error('💥 Error in loadOrders:', error);
+      toast.error('Failed to load orders', {
+        description: error.message
+      });
       setOrders([]);
     } finally {
       setLoading(false);
@@ -153,6 +168,14 @@ const Purchases = () => {
           return isPickupType || isReadyStatus;
         })
       : orders.filter((order) => order.status === activeTab);
+
+  console.log('🔍 Filter Debug:', {
+    activeTab,
+    totalOrders: orders.length,
+    orderStatuses: orders.map(o => o.status),
+    filteredCount: filteredOrders.length,
+    filteredOrders: filteredOrders.map(o => ({ id: o.orderId, status: o.status }))
+  });
 
   const getButtons = (status) => {
     switch (status) {

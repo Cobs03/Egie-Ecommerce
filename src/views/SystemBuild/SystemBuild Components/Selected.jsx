@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { components } from "../../Data/components";
 import ProductModal from "../../Products/ProductGrid/ProductModal/ProductModal";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 import {
   Select,
@@ -18,6 +19,10 @@ const Selected = ({ selectedType, selectedProducts, onAddProduct, onRemoveProduc
   const [selectedBrand, setSelectedBrand] = useState("all");
   const [selectedSubCategory, setSelectedSubCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Scroll animations
+  const headerAnim = useScrollAnimation({ threshold: 0.1 });
+  const listAnim = useScrollAnimation({ threshold: 0.1 });
 
   // Reset filters when selectedType changes
   useEffect(() => {
@@ -39,7 +44,14 @@ const Selected = ({ selectedType, selectedProducts, onAddProduct, onRemoveProduc
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-[900px] flex flex-col">
-      <h2 className="text-lg font-bold text-gray-800 mb-3 border-b border-gray-300 pb-2 flex-shrink-0">
+      <h2 
+        ref={headerAnim.ref}
+        className={`text-lg font-bold text-gray-800 mb-3 border-b border-gray-300 pb-2 flex-shrink-0 transition-all duration-700 ${
+          headerAnim.isVisible 
+            ? 'opacity-100 translate-x-0' 
+            : 'opacity-0 translate-x-4'
+        }`}
+      >
         Select Products
       </h2>
 
@@ -57,7 +69,7 @@ const Selected = ({ selectedType, selectedProducts, onAddProduct, onRemoveProduc
                 {onRemoveProduct && (
                   <button
                     onClick={() => onRemoveProduct(type)}
-                    className="ml-2 text-red-500 hover:text-red-700 flex-shrink-0"
+                    className="ml-2 text-red-500 hover:text-red-700 flex-shrink-0 transition-all duration-200 active:scale-90 hover:scale-125"
                     title={`Remove ${type}`}
                   >
                     ✕
@@ -126,7 +138,14 @@ const Selected = ({ selectedType, selectedProducts, onAddProduct, onRemoveProduc
       </div>
 
       {/* Scrollable Products List */}
-      <div className="overflow-y-auto flex-1 min-h-0 pr-1">
+      <div 
+        ref={listAnim.ref}
+        className={`overflow-y-auto flex-1 min-h-0 pr-1 transition-all duration-700 delay-200 ${
+          listAnim.isVisible 
+            ? 'opacity-100 translate-x-0' 
+            : 'opacity-0 translate-x-4'
+        }`}
+      >
         {!selectedType ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <p className="text-sm text-center">
@@ -181,14 +200,14 @@ const Selected = ({ selectedType, selectedProducts, onAddProduct, onRemoveProduc
                       <div className="flex gap-2 mt-2">
                         <button
                           onClick={() => setSelectedProduct(product)}
-                          className="cursor-pointer bg-blue-500 text-white text-xs px-3 py-1 rounded hover:bg-blue-600 transition"
+                          className="cursor-pointer bg-blue-500 text-white text-xs px-3 py-1 rounded hover:bg-blue-600 transition-all duration-200 active:scale-90 hover:scale-105"
                         >
                           Details
                         </button>
                         <button
                           onClick={() => onAddProduct(selectedType, product)}
                           disabled={isSelected}
-                          className={`cursor-pointer text-xs px-3 py-1 rounded transition ${
+                          className={`cursor-pointer text-xs px-3 py-1 rounded transition-all duration-200 active:scale-90 hover:scale-105 ${
                             isSelected
                               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                               : 'bg-lime-400 text-black hover:bg-lime-500'

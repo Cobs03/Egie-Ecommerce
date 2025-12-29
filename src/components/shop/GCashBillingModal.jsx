@@ -58,7 +58,7 @@ const GCashBillingModal = ({ isOpen, onClose, onSubmit, defaultEmail, defaultNam
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
@@ -95,7 +95,7 @@ const GCashBillingModal = ({ isOpen, onClose, onSubmit, defaultEmail, defaultNam
               value={billingInfo.name}
               onChange={handleChange}
               placeholder="Juan Dela Cruz"
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400 ${
                 errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
             />
@@ -116,7 +116,7 @@ const GCashBillingModal = ({ isOpen, onClose, onSubmit, defaultEmail, defaultNam
               value={billingInfo.email}
               onChange={handleChange}
               placeholder="juan@example.com"
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400 ${
                 errors.email ? 'border-red-500' : 'border-gray-300'
               }`}
             />
@@ -137,7 +137,7 @@ const GCashBillingModal = ({ isOpen, onClose, onSubmit, defaultEmail, defaultNam
               value={billingInfo.phone}
               onChange={handleChange}
               placeholder="09171234567"
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400 ${
                 errors.phone ? 'border-red-500' : 'border-gray-300'
               }`}
             />

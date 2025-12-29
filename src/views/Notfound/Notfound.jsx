@@ -1,8 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { FaGamepad, FaExclamationTriangle } from "react-icons/fa";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const Notfound = () => {
+  const containerAnim = useScrollAnimation({ threshold: 0.1 });
+
   return (
     <>
       <style>

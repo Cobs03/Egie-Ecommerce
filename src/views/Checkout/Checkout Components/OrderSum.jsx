@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useCart } from "../../../context/CartContext";
 import VoucherService from "../../../services/VoucherService";
 import { toast } from "sonner";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const OrderSum = () => {
   const { 
@@ -14,6 +15,12 @@ const OrderSum = () => {
     appliedVoucher, 
     setAppliedVoucher 
   } = useCart();
+  
+  // Scroll animations
+  const containerAnim = useScrollAnimation({ threshold: 0.1 });
+  const productListAnim = useScrollAnimation({ threshold: 0.1 });
+  const voucherAnim = useScrollAnimation({ threshold: 0.1 });
+  const summaryAnim = useScrollAnimation({ threshold: 0.1 });
   
   useEffect(() => {
     loadCart();
@@ -104,7 +111,14 @@ const OrderSum = () => {
   };
 
   return (
-    <div className="p-5 border rounded-lg shadow-lg w-full bg-white">
+    <div
+      ref={containerAnim.ref}
+      className={`p-5 border rounded-lg shadow-lg w-full bg-white transition-all duration-700 ${
+        containerAnim.isVisible
+          ? "opacity-100 translate-x-0"
+          : "opacity-0 -translate-x-8"
+      }`}
+    >
       <div className="flex justify-between max-md:flex-col md:items-start md:gap-2">
         <h2 className="text-lg font-bold mb-2">Order Summary</h2>
         <p className="text-sm text-gray-600 mb-4">
@@ -184,7 +198,7 @@ const OrderSum = () => {
           />
           {!appliedVoucher ? (
             <button 
-              className="bg-green-500 text-white px-4 rounded-lg hover:bg-green-600 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="bg-green-500 text-white px-4 rounded-lg hover:bg-green-600 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed active:scale-95 transition-transform duration-150"
               onClick={handleApplyVoucher}
               disabled={isValidating || !voucherCode.trim()}
             >
@@ -192,7 +206,7 @@ const OrderSum = () => {
             </button>
           ) : (
             <button 
-              className="bg-red-500 text-white px-4 rounded-lg hover:bg-red-600 cursor-pointer"
+              className="bg-red-500 text-white px-4 rounded-lg hover:bg-red-600 cursor-pointer active:scale-95 transition-transform duration-150"
               onClick={handleRemoveVoucher}
             >
               Remove

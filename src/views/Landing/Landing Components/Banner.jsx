@@ -2,14 +2,24 @@ import { Link } from "react-router-dom";
 import React from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
+import { useScrollAnimation } from "../../../hooks/useScrollAnimation";
 
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 const LandingBanner = () => {
+  const { ref, isVisible } = useScrollAnimation({ threshold: 0.2 });
+
   return (
-    <div className="">
+    <div 
+      ref={ref}
+      className={`transition-all duration-1000 ${
+        isVisible 
+          ? 'opacity-100 translate-y-0' 
+          : 'opacity-0 translate-y-10'
+      }`}
+    >
       <style>
         {`
           /* Custom styles for Swiper navigation buttons */
@@ -71,11 +81,11 @@ const LandingBanner = () => {
             <div className="absolute top-2/3 left-1/4 transform -translate-y-1/2 -translate-x-1/2 max-md:translate-x-[-20%] flex gap-2 md:gap-4 z-10">
               <Link
                 to="/products"
-                className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-2 md:px-6 py-1 md:py-3 rounded text-xs md:text-lg transition"
+                className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-2 md:px-6 py-1 md:py-3 rounded text-xs md:text-lg transition active:scale-95 active:shadow-inner"
               >
                 SHOP NOW
               </Link>
-              <button className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white font-semibold px-2 md:px-6 py-1 md:py-3 rounded text-xs md:text-lg transition">
+              <button className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white font-semibold px-2 md:px-6 py-1 md:py-3 rounded text-xs md:text-lg transition active:scale-95 active:shadow-inner">
                 LEARN MORE
               </button>
             </div>
@@ -93,7 +103,7 @@ const LandingBanner = () => {
             <div className="absolute top-3/4 left-1/2 transform -translate-y-1/2 -translate-x-1/2">
               <Link
                 to="/products"
-                className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-3 md:px-10 py-1.5 md:py-4 rounded text-xs md:text-2xl transition"
+                className="bg-lime-500 hover:bg-lime-600 text-black font-semibold px-3 md:px-10 py-1.5 md:py-4 rounded text-xs md:text-2xl transition active:scale-95 active:shadow-inner"
               >
                 SHOP NOW
               </Link>

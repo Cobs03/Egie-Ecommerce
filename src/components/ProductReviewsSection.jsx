@@ -6,6 +6,15 @@ import InquiryFormModal from './InquiryFormModal';
 import ReviewService from '../services/ReviewService';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from './ui/pagination';
 
 /**
  * ProductReviewsSection Component
@@ -24,6 +33,8 @@ const ProductReviewsSection = ({ product }) => {
   const [editingReview, setEditingReview] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showInquiryModal, setShowInquiryModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const reviewsPerPage = 5;
 
   // Load user
   useEffect(() => {
@@ -44,6 +55,7 @@ const ProductReviewsSection = ({ product }) => {
   // Load reviews and summary
   useEffect(() => {
     loadReviews();
+    setCurrentPage(1); // Reset to first page when product changes
   }, [product.id, user]);
 
   const loadReviews = async () => {
@@ -134,6 +146,44 @@ const ProductReviewsSection = ({ product }) => {
   const totalReviews = ratingSummary?.total_reviews || 0;
   const averageRating = ratingSummary?.average_rating || 0;
 
+  // Calculate pagination
+  const totalPages = Math.ceil(reviews.length / reviewsPerPage);
+  const startIndex = (currentPage - 1) * reviewsPerPage;
+  const endIndex = startIndex + reviewsPerPage;
+  const currentReviews = reviews.slice(startIndex, endIndex);
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 3; i++) pages.push(i);
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('ellipsis');
+        for (let i = totalPages - 2; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('ellipsis');
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
   return (
     <div className="py-8 border-t">
       <h2 className="text-2xl font-bold mb-6">Customer Reviews</h2>
@@ -198,14 +248,14 @@ const ProductReviewsSection = ({ product }) => {
                 <div className="flex gap-2">
                   <button
                     onClick={handleEditReview}
-                    className="text-blue-600 hover:text-blue-700 p-2 hover:bg-blue-100 rounded transition-colors"
+                    className="text-blue-600 hover:text-blue-700 p-2 hover:bg-blue-100 rounded transition-all active:scale-95"
                     title="Edit your review"
                   >
                     <FaEdit size={16} />
                   </button>
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="text-red-600 hover:text-red-700 p-2 hover:bg-red-100 rounded transition-colors"
+                    className="text-red-600 hover:text-red-700 p-2 hover:bg-red-100 rounded transition-all active:scale-95"
                     title="Delete your review"
                   >
                     <FaTrash size={16} />
@@ -217,7 +267,7 @@ const ProductReviewsSection = ({ product }) => {
             {/* Ask Question Button - Below user's review */}
             <button
               onClick={handleAskQuestion}
-              className="bg-blue-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+              className="bg-blue-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-blue-600 transition-all flex items-center gap-2 active:scale-95 active:shadow-inner"
             >
               <FaQuestionCircle /> Ask a Question
             </button>
@@ -226,7 +276,7 @@ const ProductReviewsSection = ({ product }) => {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={handleWriteReview}
-              className="bg-green-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2"
+              className="bg-green-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-green-600 transition-all flex items-center gap-2 active:scale-95 active:shadow-inner"
             >
               <FaStar /> Write a Review
             </button>
@@ -234,7 +284,7 @@ const ProductReviewsSection = ({ product }) => {
             {/* Ask Question Button - Next to Write Review */}
             <button
               onClick={handleAskQuestion}
-              className="bg-blue-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+              className="bg-blue-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-blue-600 transition-all flex items-center gap-2 active:scale-95 active:shadow-inner"
             >
               <FaQuestionCircle /> Ask a Question
             </button>
@@ -244,13 +294,14 @@ const ProductReviewsSection = ({ product }) => {
 
       {/* Reviews List */}
       {reviews.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-500 text-lg mb-2">No reviews yet</p>
-          <p className="text-gray-400 text-sm">Be the first to review this product!</p>
+        <div className="text-center py-12 bg-gray-200 rounded-lg">
+          <p className="text-gray-600 text-lg mb-2">No reviews yet</p>
+          <p className="text-gray-500 text-sm">Be the first to review this product!</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {reviews.map((review) => {
+        <>
+          <div className="space-y-4">
+            {currentReviews.map((review) => {
             // Get user initials for avatar
             const userName = review.user_name || review.user_email?.split('@')[0] || 'Anonymous';
             const initials = userName
@@ -339,6 +390,62 @@ const ProductReviewsSection = ({ product }) => {
             );
           })}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-8">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage > 1) setCurrentPage(currentPage - 1);
+                    }}
+                    className={`transition-all active:scale-95 ${
+                      currentPage === 1 ? 'pointer-events-none opacity-50' : ''
+                    }`}
+                  />
+                </PaginationItem>
+                
+                {getPageNumbers().map((page, index) => (
+                  <PaginationItem key={index}>
+                    {page === 'ellipsis' ? (
+                      <PaginationEllipsis />
+                    ) : (
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setCurrentPage(page);
+                        }}
+                        isActive={currentPage === page}
+                        className="transition-all active:scale-95"
+                      >
+                        {page}
+                      </PaginationLink>
+                    )}
+                  </PaginationItem>
+                ))}
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                    }}
+                    className={`transition-all active:scale-95 ${
+                      currentPage === totalPages ? 'pointer-events-none opacity-50' : ''
+                    }`}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
+        </>
       )}
 
       {/* Delete Confirmation Dialog */}
@@ -387,13 +494,13 @@ const ProductReviewsSection = ({ product }) => {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-all active:scale-95"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteReview}
-                className="flex-1 px-4 py-2.5 bg-red-600 rounded-lg text-white font-medium hover:bg-red-700 transition-colors"
+                className="flex-1 px-4 py-2.5 bg-red-600 rounded-lg text-white font-medium hover:bg-red-700 transition-all active:scale-95 active:shadow-inner"
               >
                 Delete Review
               </button>

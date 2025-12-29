@@ -5,22 +5,24 @@ import { RiMastercardFill } from "react-icons/ri";
 import { useCart } from "../../../context/CartContext";
 import OrderService from "../../../services/OrderService";
 import PayMongoEdgeFunctionService from '../../../services/PayMongoEdgeFunctionService';
-import GCashBillingModal from '../../../components/shop/GCashBillingModal';
 import { toast } from "sonner";
 import { supabase } from "../../../lib/supabase";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
-const Payment = ({ selectedAddress }) => {
+const Payment = ({ selectedAddress, onShowGCashModal }) => {
   const navigate = useNavigate();
   const { deliveryType, orderNotes, cartItems, clearCart, appliedVoucher, loadCart } = useCart();
+  
+  // Scroll animations
+  const containerAnim = useScrollAnimation({ threshold: 0.1 });
+  const paymentOptionsAnim = useScrollAnimation({ threshold: 0.1 });
+  const cardFormAnim = useScrollAnimation({ threshold: 0.1 });
+  const placeOrderAnim = useScrollAnimation({ threshold: 0.1 });
   
   // Payment state
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
-  
-  // GCash billing modal state
-  const [showGCashModal, setShowGCashModal] = useState(false);
-  const [userInfo, setUserInfo] = useState({ email: '', name: '' });
   
   // Card details (only shown for credit card)
   const [cardDetails, setCardDetails] = useState({
@@ -110,12 +112,13 @@ const Payment = ({ selectedAddress }) => {
           .eq('id', user?.id)
           .single();
         
-        setUserInfo({
+        const userInfo = {
           email: profile?.email || user?.email || '',
           name: profile?.full_name || ''
-        });
+        };
         
-        setShowGCashModal(true);
+        // Show modal via parent component with callback
+        onShowGCashModal(userInfo, handleGCashPayment);
         setLoading(false);
         return; // Important: return here to prevent further execution
       }
@@ -167,7 +170,6 @@ const Payment = ({ selectedAddress }) => {
 
   // Handle GCash payment through PayMongo (called after billing form submission)
   const handleGCashPayment = async (billingInfo) => {
-    setShowGCashModal(false);
     setLoading(true);
     
     try {
@@ -471,17 +473,14 @@ const Payment = ({ selectedAddress }) => {
   };
 
   return (
-    <>
-      {/* GCash Billing Modal */}
-      <GCashBillingModal
-        isOpen={showGCashModal}
-        onClose={() => setShowGCashModal(false)}
-        onSubmit={handleGCashPayment}
-        defaultEmail={userInfo.email}
-        defaultName={userInfo.name}
-      />
-
-      <div className="p-5 border rounded-lg shadow-md w-full max-w-2xl bg-white">
+    <div
+      ref={containerAnim.ref}
+      className={`p-5 border rounded-lg shadow-md w-full max-w-2xl bg-white transition-all duration-700 ${
+        containerAnim.isVisible
+          ? "opacity-100 translate-x-0"
+          : "opacity-0 translate-x-8"
+      }`}
+    >
         <h2 className="text-xl font-bold mb-2">Payment Method</h2>
         <p className="text-gray-600 mb-4">
           All transactions are secure and encrypted
@@ -494,7 +493,14 @@ const Payment = ({ selectedAddress }) => {
         </div>
       )}
 
-      <div className="mb-4 space-y-3">
+      <div
+        ref={paymentOptionsAnim.ref}
+        className={`mb-4 space-y-3 transition-all duration-700 ${
+          paymentOptionsAnim.isVisible
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-4"
+        }`}
+      >
         <label className="flex items-center gap-2">
           <input
             type="radio"
@@ -543,7 +549,14 @@ const Payment = ({ selectedAddress }) => {
 
       {/* Show card form if selected */}
       {selectedPayment === "card" && (
-        <div className="space-y-3 mb-4">
+        <div
+          ref={cardFormAnim.ref}
+          className={`space-y-3 mb-4 transition-all duration-700 ${
+            cardFormAnim.isVisible
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-4"
+          }`}
+        >
           <input
             type="text"
             placeholder="Card Number (e.g., 4343 4343 4343 4345)"
@@ -611,12 +624,11 @@ const Payment = ({ selectedAddress }) => {
         disabled={loading}
         className={`block text-center w-full ${
           loading ? 'bg-gray-400' : 'bg-green-500 hover:bg-green-600'
-        } text-white py-2 rounded-lg transition-colors`}
+        } text-white py-2 rounded-lg transition-all duration-150 active:scale-95`}
       >
         {loading ? 'Processing...' : 'Place Order'}
       </button>
       </div>
-    </>
   );
 };
 

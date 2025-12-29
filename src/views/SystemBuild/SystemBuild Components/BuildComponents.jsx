@@ -3,16 +3,22 @@ import { components } from "../../Data/components";
 import { FaMinus, FaPlus, FaTrash, FaShoppingCart } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const BuildComponents = ({
   selectedType,
   setSelectedType,
   selectedProducts,
   setSelectedProducts,
+  onOpenDrawer,
 }) => {
   const [quantities, setQuantities] = useState(
     components.reduce((acc, comp) => ({ ...acc, [comp.type]: 0 }), {})
   );
+
+  // Scroll animation
+  const tableAnim = useScrollAnimation({ threshold: 0.1 });
+  const summaryAnim = useScrollAnimation({ threshold: 0.1 });
 
   const handleDecrease = (compType) => {
     if (!selectedProducts[compType]) return;
@@ -53,7 +59,14 @@ const BuildComponents = ({
   return (
     <div className="w-full mb-4">
       <div className="flex flex-col lg:flex-row gap-6">
-        <div className="flex-1 border rounded shadow-sm bg-gray-50 p-4">
+        <div 
+          ref={tableAnim.ref}
+          className={`flex-1 border rounded shadow-sm bg-gray-50 p-4 transition-all duration-700 ${
+            tableAnim.isVisible 
+              ? 'opacity-100 translate-x-0' 
+              : 'opacity-0 -translate-x-8'
+          }`}
+        >
           <table className="min-w-full text-sm border border-gray-300 mb-4">
             <thead className="bg-blue-100 text-gray-700 text-left">
               <tr>
@@ -80,8 +93,8 @@ const BuildComponents = ({
                       </td>
                       <td colSpan="5" className="p-4 border text-center">
                         <button
-                          onClick={() => setSelectedType(comp.type)}
-                          className="bg-transparent border-2 border-dashed border-green-500 text-green-600 px-6 py-2 rounded-lg hover:bg-green-50 font-semibold transition-colors w-full max-w-md"
+                          onClick={() => onOpenDrawer ? onOpenDrawer(comp.type) : setSelectedType(comp.type)}
+                          className="bg-transparent border-2 border-dashed border-green-500 text-green-600 px-6 py-2 rounded-lg hover:bg-green-50 font-semibold transition-all duration-200 active:scale-95 hover:scale-105 w-full max-w-md"
                         >
                           + Add a {comp.type} Component
                         </button>
@@ -104,7 +117,7 @@ const BuildComponents = ({
                       <div className="flex justify-center items-center space-x-2">
                         <button
                           onClick={() => handleDecrease(comp.type)}
-                          className="cursor-pointer bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                          className="cursor-pointer bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-all duration-200 active:scale-90 hover:scale-110"
                         >
                           <FaMinus size={12} />
                         </button>
@@ -113,7 +126,7 @@ const BuildComponents = ({
                         </span>
                         <button
                           onClick={() => handleIncrease(comp.type)}
-                          className="cursor-pointer bg-green-500 text-white p-1 rounded-full hover:bg-green-600"
+                          className="cursor-pointer bg-green-500 text-white p-1 rounded-full hover:bg-green-600 transition-all duration-200 active:scale-90 hover:scale-110"
                         >
                           <FaPlus size={12} />
                         </button>
@@ -126,7 +139,7 @@ const BuildComponents = ({
                     <td className="p-2 border text-center">
                       <button
                         onClick={() => handleDelete(comp.type)}
-                        className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 cursor-pointer transition-colors"
+                        className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 cursor-pointer transition-all duration-200 active:scale-90 hover:scale-110"
                         title="Remove component"
                       >
                         <FaTrash size={12} />
@@ -138,7 +151,14 @@ const BuildComponents = ({
             </tbody>
           </table>
 
-          <div className="bg-black text-white flex justify-between items-center p-4 rounded-md">
+          <div 
+            ref={summaryAnim.ref}
+            className={`bg-black text-white flex justify-between items-center p-4 rounded-md transition-all duration-700 ${
+              summaryAnim.isVisible 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-4'
+            }`}
+          >
             <span className="text-lg font-semibold">
               Subtotal: ₱{subtotal.toFixed(2)}
             </span>
@@ -160,7 +180,7 @@ const BuildComponents = ({
                   description: "Your products have been successfully added.",
                 });
               }}
-              className="bg-lime-400 text-black px-6 py-2 rounded hover:bg-lime-500 font-semibold transition-colors flex items-center gap-2"
+              className="bg-lime-400 text-black px-6 py-2 rounded hover:bg-lime-500 font-semibold transition-all duration-200 active:scale-95 hover:scale-105 flex items-center gap-2"
             >
               <FaShoppingCart size={16} />
               Add to Cart

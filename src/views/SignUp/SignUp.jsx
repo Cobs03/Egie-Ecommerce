@@ -4,6 +4,7 @@ import { FaEye } from "react-icons/fa";
 import { IoMdEyeOff } from "react-icons/io";
 import { FaGoogle } from "react-icons/fa";
 import { supabase } from "../../lib/supabase";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +16,10 @@ const SignUp = () => {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
+
+  // Scroll animations
+  const imageAnim = useScrollAnimation({ threshold: 0.1 });
+  const formAnim = useScrollAnimation({ threshold: 0.1 });
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -98,7 +103,14 @@ const SignUp = () => {
   return (
     <div className="flex flex-col md:flex-row h-screen">
       {/* Left Side with Illustration - Only visible on desktop */}
-      <div className="hidden md:flex md:w-1/2 bg-gradient-to-r from-blue-200 to-purple-200 items-center justify-center">
+      <div 
+        ref={imageAnim.ref}
+        className={`hidden md:flex md:w-1/2 bg-gradient-to-r from-blue-200 to-purple-200 items-center justify-center transition-all duration-700 ${
+          imageAnim.isVisible
+            ? "opacity-100 translate-x-0"
+            : "opacity-0 -translate-x-8"
+        }`}
+      >
         <div className="rounded-lg w-full h-full bg-opacity-50">
           <img
             className="w-full h-full object-cover"
@@ -109,7 +121,14 @@ const SignUp = () => {
       </div>
 
       {/* Right Side with Form - Added overflow-y-auto for mobile */}
-      <div className="w-full md:w-1/2 bg-black text-[#F3F7F6] p-4 md:p-10 shadow-lg flex flex-col justify-center overflow-y-auto">
+      <div 
+        ref={formAnim.ref}
+        className={`w-full md:w-1/2 bg-black text-[#F3F7F6] p-4 md:p-10 shadow-lg flex flex-col justify-center overflow-y-auto transition-all duration-700 ${
+          formAnim.isVisible
+            ? "opacity-100 translate-x-0"
+            : "opacity-0 translate-x-8"
+        }`}
+      >
         <div className="flex items-center mb-3 justify-center">
           <img
             className="w-24 h-16 md:w-28 md:h-20 object-contain"
@@ -201,7 +220,7 @@ const SignUp = () => {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-all duration-200 active:scale-90 hover:scale-110"
             >
               {showPassword ? (
                 <IoMdEyeOff className="w-5 h-5" />
@@ -227,7 +246,7 @@ const SignUp = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full sm:w-[60%] bg-green-500 text-white px-4 py-2 rounded-3xl cursor-pointer hover:bg-transparent border hover:border-green-500 hover:text-green-500 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-[60%] bg-green-500 text-white px-4 py-2 rounded-3xl cursor-pointer hover:bg-transparent border hover:border-green-500 hover:text-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 hover:scale-105"
             >
               {loading ? "Signing Up..." : "SIGN UP"}
             </button>
@@ -243,7 +262,7 @@ const SignUp = () => {
             type="button"
             onClick={handleGoogleSignUp}
             disabled={loading}
-            className="flex items-center justify-center w-full sm:w-[60%] p-2 sm:p-3 bg-gray-200 text-black rounded-3xl hover:bg-gray-300 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center w-full sm:w-[60%] p-2 sm:p-3 bg-gray-200 text-black rounded-3xl hover:bg-gray-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 hover:scale-105"
           >
             <FaGoogle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
             <span>{loading ? "Loading..." : "Google"}</span>

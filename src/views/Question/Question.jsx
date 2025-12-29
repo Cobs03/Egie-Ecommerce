@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { FaArrowRight, FaArrowLeft, FaCheck } from "react-icons/fa";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const PCBuildQuestionnaire = ({ onSubmit }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -19,6 +20,9 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
   });
 
   const totalSteps = 9;
+
+  // Scroll animation
+  const containerAnim = useScrollAnimation({ threshold: 0.1 });
 
   // Handle checkbox changes (for multi-select questions)
   const handleCheckboxChange = (field, value) => {
@@ -67,7 +71,14 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
   const progressPercentage = ((currentStep - 1) / totalSteps) * 100;
 
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-lg flex flex-col h-[490px] mt-32.5 max-md:mt-22.5 overflow-y-auto">
+    <div 
+      ref={containerAnim.ref}
+      className={`max-w-3xl mx-auto bg-white rounded-lg shadow-lg flex flex-col h-[490px] mt-32.5 max-md:mt-22.5 overflow-y-auto transition-all duration-700 ${
+        containerAnim.isVisible
+          ? "opacity-100 scale-100"
+          : "opacity-0 scale-95"
+      }`}
+    >
       {/* Header - Fixed height */}
       <div className="p-6 pb-2 flex-shrink-0">
         <h1 className="text-2xl md:text-3xl font-bold text-center mb-2">
@@ -853,10 +864,10 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
             type="button"
             onClick={prevStep}
             disabled={currentStep === 1}
-            className={`px-4 py-2 rounded-lg flex items-center ${
+            className={`px-4 py-2 rounded-lg flex items-center transition-all duration-200 ${
               currentStep === 1
                 ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                : "bg-gray-200 hover:bg-gray-300 text-gray-700 active:scale-95 hover:scale-105"
             }`}
           >
             <FaArrowLeft className="mr-2" /> Previous
@@ -866,14 +877,14 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
             <button
               type="button"
               onClick={nextStep}
-              className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center"
+              className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center transition-all duration-200 active:scale-95 hover:scale-105"
             >
               Next <FaArrowRight className="ml-2" />
             </button>
           ) : (
             <button
               type="submit"
-              className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center"
+              className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center transition-all duration-200 active:scale-95 hover:scale-105"
             >
               Submit <FaCheck className="ml-2" />
             </button>

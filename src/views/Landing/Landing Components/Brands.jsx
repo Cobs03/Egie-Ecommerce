@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useScrollAnimation } from "../../../hooks/useScrollAnimation";
 
 const Brands = () => {
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
   const scrollContainerRef = useRef(null);
+  const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 });
 
   const logoData = [
     { src: "https://i.ibb.co/mrnkfsD9/image-33.png", alt: "Roccat" },
@@ -47,7 +49,14 @@ const Brands = () => {
   }, []);
 
   return (
-    <div className="w-full bg-white p-5 relative">
+    <div 
+      ref={ref}
+      className={`w-full bg-white p-5 relative transition-all duration-1000 ${
+        isVisible 
+          ? 'opacity-100 translate-y-0' 
+          : 'opacity-0 translate-y-10'
+      }`}
+    >
       {/* Left Arrow */}
       {showLeftArrow && (
         <button

@@ -1,11 +1,15 @@
 import React from "react";
+import { useScrollAnimation } from "../../../../../hooks/useScrollAnimation";
 
 const Description = ({ product }) => {
+  const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 });
   // Determine if we're displaying a product or bundle
   const isBundle = product?.category === "Bundles" || product?.id?.startsWith("bundle-");
 
   return (
-    <>
+    <div ref={ref} className={`transition-all duration-1000 ${
+      isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+    }`}>
       <h1 className="text-2xl font-bold mb-4 mt-4">
         {product?.name || product?.title || "Product Name"}
       </h1>
@@ -170,7 +174,7 @@ const Description = ({ product }) => {
       </div>
 
       <hr className="border-t-2 border-black my-4" />
-    </>
+    </div>
   );
 }
 

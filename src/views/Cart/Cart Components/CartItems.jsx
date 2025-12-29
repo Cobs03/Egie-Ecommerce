@@ -14,18 +14,13 @@ const CartItems = ({ cartItems, selectedItems, setSelectedItems }) => {
   // State for clear cart confirmation
   const [showConfirmClear, setShowConfirmClear] = useState(false);
 
-  // State for updating quantity
-  const [updatingItem, setUpdatingItem] = useState(null);
-
   const updateQuantity = async (id, delta) => {
     const item = cartItems.find(i => i.id === id);
     if (!item) return;
 
     const newQuantity = Math.max(item.quantity + delta, 1);
     
-    setUpdatingItem(id);
     await updateCartQuantity(id, newQuantity);
-    setUpdatingItem(null);
   };
 
   const toggleSelect = (id) => {
@@ -193,22 +188,16 @@ const CartItems = ({ cartItems, selectedItems, setSelectedItems }) => {
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => updateQuantity(item.id, -1)}
-                        disabled={updatingItem === item.id}
-                        className="bg-red-500 text-white rounded px-2 h-8 disabled:opacity-50"
+                        className="bg-red-500 text-white rounded px-2 h-8"
                       >
                         −
                       </button>
                       <span className="inline-flex items-center justify-center h-8 px-2 border rounded min-w-[40px]">
-                        {updatingItem === item.id ? (
-                          <div className="animate-spin h-4 w-4 border-2 border-green-500 border-t-transparent rounded-full" />
-                        ) : (
-                          item.quantity
-                        )}
+                        {item.quantity}
                       </span>
                       <button
                         onClick={() => updateQuantity(item.id, 1)}
-                        disabled={updatingItem === item.id}
-                        className="bg-green-500 text-white rounded px-2 h-8 disabled:opacity-50"
+                        className="bg-green-500 text-white rounded px-2 h-8"
                       >
                         +
                       </button>
@@ -298,22 +287,16 @@ const CartItems = ({ cartItems, selectedItems, setSelectedItems }) => {
                 <div className="flex items-center">
                   <button
                     onClick={() => updateQuantity(item.id, -1)}
-                    disabled={updatingItem === item.id}
-                    className="w-6 h-6 flex items-center justify-center rounded-full bg-red-500 text-white disabled:opacity-50"
+                    className="w-6 h-6 flex items-center justify-center rounded-full bg-red-500 text-white"
                   >
                     <FaMinus className="text-xs" />
                   </button>
                   <span className="mx-3 w-8 text-center">
-                    {updatingItem === item.id ? (
-                      <div className="animate-spin h-4 w-4 border-2 border-green-500 border-t-transparent rounded-full mx-auto" />
-                    ) : (
-                      item.quantity
-                    )}
+                    {item.quantity}
                   </span>
                   <button
                     onClick={() => updateQuantity(item.id, 1)}
-                    disabled={updatingItem === item.id}
-                    className="w-6 h-6 flex items-center justify-center rounded-full bg-green-500 text-white disabled:opacity-50"
+                    className="w-6 h-6 flex items-center justify-center rounded-full bg-green-500 text-white"
                   >
                     <FaPlus className="text-xs" />
                   </button>

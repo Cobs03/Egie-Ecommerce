@@ -7,7 +7,7 @@ import { ProductService } from "../../../services/ProductService";
 import ReviewService from "../../../services/ReviewService";
 import StarRating from "../../../components/StarRating";
 
-const OtherCart = () => {
+const OtherCart = ({ noBackground = false }) => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -173,6 +173,7 @@ const OtherCart = () => {
         <ProductModal
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
+          noBackground={noBackground}
         />
       )}
     </div>

@@ -19,7 +19,7 @@ import { FaXTwitter } from "react-icons/fa6";
 import { toast } from "sonner";
 import { useCart } from "../../../../context/CartContext";
 
-const ProductModal = ({ product, onClose }) => {
+const ProductModal = ({ product, onClose, noBackground = false }) => {
   const { addToCart, user } = useCart();
   const navigate = useNavigate();
   
@@ -100,7 +100,7 @@ const ProductModal = ({ product, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[999]"
+      className={`fixed inset-0 flex items-center justify-center z-[999] ${!noBackground ? 'bg-black/80' : ''}`}
       onClick={onClose}
     >
       <div
@@ -143,7 +143,7 @@ const ProductModal = ({ product, onClose }) => {
                     <img
                       src={image}
                       alt={`Product ${index + 1}`}
-                      className="object-contain max-h-full max-w-full"
+                      className="object-contain max-h-full max-w-full m-auto"
                     />
                   </div>
                 ))}
@@ -171,7 +171,7 @@ const ProductModal = ({ product, onClose }) => {
                       <img
                         src={image}
                         alt={`Thumbnail ${index + 1}`}
-                        className="object-contain h-full w-full"
+                        className="object-contain h-full w-full m-auto"
                       />
                     </div>
                   </div>
@@ -228,9 +228,9 @@ const ProductModal = ({ product, onClose }) => {
                     <button
                       key={variation}
                       onClick={() => setSelectedVariation(variation)}
-                      className={`border px-4 py-2.5 rounded text-sm transition cursor-pointer font-normal ${
+                      className={`border px-4 py-2.5 rounded text-sm transition-all cursor-pointer font-normal active:scale-95 ${
                         selectedVariation === variation
-                          ? "border-green-500 bg-green-500 text-white"
+                          ? "border-green-500 bg-green-500 text-white active:shadow-inner"
                           : "border-gray-600 text-gray-300 hover:border-green-500 hover:text-green-500"
                       }`}
                       style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
@@ -250,7 +250,7 @@ const ProductModal = ({ product, onClose }) => {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setQuantity((prev) => Math.max(prev - 1, 1))}
-                  className="px-4 py-2 border border-gray-600 rounded text-gray-300 hover:border-green-500 hover:text-green-500 transition cursor-pointer font-normal"
+                  className="px-4 py-2 border border-gray-600 rounded text-gray-300 hover:border-green-500 hover:text-green-500 transition-all cursor-pointer font-normal active:scale-95"
                   style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                   disabled={stock === 0}
                 >
@@ -267,7 +267,7 @@ const ProductModal = ({ product, onClose }) => {
                   onClick={() =>
                     setQuantity((prev) => Math.min(prev + 1, stock))
                   }
-                  className="px-4 py-2 border border-gray-600 rounded text-gray-300 hover:border-green-500 hover:text-green-500 transition cursor-pointer font-normal"
+                  className="px-4 py-2 border border-gray-600 rounded text-gray-300 hover:border-green-500 hover:text-green-500 transition-all cursor-pointer font-normal active:scale-95"
                   style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
                   disabled={stock === 0}
                 >
@@ -313,7 +313,7 @@ const ProductModal = ({ product, onClose }) => {
                   setAddingToCart(false);
                 }}
                 disabled={addingToCart}
-                className="flex-1 bg-green-500 text-white font-normal py-3 rounded hover:bg-green-600 transition text-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 bg-green-500 text-white font-normal py-3 rounded hover:bg-green-600 transition-all text-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-95 active:shadow-inner"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 {addingToCart ? (
@@ -332,7 +332,7 @@ const ProductModal = ({ product, onClose }) => {
                     description: "Product added to comparison list.",
                   });
                 }}
-                className="flex-1 bg-gray-600 text-white font-normal py-3 rounded hover:bg-gray-700 transition text-center cursor-pointer"
+                className="flex-1 bg-gray-600 text-white font-normal py-3 rounded hover:bg-gray-700 transition-all text-center cursor-pointer active:scale-95 active:shadow-inner"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 Compare
@@ -363,7 +363,7 @@ const ProductModal = ({ product, onClose }) => {
                   navigate('/checkout');
                 }}
                 disabled={addingToCart}
-                className="flex-1 bg-blue-500 text-white font-normal py-3 rounded hover:bg-blue-600 transition text-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-blue-500 text-white font-normal py-3 rounded hover:bg-blue-600 transition-all text-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 active:shadow-inner"
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
               >
                 Buy

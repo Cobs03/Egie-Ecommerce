@@ -492,30 +492,33 @@ const ComparisonTable = ({ products, onRemoveProduct, onAddProduct }) => {
               {/* Combined Specifications Box */}
               <div className={`rounded-xl shadow-md p-5 border-t-4 ${getProductColorClass(productIndex)}`}>
                 {/* Brand & Price Section */}
-                <div className="mb-4 pb-4 border-b border-gray-200">
-                  <div className="mb-3">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Brand</div>
-                    <div className="text-lg font-semibold text-gray-800">{product.brand}</div>
+                <div className="mb-5 pb-5 border-b-2 border-gray-300">
+                  <div className="mb-4 bg-white/50 p-3 rounded-lg">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-medium">Brand</div>
+                    <div className="text-lg font-semibold text-gray-800">{product.brand || "N/A"}</div>
                   </div>
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Price</div>
+                  <div className="bg-white/50 p-3 rounded-lg">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-medium">Price</div>
                     <div className="text-2xl font-bold text-green-600">₱{Number(product.price).toLocaleString()}</div>
                   </div>
                 </div>
 
                 {/* Specifications Section */}
-                <div className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-                  Specifications
+                <div className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-4 flex items-center">
+                  <span className="border-b-2 border-green-500 pb-1">Specifications</span>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {extractSpecifications(product).map((specItem, specIndex) => (
-                    <div key={`${product.id}-${specIndex}`} className="text-sm">
-                      <span className="font-semibold text-gray-700">{specItem.label}:</span>{" "}
-                      <span className="text-gray-600">{renderSpecificationValue(specItem)}</span>
+                    <div 
+                      key={`${product.id}-${specIndex}`} 
+                      className="text-sm bg-white/30 p-3 rounded-lg hover:bg-white/50 transition-colors"
+                    >
+                      <div className="font-semibold text-gray-700 mb-1">{specItem.label}</div>
+                      <div className="text-gray-600 pl-2 border-l-2 border-gray-300">{renderSpecificationValue(specItem)}</div>
                     </div>
                   ))}
                   {extractSpecifications(product).length === 0 && (
-                    <div className="text-sm text-gray-400 italic text-center py-4">
+                    <div className="text-sm text-gray-400 italic text-center py-8 bg-white/30 rounded-lg">
                       No specifications available
                     </div>
                   )}
@@ -554,30 +557,33 @@ const ComparisonTable = ({ products, onRemoveProduct, onAddProduct }) => {
             {/* Combined Specifications Box */}
             <div className={`rounded-xl shadow-md p-5 border-t-4 ${getProductColorClass(productIndex)}`}>
               {/* Brand & Price Section */}
-              <div className="mb-4 pb-4 border-b border-gray-200">
-                <div className="mb-3">
-                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Brand</div>
-                  <div className="text-lg font-semibold text-gray-800">{product.brand}</div>
+              <div className="mb-5 pb-5 border-b-2 border-gray-300">
+                <div className="mb-4 bg-white/50 p-3 rounded-lg">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-medium">Brand</div>
+                  <div className="text-lg font-semibold text-gray-800">{product.brand || "N/A"}</div>
                 </div>
-                <div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Price</div>
+                <div className="bg-white/50 p-3 rounded-lg">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-medium">Price</div>
                   <div className="text-2xl font-bold text-green-600">₱{Number(product.price).toLocaleString()}</div>
                 </div>
               </div>
 
               {/* Specifications Section */}
-              <div className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-                Specifications
+              <div className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-4 flex items-center">
+                <span className="border-b-2 border-green-500 pb-1">Specifications</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {extractSpecifications(product).map((specItem, specIndex) => (
-                  <div key={`mobile-spec-${product.id}-${specIndex}`} className="text-sm">
-                    <span className="font-semibold text-gray-700">{specItem.label}:</span>{" "}
-                    <span className="text-gray-600">{renderSpecificationValue(specItem)}</span>
+                  <div 
+                    key={`mobile-spec-${product.id}-${specIndex}`} 
+                    className="text-sm bg-white/30 p-3 rounded-lg hover:bg-white/50 transition-colors"
+                  >
+                    <div className="font-semibold text-gray-700 mb-1">{specItem.label}</div>
+                    <div className="text-gray-600 pl-2 border-l-2 border-gray-300">{renderSpecificationValue(specItem)}</div>
                   </div>
                 ))}
                 {extractSpecifications(product).length === 0 && (
-                  <div className="text-sm text-gray-400 italic text-center py-4">
+                  <div className="text-sm text-gray-400 italic text-center py-8 bg-white/30 rounded-lg">
                     No specifications available
                   </div>
                 )}

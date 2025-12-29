@@ -1,12 +1,14 @@
-import { useState } from "react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useScrollAnimation } from "../../../hooks/useScrollAnimation";
 
 const Faq = () => {
+  const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 });
+  
   const faqs = [
     {
       question: "Do you offer warranties on your products?",
@@ -31,7 +33,14 @@ const Faq = () => {
   ];
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6 mb-4">
+    <div 
+      ref={ref}
+      className={`max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6 mb-4 transition-all duration-1000 ${
+        isVisible 
+          ? 'opacity-100 translate-y-0' 
+          : 'opacity-0 translate-y-10'
+      }`}
+    >
       <h1 className="text-3xl font-semibold text-center mb-6">FAQs</h1>
 
       <Accordion type="single" collapsible>

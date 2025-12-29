@@ -58,7 +58,7 @@ const Products = () => {
   }, [isSidebarOpen]);
 
   return (
-    <div className="relative">
+    <div className="relative bg-slate-300" >
       {/* Mobile Sidebar Toggle Button */}
       <div className="lg:hidden fixed top-28 left-4 z-[200]">
         <button

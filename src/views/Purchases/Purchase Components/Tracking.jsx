@@ -4,6 +4,7 @@ import { UserOrderService } from "../../../services/UserOrderService";
 import { getImageUrl } from "../../../lib/supabase";
 import { MdLocationOn } from "react-icons/md";
 import { BsClipboard, BsTruck, BsBox, BsCheck2Circle } from "react-icons/bs";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const Tracking = () => {
   const { id } = useParams();

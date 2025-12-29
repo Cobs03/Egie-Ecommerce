@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { FaEye } from "react-icons/fa";
 import { IoMdEyeOff } from "react-icons/io";
+import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -15,6 +16,10 @@ const ResetPassword = () => {
   const [error, setError] = useState('');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // Scroll animations
+  const formAnim = useScrollAnimation({ threshold: 0.1 });
+  const imageAnim = useScrollAnimation({ threshold: 0.1 });
 
   useEffect(() => {
     const initializePasswordReset = async () => {
@@ -112,7 +117,14 @@ const ResetPassword = () => {
   return (
     <div className="flex flex-col md:flex-row h-screen text-[#F3F7F6]">
       {/* Left Side with Form */}
-      <div className="w-full md:w-1/2 bg-black p-4 md:p-10 shadow-lg flex flex-col justify-center h-full overflow-y-auto">
+      <div 
+        ref={formAnim.ref}
+        className={`w-full md:w-1/2 bg-black p-4 md:p-10 shadow-lg flex flex-col justify-center h-full overflow-y-auto transition-all duration-700 ${
+          formAnim.isVisible
+            ? "opacity-100 translate-x-0"
+            : "opacity-0 -translate-x-8"
+        }`}
+      >
         <div className="flex items-center mb-3 justify-center">
           <img
             className="w-24 h-16 md:w-28 md:h-20 object-contain"
@@ -165,7 +177,7 @@ const ResetPassword = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-all duration-200 active:scale-90 hover:scale-110"
               >
                 {showPassword ? (
                   <IoMdEyeOff className="w-5 h-5" />
@@ -198,7 +210,7 @@ const ResetPassword = () => {
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-all duration-200 active:scale-90 hover:scale-110"
               >
                 {showConfirmPassword ? (
                   <IoMdEyeOff className="w-5 h-5" />
@@ -214,7 +226,7 @@ const ResetPassword = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full sm:w-[60%] bg-green-500 text-white px-4 py-2 rounded-3xl cursor-pointer hover:bg-green-600 border hover:border-green-600 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-[60%] bg-green-500 text-white px-4 py-2 rounded-3xl cursor-pointer hover:bg-green-600 border hover:border-green-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 hover:scale-105"
             >
               {loading ? "Updating..." : "Update Password"}
             </button>
@@ -223,7 +235,14 @@ const ResetPassword = () => {
       </div>
 
       {/* Right Side with Illustration - Only visible on desktop */}
-      <div className="hidden md:flex md:w-1/2 bg-gradient-to-r from-green-200 to-blue-200 items-center justify-center">
+      <div 
+        ref={imageAnim.ref}
+        className={`hidden md:flex md:w-1/2 bg-gradient-to-r from-green-200 to-blue-200 items-center justify-center transition-all duration-700 ${
+          imageAnim.isVisible
+            ? "opacity-100 translate-x-0"
+            : "opacity-0 translate-x-8"
+        }`}
+      >
         <img
           className="w-full h-full object-cover"
           src="https://i.ibb.co/yF04zrC9/vecteezy-computer-electronic-chip-with-processor-transistors-29336852.jpg"

@@ -1,10 +1,13 @@
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaExclamationCircle } from 'react-icons/fa';
+import { useScrollAnimation } from '../../hooks/useScrollAnimation';
 
 const PaymentFailed = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  
+  const containerAnim = useScrollAnimation({ threshold: 0.1 });
   
   const orderId = searchParams.get('order_id');
 
@@ -22,7 +25,12 @@ const PaymentFailed = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+      <div 
+        ref={containerAnim.ref}
+        className={`bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center transition-all duration-700 ${
+          containerAnim.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+        }`}
+      >
         <div className="mb-6">
           <div className="bg-red-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
             <FaExclamationCircle className="text-red-500 text-5xl" />
@@ -68,13 +76,13 @@ const PaymentFailed = () => {
         <div className="space-y-3">
           <button
             onClick={handleRetry}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors active:scale-95 transition-transform duration-150"
           >
             Try Again
           </button>
           <button
             onClick={handleBackToHome}
-            className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-colors"
+            className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-colors active:scale-95 transition-transform duration-150"
           >
             Back to Home
           </button>

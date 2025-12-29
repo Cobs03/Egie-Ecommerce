@@ -8,10 +8,12 @@ import { IoCloseCircleOutline } from "react-icons/io5";
 import { toast } from "sonner";
 import { useCart } from "../../../../../context/CartContext";
 import { supabase } from "../../../../../lib/supabase";
+import { useScrollAnimation } from "../../../../../hooks/useScrollAnimation";
 
 const ProductDetails = ({ product }) => {
   const { addToCart, user } = useCart();
   const navigate = useNavigate();
+  const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 });
   
   // Rating and sold count states
   const [ratingSummary, setRatingSummary] = useState(null);
@@ -138,7 +140,9 @@ const ProductDetails = ({ product }) => {
   );
 
   return (
-    <div className="container mx-auto py-10 px-10 text-white ">
+    <div ref={ref} className={`container mx-auto py-10 px-10 text-white transition-all duration-1000 ${
+      isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+    }`}>
       <div className="flex flex-col lg:flex-row gap-8 mt-2 bg-white py-8 shadow-md rounded-2xl">
         {/* Image Slider */}
         <div className="w-full lg:w-1/2">
@@ -259,7 +263,7 @@ const ProductDetails = ({ product }) => {
                   <button
                     key={variation}
                     onClick={() => setSelectedVariation(variation)}
-                    className={`border px-4 py-2 rounded text-sm transition cursor-pointer ${
+                    className={`border px-4 py-2 rounded text-sm transition-all cursor-pointer active:scale-95 ${
                       selectedVariation === variation
                         ? "border-green-500 bg-green-500 text-white"
                         : "border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
@@ -280,7 +284,7 @@ const ProductDetails = ({ product }) => {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setQuantity((prev) => Math.max(prev - 1, 1))}
-                className="px-3 py-2 border border-green-500 rounded text-green-500 hover:bg-green-500 hover:text-white transition cursor-pointer"
+                className="px-3 py-2 border border-green-500 rounded text-green-500 hover:bg-green-500 hover:text-white transition-all cursor-pointer active:scale-95"
               >
                 −
               </button>
@@ -292,7 +296,7 @@ const ProductDetails = ({ product }) => {
               />
               <button
                 onClick={() => setQuantity((prev) => Math.min(prev + 1, stock))}
-                className="px-3 py-2 border border-green-500 rounded text-green-500 hover:bg-green-500 hover:text-white transition cursor-pointer"
+                className="px-3 py-2 border border-green-500 rounded text-green-500 hover:bg-green-500 hover:text-white transition-all cursor-pointer active:scale-95"
               >
                 +
               </button>
@@ -327,7 +331,7 @@ const ProductDetails = ({ product }) => {
                 setAddingToCart(false);
               }}
               disabled={addingToCart || stock === 0}
-              className="flex-1 bg-green-500 text-white font-medium py-3 rounded hover:bg-green-600 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-green-500 text-white font-medium py-3 rounded hover:bg-green-600 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 active:shadow-inner"
             >
               {addingToCart ? 'Adding...' : 'Add To Cart'}
             </button>
@@ -355,7 +359,7 @@ const ProductDetails = ({ product }) => {
                 navigate('/checkout');
               }}
               disabled={addingToCart || stock === 0}
-              className="flex-1 bg-blue-500 text-white font-medium py-3 rounded hover:bg-blue-600 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-blue-500 text-white font-medium py-3 rounded hover:bg-blue-600 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 active:shadow-inner"
             >
               Buy
             </button>

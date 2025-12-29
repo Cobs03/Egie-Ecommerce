@@ -98,8 +98,10 @@ const SearchFill = ({ filters, onChange, selectedCategory }) => {
 
   return (
     <div className=" text-white p-6 h-full">
-      <h2 className="text-2xl font-bold mb-6 text-white">Search Filter</h2>
-
+      <h2 className="text-2xl font-bold mb-6 text-white font-['Bruno_Ace_SC']">
+        Search Filter
+      </h2>
+      <hr className="mb-4" />
       {/* Price Range */}
       <div className="mb-8">
         <label className="block mb-4 font-semibold text-white">
@@ -128,13 +130,14 @@ const SearchFill = ({ filters, onChange, selectedCategory }) => {
           </div>
         </div>
         <button
-          className="w-full bg-green-500 text-white py-3 rounded font-semibold hover:bg-green-600 transition-colors"
+          className="w-full bg-green-500 text-white py-3 rounded font-semibold hover:bg-green-600 transition-all active:scale-95 active:shadow-inner"
           onClick={applyPrice}
         >
           APPLY
         </button>
       </div>
 
+      <hr className="mb-4" />
       {/* Brand Filter */}
       <div className="mb-8">
         <label className="block mb-4 font-semibold text-white">By Brand</label>
@@ -145,23 +148,28 @@ const SearchFill = ({ filters, onChange, selectedCategory }) => {
         ) : (
           <div className="space-y-3">
             {(showAllBrands ? allBrands : allBrands.slice(0, 4))
-              .filter(brand => brand && brand.id && brand.name) // Safety check
+              .filter((brand) => brand && brand.id && brand.name) // Safety check
               .map((brand) => (
-              <label key={brand.id} className="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  value={brand.id}
-                  checked={selectedBrands.includes(brand.id)}
-                  onChange={() => toggleBrand(brand.id)}
-                  className="w-4 h-4 text-green-500 bg-black bg-opacity-50 border-gray-600 rounded focus:ring-green-500 focus:ring-2"
-                />
-                <span className="ml-3 text-gray-300">{String(brand.name)}</span>
-              </label>
-            ))}
+                <label
+                  key={brand.id}
+                  className="flex items-center cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    value={brand.id}
+                    checked={selectedBrands.includes(brand.id)}
+                    onChange={() => toggleBrand(brand.id)}
+                    className="w-4 h-4 text-green-500 bg-black bg-opacity-50 border-gray-600 rounded focus:ring-green-500 focus:ring-2"
+                  />
+                  <span className="ml-3 text-gray-300">
+                    {String(brand.name)}
+                  </span>
+                </label>
+              ))}
             {allBrands.length > 4 && (
               <button
                 onClick={() => setShowAllBrands(!showAllBrands)}
-                className="text-green-500 hover:text-green-400 text-sm font-medium transition-colors"
+                className="text-green-500 hover:text-green-400 text-sm font-medium transition-all active:scale-95"
               >
                 {showAllBrands ? "Show Less" : `Show All (${allBrands.length})`}
               </button>
@@ -170,6 +178,7 @@ const SearchFill = ({ filters, onChange, selectedCategory }) => {
         )}
       </div>
 
+      <hr className="mb-4" />
       {/* Rating Filter */}
       <div className="mb-8">
         <label className="block mb-4 font-semibold text-white">By Rate</label>
@@ -177,9 +186,9 @@ const SearchFill = ({ filters, onChange, selectedCategory }) => {
           {[5, 4, 3, 2, 1].map((rating) => (
             <button
               key={rating}
-              className={`flex items-center space-x-2 w-full p-2 rounded transition-colors ${
+              className={`flex items-center space-x-2 w-full p-2 rounded transition-all active:scale-95 ${
                 selectedRating === rating
-                  ? "bg-green-500 text-white"
+                  ? "bg-green-500 text-white shadow-md active:shadow-inner"
                   : "text-yellow-400 hover:bg-black hover:bg-opacity-30"
               }`}
               onClick={() => applyRating(rating)}
@@ -202,6 +211,7 @@ const SearchFill = ({ filters, onChange, selectedCategory }) => {
         </div>
       </div>
 
+      <hr className="mb-4" />
       {/* Discount Filter */}
       <div className="mb-8">
         <label className="block mb-4 font-semibold text-white">
@@ -225,7 +235,7 @@ const SearchFill = ({ filters, onChange, selectedCategory }) => {
 
       {/* Clear All Button */}
       <button
-        className="w-full bg-green-500 text-white py-3 rounded font-semibold hover:bg-green-600 transition-colors mb-6"
+        className="w-full bg-green-500 text-white py-3 rounded font-semibold hover:bg-green-600 transition-all active:scale-95 active:shadow-inner mb-6"
         onClick={clearAll}
       >
         CLEAR ALL

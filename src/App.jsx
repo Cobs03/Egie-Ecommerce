@@ -81,7 +81,7 @@ const Main = () => {
           <Route
             path="/"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <Landing />
               </div>
             }
@@ -121,7 +121,7 @@ const Main = () => {
           <Route
             path="/products"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <Products />
               </div>
             }
@@ -129,7 +129,7 @@ const Main = () => {
           <Route
             path="/products/details"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <ProductDetails />
               </div>
             }
@@ -137,7 +137,7 @@ const Main = () => {
           <Route
             path="/products/bundle-details/:bundleId"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <BundleDetails />
               </div>
             }
@@ -145,7 +145,7 @@ const Main = () => {
           <Route
             path="/cart"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <Cart />
               </div>
             }
@@ -153,7 +153,7 @@ const Main = () => {
           <Route
             path="/checkout"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <Checkout />
               </div>
             }
@@ -161,7 +161,7 @@ const Main = () => {
           <Route
             path="/thankyou"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <ThankYou />
               </div>
             }
@@ -177,7 +177,7 @@ const Main = () => {
           <Route
             path="/buildpc"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <SystemBuild />
               </div>
             }
@@ -185,7 +185,7 @@ const Main = () => {
           <Route
             path="/contactus"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <ContactUs />
               </div>
             }
@@ -193,7 +193,7 @@ const Main = () => {
           <Route
             path="/notification"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <Notification />
               </div>
             }
@@ -201,7 +201,7 @@ const Main = () => {
           <Route
             path="/purchases"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <Purchases />
               </div>
             }
@@ -209,7 +209,7 @@ const Main = () => {
           <Route
             path="/purchases/details/:id"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <OrderDetails />
               </div>
             }
@@ -217,7 +217,7 @@ const Main = () => {
           <Route
             path="/purchases/tracking/:id"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <Tracking />
               </div>
             }
@@ -225,7 +225,7 @@ const Main = () => {
           <Route
             path="/my-inquiries"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <MyInquiries />
               </div>
             }
@@ -233,7 +233,7 @@ const Main = () => {
           <Route
             path="/compare"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <Compare />
               </div>
             }
@@ -241,7 +241,7 @@ const Main = () => {
           <Route
             path="/terms"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <Terms />
               </div>
             }
@@ -249,7 +249,7 @@ const Main = () => {
           <Route
             path="/privacy"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <Policy />
               </div>
             }
@@ -257,7 +257,7 @@ const Main = () => {
           <Route
             path="/settings"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <Settings />
               </div>
             }
@@ -265,7 +265,7 @@ const Main = () => {
           <Route
             path="*"
             element={
-              <div className="mt-32.5 max-md:mt-22.5 container-responsive">
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <Notfound />
               </div>
             }

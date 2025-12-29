@@ -97,7 +97,7 @@ const BundleDetails = () => {
           <p className="text-red-500 text-xl mb-4">{error || 'Bundle not found'}</p>
           <button
             onClick={() => navigate('/products')}
-            className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
+            className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition-all active:scale-95 active:shadow-inner"
           >
             Back to Products
           </button>
@@ -133,7 +133,7 @@ const BundleDetails = () => {
         <div className="mb-6">
           <button
             onClick={() => navigate(-1)}
-            className="text-gray-600 hover:text-gray-800 mb-4 flex items-center gap-2"
+            className="text-gray-600 hover:text-gray-800 mb-4 flex items-center gap-2 transition-all active:scale-95"
           >
             ← Back
           </button>

@@ -5,6 +5,7 @@ import ComparisonSelector from "./Compare Components/ComparisonSelector";
 import ComparisonTable from "./Compare Components/ComparisonTable";
 import AIRecommendation from "./Compare Components/AIRecommendation";
 import ProductModal from "../Products/ProductGrid/ProductModal/ProductModal";
+import { useScrollAnimation } from "../../hooks/useScrollAnimation";
 
 const Compare = () => {
   const location = useLocation();
@@ -12,6 +13,10 @@ const Compare = () => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProductForModal, setSelectedProductForModal] = useState(null);
+  
+  const headerAnim = useScrollAnimation({ threshold: 0.1 });
+  const emptyStateAnim = useScrollAnimation({ threshold: 0.1 });
+  const tableAnim = useScrollAnimation({ threshold: 0.1 });
   
   // New state for product modal
   const [showProductModal, setShowProductModal] = useState(false);
@@ -67,7 +72,12 @@ const Compare = () => {
       
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="py-4 text-center shadow-sm mb-6">
+        <div 
+          ref={headerAnim.ref}
+          className={`py-4 text-center shadow-sm mb-6 transition-all duration-700 ${
+            headerAnim.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+          }`}
+        >
           <h1 className="text-2xl font-semibold font-['Bruno_Ace_SC']">
             Compare Products
           </h1>
@@ -75,7 +85,12 @@ const Compare = () => {
 
         {productsToCompare.length === 0 ? (
           /* Empty state */
-          <div className="bg-white rounded-lg shadow-md py-16 flex flex-col items-center justify-center">
+          <div 
+            ref={emptyStateAnim.ref}
+            className={`bg-white rounded-lg shadow-md py-16 flex flex-col items-center justify-center transition-all duration-700 ${
+              emptyStateAnim.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+            }`}
+          >
             <p className="text-gray-600 mb-4">No Component Selected</p>
             <div className="text-6xl text-gray-800 mb-8">
               <FaCog className="inline-block animate-spin-slow" />
@@ -84,15 +99,13 @@ const Compare = () => {
             </div>
             <button
               onClick={handleAddComponent}
-              className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md transition-colors"
+              className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md transition-colors active:scale-95 transition-transform duration-150"
             >
               Add a Component
             </button>
           </div>
         ) : (
-          <>
-
-            
+          <div>
             {/* Comparison Table */}
             <ComparisonTable 
               products={productsToCompare} 
@@ -107,7 +120,7 @@ const Compare = () => {
                 onViewDetails={handleViewProductDetails} 
               />
             )}
-          </>
+          </div>
         )}
       </div>
     </div>

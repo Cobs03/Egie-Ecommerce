@@ -20,7 +20,7 @@ const OrderTabs = ({ activeTab, onChange }) => {
           <button
             key={tab}
             onClick={() => onChange(tab)}
-            className={`cursor-pointer whitespace-nowrap py-2 border-b-2 font-medium text-sm transition-colors ${
+            className={`cursor-pointer whitespace-nowrap py-2 border-b-2 font-medium text-sm transition-all duration-200 active:scale-95 hover:scale-105 ${
               activeTab === tab
                 ? "border-green-500 text-green-500"
                 : "border-transparent text-gray-600 hover:text-blue-500"

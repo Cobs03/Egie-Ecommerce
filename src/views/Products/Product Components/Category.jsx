@@ -84,7 +84,9 @@ const Category = ({ selectedCategory, setSelectedCategory }) => {
 
   return (
     <div className="bg-white mb-6 z-40">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">All Categories</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-4 font-['Bruno_Ace_SC']">
+        All Categories
+      </h2>
       <Carousel className="w-full">
         <CarouselContent className="-ml-2 z-30">
           {categoryData.map((category, index) => (

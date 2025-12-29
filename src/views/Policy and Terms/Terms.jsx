@@ -1,11 +1,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 
 const Terms = () => {
+  const containerAnim = useScrollAnimation({ threshold: 0.1 });
+
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="bg-white shadow-md rounded-lg p-6 md:p-8">
+        <div 
+          ref={containerAnim.ref}
+          className={`bg-white shadow-md rounded-lg p-6 md:p-8 transition-all duration-700 ${
+            containerAnim.isVisible
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-8"
+          }`}
+        >
           <h1 className="text-3xl font-bold text-center mb-8 text-gray-800 font-['Bruno_Ace_SC']">
             Terms and Conditions
           </h1>

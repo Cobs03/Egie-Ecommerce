@@ -212,7 +212,7 @@ const BundleModal = ({ bundle, onClose }) => {
                     <img
                       src={image}
                       alt={`Bundle ${index + 1}`}
-                      className="object-contain max-h-full max-w-full"
+                      className="object-contain max-h-full max-w-full m-auto"
                       onError={(e) => {
                         e.target.src = '/images/bundle.png';
                       }}
@@ -243,7 +243,7 @@ const BundleModal = ({ bundle, onClose }) => {
                       <img
                         src={image}
                         alt={`Thumbnail ${index + 1}`}
-                        className="object-contain h-full w-full"
+                        className="object-contain h-full w-full m-auto"
                         onError={(e) => {
                           e.target.src = '/images/bundle.png';
                         }}
@@ -300,9 +300,9 @@ const BundleModal = ({ bundle, onClose }) => {
                     <button
                       key={category}
                       onClick={() => setSelectedFilter(category)}
-                      className={`border px-4 py-2 rounded text-sm transition cursor-pointer ${
+                      className={`border px-4 py-2 rounded text-sm transition-all cursor-pointer active:scale-95 ${
                         selectedFilter === category
-                          ? "border-green-500 bg-green-500 text-white"
+                          ? "border-green-500 bg-green-500 text-white active:shadow-inner"
                           : "border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
                       }`}
                     >
@@ -321,7 +321,7 @@ const BundleModal = ({ bundle, onClose }) => {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setQuantity((prev) => Math.max(prev - 1, 1))}
-                  className="border border-green-500 text-green-500 px-4 py-2 rounded hover:bg-green-500 hover:text-white transition"
+                  className="border border-green-500 text-green-500 px-4 py-2 rounded hover:bg-green-500 hover:text-white transition-all active:scale-95"
                 >
                   -
                 </button>
@@ -334,7 +334,7 @@ const BundleModal = ({ bundle, onClose }) => {
                 />
                 <button
                   onClick={() => setQuantity((prev) => prev + 1)}
-                  className="border border-green-500 text-green-500 px-4 py-2 rounded hover:bg-green-500 hover:text-white transition"
+                  className="border border-green-500 text-green-500 px-4 py-2 rounded hover:bg-green-500 hover:text-white transition-all active:scale-95"
                 >
                   +
                 </button>
@@ -347,7 +347,7 @@ const BundleModal = ({ bundle, onClose }) => {
               <button
                 onClick={handleAddToCart}
                 disabled={addingToCart}
-                className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 active:scale-95 active:shadow-inner"
               >
                 <ShoppingCart size={20} />
                 {addingToCart ? 'Adding...' : 'Add Entire Bundle'}
@@ -357,7 +357,7 @@ const BundleModal = ({ bundle, onClose }) => {
             {/* View More Details Button */}
             <button
               onClick={handleViewMoreDetails}
-              className="w-full border-2 border-green-500 text-green-500 hover:bg-green-500 hover:text-white py-3 rounded-lg font-semibold transition"
+              className="w-full border-2 border-green-500 text-green-500 hover:bg-green-500 hover:text-white py-3 rounded-lg font-semibold transition-all active:scale-95"
             >
               VIEW MORE DETAILS
             </button>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../../../lib/supabase";
+import { useScrollAnimation } from "../../../hooks/useScrollAnimation";
 import {
   Carousel,
   CarouselContent,
@@ -12,6 +13,7 @@ import {
 const Feature = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 });
 
   // Fetch categories from Supabase
   useEffect(() => {
@@ -88,7 +90,14 @@ const Feature = () => {
   };
 
   return (
-    <div className="bg-gray-100 p-4 sm:p-6 md:p-8 rounded-lg">
+    <div 
+      ref={ref}
+      className={`bg-gray-100 p-4 sm:p-6 md:p-8 rounded-lg transition-all duration-1000 ${
+        isVisible 
+          ? 'opacity-100 translate-y-0' 
+          : 'opacity-0 translate-y-10'
+      }`}
+    >
       <p className="text-left mb-4 sm:mb-6 text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold">
         Featured Products
       </p>

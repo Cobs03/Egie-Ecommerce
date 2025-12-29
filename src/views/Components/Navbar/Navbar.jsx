@@ -47,9 +47,39 @@ const Navbar = ({ isAuth }) => {
   const [userAvatar, setUserAvatar] = useState("https://randomuser.me/api/portraits/men/32.jpg");
   const [userFullName, setUserFullName] = useState("");
 
+  // Scroll hide/show state
+  const [showNavbar, setShowNavbar] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
   const navigate = useNavigate();
 
   const location = useLocation();
+
+  // Handle scroll to show/hide navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY < 10) {
+        // Always show navbar at the top of the page
+        setShowNavbar(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down & past 100px - hide navbar
+        setShowNavbar(false);
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling up - show navbar
+        setShowNavbar(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [lastScrollY]);
 
   // Fetch notification count
   useEffect(() => {
@@ -186,12 +216,12 @@ const Navbar = ({ isAuth }) => {
   };
 
   return (
-    <div className={`navbar ${isAuth ? "auth-navbar" : "main-navbar"}`}>
+    <>
       {isAuth ? (
-        <div className="auth-header "></div>
+        null
       ) : (
-        <div className="main-header">
-          <nav className="bg-gradient-to-r from-green-200 to-green-300 border-gray-200 w-full min-w-[320px] md:min-w-[768px] lg:min-w-[1024px] xl:min-w-[1280px] fixed top-0 left-0 right-0 z-[500] ">
+        <>
+          <nav className={`navbar bg-gradient-to-r from-green-200 to-green-300 border-gray-200 w-full min-w-[320px] md:min-w-[768px] lg:min-w-[1024px] xl:min-w-[1280px] fixed top-0 left-0 right-0 z-[500] transition-transform duration-300 ease-in-out ${showNavbar ? 'translate-y-0' : '-translate-y-full'}`}>
             {/* UPPER NAVBAR - Desktop */}
             <div className="hidden md:flex bg-gradient-to-r from-green-100 to-green-300 text-black px-5 py-1 justify-around items-center w-full h-10">
               <div className="text-[10px] font-bold">
@@ -278,9 +308,9 @@ const Navbar = ({ isAuth }) => {
               <div className="flex-1 flex justify-center md:flex-1 max-md:justify-start">
                 <Link to="/">
                   <img
-                    src="https://i.ibb.co/tp4Bkfzs/egie-removebg-preview-1.png"
+                    src="/Logo/Nameless Logo.png"
                     alt="EGIE logo"
-                    border="0"
+                    className="h-12 md:h-16"
                   />
                 </Link>
               </div>
@@ -573,7 +603,7 @@ const Navbar = ({ isAuth }) => {
               className="lg:hidden bg-black border-t border-gray-700"
               style={{
                 position: "fixed",
-                top: "90px",
+                top: "65px",
                 left: 0,
                 right: 0,
                 zIndex: 2000,
@@ -627,30 +657,31 @@ const Navbar = ({ isAuth }) => {
                     Compare
                   </Link>
                 </div>
-                {/* Profile Accordion */}
-                <div className="border-t border-gray-700 pt-2">
-                  <button
-                    className="flex items-center w-full px-3 py-2 text-white hover:text-green-400 transition rounded-lg"
-                    onClick={() => setShowProfileAccordion((prev) => !prev)}
-                  >
-                    <img
-                      src={userAvatar}
-                      alt="Profile"
-                      className="w-7 h-7 rounded-full object-cover mr-2"
-                    />
-                    <span className="flex-1 text-left">Profile</span>
-                    <svg
-                      className={`w-4 h-4 ml-2 transition-transform ${
-                        showProfileAccordion ? "rotate-90" : ""
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
+                {/* Profile Accordion or Sign In/Sign Up */}
+                {user ? (
+                  <div className="border-t border-gray-700 pt-2">
+                    <button
+                      className="flex items-center w-full px-3 py-2 text-white hover:text-green-400 transition rounded-lg"
+                      onClick={() => setShowProfileAccordion((prev) => !prev)}
                     >
-                      <path d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
+                      <img
+                        src={userAvatar}
+                        alt="Profile"
+                        className="w-7 h-7 rounded-full object-cover mr-2"
+                      />
+                      <span className="flex-1 text-left">Profile</span>
+                      <svg
+                        className={`w-4 h-4 ml-2 transition-transform ${
+                          showProfileAccordion ? "rotate-90" : ""
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
                   {showProfileAccordion && (
                     <div className="pl-10 py-1 space-y-1">
                       <button
@@ -715,7 +746,25 @@ const Navbar = ({ isAuth }) => {
                       </button>
                     </div>
                   )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="border-t border-gray-700 pt-2 space-y-2">
+                    <Link
+                      to="/signin"
+                      className="block px-3 py-2 text-center border-2 border-green-400 text-white rounded-full hover:bg-green-400 hover:text-black transition font-semibold"
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      to="/auth"
+                      className="block px-3 py-2 text-center border-2 border-green-400 text-white rounded-full hover:bg-green-400 hover:text-black transition font-semibold"
+                      onClick={() => setShowMobileMenu(false)}
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
+                )}
                 {/* Icons */}
                 <div className="flex items-center gap-4 pt-2 border-t border-gray-700">
                   <Link
@@ -793,9 +842,9 @@ const Navbar = ({ isAuth }) => {
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
-    </div>
+    </>
   );
 };
 

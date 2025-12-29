@@ -16,7 +16,7 @@ const Footer = ({ isAuth }) => {
             {/* Logo */}
             <div className="mb-6 w-full sm:w-auto">
               <img
-                src="https://i.ibb.co/tp4Bkfzs/egie-removebg-preview-1.png"
+                src="/Logo/Nameless Logo.png"
                 alt="EGIE Game Shop"
                 className="w-[280px] sm:w-[350px] mx-auto sm:mx-0"
               />
@@ -115,18 +115,7 @@ const Footer = ({ isAuth }) => {
           </div>
         </>
       )}
-      <div className="legal-links">
-        {/* Update these links to point to your new pages */}
-        <Link to="/terms" className="text-gray-300 hover:text-white mx-2">
-          Terms & Conditions
-        </Link>
-        <Link
-          to="/privacy-policy"
-          className="text-gray-300 hover:text-white mx-2"
-        >
-          Privacy Policy
-        </Link>
-      </div>
+  
     </footer>
   );
 };

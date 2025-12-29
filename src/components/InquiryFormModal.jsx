@@ -59,7 +59,7 @@ const InquiryFormModal = ({ product, onClose, onSuccess }) => {
           <h2 className="text-2xl font-bold text-gray-800">Ask a Question</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
+            className="text-gray-500 hover:text-gray-700 transition-all active:scale-95"
           >
             <FaTimes size={24} />
           </button>
@@ -101,7 +101,7 @@ const InquiryFormModal = ({ product, onClose, onSuccess }) => {
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="e.g., Compatibility Question"
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all placeholder:text-gray-400"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Briefly describe your question
@@ -119,7 +119,7 @@ const InquiryFormModal = ({ product, onClose, onSuccess }) => {
                 required
                 rows={5}
                 maxLength={1000}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none placeholder:text-gray-400"
               />
               <p className="text-xs text-gray-500 mt-1">
                 {question.length}/1000 characters
@@ -132,14 +132,14 @@ const InquiryFormModal = ({ product, onClose, onSuccess }) => {
         <div className="flex justify-end gap-3 p-6 border-t bg-gray-50">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
+            className="px-6 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all active:scale-95"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={submitting || !subject.trim() || !question.trim()}
-            className="px-6 py-2.5 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-2.5 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all active:scale-95 active:shadow-inner"
           >
             {submitting ? 'Submitting...' : 'Submit Question'}
           </button>

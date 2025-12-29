@@ -24,6 +24,7 @@ const ProductGrid = ({ selectedCategory, filters }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [addingToCart, setAddingToCart] = useState(null);
   const [productRatings, setProductRatings] = useState({});
+  const [cardsVisible, setCardsVisible] = useState(false);
   
   const { addToCart, user } = useCart();
 
@@ -94,6 +95,15 @@ const ProductGrid = ({ selectedCategory, filters }) => {
     };
     
     loadRatings();
+  }, [products]);
+
+  // Trigger card animations when products load
+  useEffect(() => {
+    if (products && products.length > 0) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => setCardsVisible(true), 100);
+      return () => clearTimeout(timer);
+    }
   }, [products]);
 
   // Helper function to determine stock status based on quantity
@@ -186,7 +196,14 @@ const ProductGrid = ({ selectedCategory, filters }) => {
             <div
               key={index}
               onClick={() => setSelectedProduct(product)}
-              className="bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden group"
+              className={`bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-all duration-500 cursor-pointer overflow-hidden group active:scale-95 ${ 
+                cardsVisible 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 translate-y-4'
+              }`}
+              style={{
+                transitionDelay: cardsVisible ? `${index * 50}ms` : '0ms'
+              }}
             >
               <div className="w-full h-32 bg-gray-50 relative overflow-hidden">
                 <img

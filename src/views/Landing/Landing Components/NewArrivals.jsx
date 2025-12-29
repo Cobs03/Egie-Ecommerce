@@ -3,6 +3,7 @@ import ProductModal from "../../Products/ProductGrid/ProductModal/ProductModal";
 import { supabase } from "../../../lib/supabase";
 import ReviewService from "../../../services/ReviewService";
 import { ProductService } from "../../../services/ProductService";
+import { useScrollAnimation } from "../../../hooks/useScrollAnimation";
 import {
   Carousel,
   CarouselContent,
@@ -15,6 +16,7 @@ const NewArrivals = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 });
 
   // Helper function to get stock status color
   const getStockStatusColor = (stockStatus) => {
@@ -136,7 +138,14 @@ const NewArrivals = () => {
   ];
 
   return (
-    <div className="my-4 p-10 relative">
+    <div 
+      ref={ref}
+      className={`my-4 p-10 relative transition-all duration-1000 ${
+        isVisible 
+          ? 'opacity-100 translate-y-0' 
+          : 'opacity-0 translate-y-10'
+      }`}
+    >
       <div className="flex justify-between items-center mb-4 px-2">
         <h2 className="text-2xl font-semibold">NEW ARRIVALS</h2>
         <a
@@ -159,7 +168,6 @@ const NewArrivals = () => {
               className="pl-2 md:pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/4 xl:basis-1/5"
             >
               <div
-                key={product.id}
                 onClick={() => setSelectedProduct(product)}
                 className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 p-3 sm:p-4 cursor-pointer flex flex-col h-full"
               >

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import ProductModal from "../../ProductModal/ProductModal";
 import { supabase } from "../../../../../lib/supabase";
+import { useScrollAnimation } from "../../../../../hooks/useScrollAnimation";
 
 const pageSize = 6;
 
 const CompComponents = ({ product }) => {
+  const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 });
   const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedComponent, setSelectedComponent] = useState(null);
@@ -83,7 +85,9 @@ const CompComponents = ({ product }) => {
   );
 
   return (
-    <>
+    <div ref={ref} className={`transition-all duration-1000 ${
+      isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+    }`}>
       <h2 className="text-lg font-semibold mt-6 mb-4">Compatible Components</h2>
       <p className="text-sm text-gray-600 mb-4">
         Products that work with this item based on compatibility tags
@@ -147,7 +151,7 @@ const CompComponents = ({ product }) => {
       {/* Pagination */}
       <div className="flex justify-center items-center mt-6 gap-2">
         <button
-          className="px-3 py-1 rounded border bg-gray-100 text-gray-700 hover:bg-gray-200"
+          className="px-3 py-1 rounded border bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all active:scale-95"
           disabled={currentPage === 1}
           onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
         >
@@ -156,7 +160,7 @@ const CompComponents = ({ product }) => {
         {[...Array(totalPages)].map((_, i) => (
           <button
             key={i}
-            className={`px-3 py-1 rounded border ${
+            className={`px-3 py-1 rounded border transition-all active:scale-95 ${
               currentPage === i + 1
                 ? "bg-green-500 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -167,7 +171,7 @@ const CompComponents = ({ product }) => {
           </button>
         ))}
         <button
-          className="px-3 py-1 rounded border bg-gray-100 text-gray-700 hover:bg-gray-200"
+          className="px-3 py-1 rounded border bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all active:scale-95"
           disabled={currentPage === totalPages}
           onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
         >
@@ -179,7 +183,7 @@ const CompComponents = ({ product }) => {
       {modalOpen && selectedComponent && (
         <ProductModal product={selectedComponent} onClose={handleCloseModal} />
       )}
-    </>
+    </div>
   );
 };
 

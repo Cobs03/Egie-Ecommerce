@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import OrderUpdates from "./Components/OrderUpdates";
 import Promotions from "./Components/Promotions";
 import NotificationService from "../../services/NotificationService";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const Notification = () => {
   const [activeTab, setActiveTab] = useState("Order Updates");
@@ -10,6 +11,9 @@ const Notification = () => {
   const [notificationsState, setNotificationsState] = useState([]);
   const [promotionsState, setPromotionsState] = useState([]);
   const navigate = useNavigate();
+
+  // Scroll animation
+  const containerAnim = useScrollAnimation({ threshold: 0.1 });
 
   // Fetch notifications from database
   useEffect(() => {
@@ -155,7 +159,14 @@ const Notification = () => {
 
   return (
     <div className="max-w-4xl mx-auto bg-gray-100 min-h-screen">
-      <div className="p-4 md:p-6">
+      <div 
+        ref={containerAnim.ref}
+        className={`p-4 md:p-6 transition-all duration-700 ${
+          containerAnim.isVisible
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-8"
+        }`}
+      >
         <h1 className="text-2xl font-bold mb-6 font-['Bruno_Ace_SC']">
           Notifications
         </h1>
@@ -164,7 +175,7 @@ const Notification = () => {
         <div className="flex border-b mb-4">
           <button
             onClick={() => setActiveTab("Order Updates")}
-            className={`px-4 py-2 font-medium ${
+            className={`px-4 py-2 font-medium transition-all duration-200 active:scale-95 hover:scale-105 ${
               activeTab === "Order Updates"
                 ? "text-green-600 border-b-2 border-green-600"
                 : "text-gray-600"
@@ -174,7 +185,7 @@ const Notification = () => {
           </button>
           <button
             onClick={() => setActiveTab("Promotions")}
-            className={`px-4 py-2 font-medium ${
+            className={`px-4 py-2 font-medium transition-all duration-200 active:scale-95 hover:scale-105 ${
               activeTab === "Promotions"
                 ? "text-green-600 border-b-2 border-green-600"
                 : "text-gray-600"
@@ -185,7 +196,7 @@ const Notification = () => {
 
           <button
             onClick={handleMarkAllAsRead}
-            className="ml-auto text-sm text-gray-600 hover:text-green-600"
+            className="ml-auto text-sm text-gray-600 hover:text-green-600 transition-all duration-200 active:scale-95 hover:scale-105"
             disabled={loading}
           >
             Mark all as Read

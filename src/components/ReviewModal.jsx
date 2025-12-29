@@ -105,7 +105,7 @@ const ReviewModal = ({ product, onClose, existingReview = null, user }) => {
           </h2>
           <button
             onClick={() => onClose(false)}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
+            className="text-gray-500 hover:text-gray-700 transition-all active:scale-95"
             aria-label="Close"
           >
             <IoCloseCircleOutline size={32} />
@@ -159,7 +159,7 @@ const ReviewModal = ({ product, onClose, existingReview = null, user }) => {
               onChange={(e) => setTitle(e.target.value)}
               maxLength={200}
               placeholder="Sum up your experience in one line"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder:text-gray-400"
             />
             <p className="text-xs text-gray-500 mt-1">
               {title.length}/200 characters
@@ -176,7 +176,7 @@ const ReviewModal = ({ product, onClose, existingReview = null, user }) => {
               onChange={(e) => setComment(e.target.value)}
               rows={6}
               placeholder="Tell us what you liked or didn't like about this product. How does it compare to similar products you've used?"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all resize-none"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all resize-none placeholder:text-gray-400"
             />
             <p className="text-xs text-gray-500 mt-1">
               Be specific and honest. Your review helps others make informed decisions.
@@ -202,14 +202,14 @@ const ReviewModal = ({ product, onClose, existingReview = null, user }) => {
               type="button"
               onClick={() => onClose(false)}
               disabled={submitting}
-              className="flex-1 border border-gray-300 text-gray-700 font-semibold rounded-lg px-6 py-3 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 border border-gray-300 text-gray-700 font-semibold rounded-lg px-6 py-3 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || rating === 0}
-              className="flex-1 bg-green-500 text-white font-semibold rounded-lg px-6 py-3 hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 bg-green-500 text-white font-semibold rounded-lg px-6 py-3 hover:bg-green-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-95 active:shadow-inner"
             >
               {submitting ? (
                 <>

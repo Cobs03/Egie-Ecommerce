@@ -3,6 +3,7 @@ import { FaMapMarkerAlt, FaPlus, FaTimes, FaPencilAlt, FaTrashAlt, FaChevronDown
 import OrderService from "../../../services/OrderService";
 import PhilippineAddressService from "../../../services/PhilippineAddressService";
 import { toast } from "sonner";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const Address = ({ onAddressSelect }) => {
   // Philippine Address API data
@@ -428,7 +429,7 @@ const Address = ({ onAddressSelect }) => {
 
             <button
               onClick={() => setShowAddressModal(true)}
-              className="text-sm text-blue-600 hover:bg-green-500 p-3 hover:text-white rounded transition cursor-pointer"
+              className="text-sm text-blue-600 hover:bg-green-500 p-3 hover:text-white rounded transition-all duration-150 cursor-pointer active:scale-95"
             >
               Change
             </button>
@@ -635,13 +636,13 @@ const Address = ({ onAddressSelect }) => {
                         setShowEditForm(false);
                         setEditingAddress(null);
                       }}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded cursor-pointer"
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded cursor-pointer active:scale-95 transition-transform duration-150"
                     >
                       Cancel
                     </button>
                     <button 
                       type="submit"
-                      className="px-4 py-2 bg-green-500 text-white rounded cursor-pointer"
+                      className="px-4 py-2 bg-green-500 text-white rounded cursor-pointer active:scale-95 transition-transform duration-150"
                     >
                       Save
                     </button>
@@ -677,13 +678,13 @@ const Address = ({ onAddressSelect }) => {
                     <div className="flex flex-col gap-2">
                       <button 
                         onClick={() => startEditing(address)}
-                        className="text-blue-600 hover:text-blue-800 cursor-pointer"
+                        className="text-blue-600 hover:text-blue-800 cursor-pointer active:scale-95 transition-transform duration-150"
                       >
                         <FaPencilAlt />
                       </button>
                       <button
                         onClick={() => confirmDelete(address)}
-                        className="text-red-600 hover:text-red-800 cursor-pointer"
+                        className="text-red-600 hover:text-red-800 cursor-pointer active:scale-95 transition-transform duration-150"
                       >
                         <FaTrashAlt />
                       </button>
@@ -692,14 +693,14 @@ const Address = ({ onAddressSelect }) => {
                   <div className="mt-3 flex justify-between">
                     <button
                       onClick={() => selectAddress(address)}
-                      className="px-3 py-1 border border-green-500 text-green-600 rounded hover:bg-green-500 hover:text-white cursor-pointer"
+                      className="px-3 py-1 border border-green-500 text-green-600 rounded hover:bg-green-500 hover:text-white cursor-pointer active:scale-95 transition-all duration-150"
                     >
                       Select
                     </button>
                     {!address.is_default && (
                       <button
                         onClick={() => setAddressAsDefault(address.id)}
-                        className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 cursor-pointer"
+                        className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 cursor-pointer active:scale-95 transition-transform duration-150"
                       >
                         Set as default
                       </button>
@@ -902,13 +903,13 @@ const Address = ({ onAddressSelect }) => {
                         setShowNewAddressForm(false);
                         setAvailableBarangays([]);
                       }}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 cursor-pointer"
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 cursor-pointer active:scale-95 transition-transform duration-150"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 cursor-pointer"
+                      className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 cursor-pointer active:scale-95 transition-transform duration-150"
                     >
                       Save Address
                     </button>
@@ -922,7 +923,7 @@ const Address = ({ onAddressSelect }) => {
               <div className="p-4 border-t sticky bottom-0 bg-white z-10 rounded-b-lg">
                 <button
                   onClick={() => setShowNewAddressForm(true)}
-                  className="flex items-center justify-center w-full p-3 bg-green-500 text-white rounded-md hover:bg-white hover:text-green-500 hover:border-2 border-green-500 transition cursor-pointer"
+                  className="flex items-center justify-center w-full p-3 bg-green-500 text-white rounded-md hover:bg-white hover:text-green-500 hover:border-2 border-green-500 transition-all duration-150 cursor-pointer active:scale-95"
                 >
                   <FaPlus className="mr-2" /> Add New Address
                 </button>
@@ -946,13 +947,13 @@ const Address = ({ onAddressSelect }) => {
                         setShowDeleteConfirmation(false);
                         setAddressToDelete(null);
                       }}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 cursor-pointer"
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 cursor-pointer active:scale-95 transition-transform duration-150"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={deleteAddress}
-                      className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer"
+                      className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer active:scale-95 transition-transform duration-150"
                     >
                       Delete
                     </button>

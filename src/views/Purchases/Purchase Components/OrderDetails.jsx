@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const OrderDetails = () => {
   const { id } = useParams();
@@ -276,7 +277,7 @@ const OrderDetails = () => {
               Contact Store
             </Button>
             <Button
-              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600"
+              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 transition-all duration-200 active:scale-95 hover:scale-105"
               onClick={() => setIsCancelOpen(true)}
             >
               Cancel Order
@@ -287,13 +288,13 @@ const OrderDetails = () => {
         return (
           <>
             <Button
-              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600"
+              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 transition-all duration-200 active:scale-95 hover:scale-105"
               onClick={() => navigate("/contactus")}
             >
               Contact Store
             </Button>
             <Button
-              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600"
+              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 transition-all duration-200 active:scale-95 hover:scale-105"
               onClick={handleOrderReceived}
             >
               Order Received
@@ -304,13 +305,13 @@ const OrderDetails = () => {
         return (
           <>
             <Button
-              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600"
+              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 transition-all duration-200 active:scale-95 hover:scale-105"
               onClick={() => navigate("/contactus")}
             >
               Contact Store
             </Button>
             <Button
-              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600"
+              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 transition-all duration-200 active:scale-95 hover:scale-105"
               onClick={handleOrderReceived}
             >
               Order Picked Up
@@ -321,13 +322,13 @@ const OrderDetails = () => {
         return (
           <>
             <Button
-              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600"
+              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 transition-all duration-200 active:scale-95 hover:scale-105"
               onClick={() => navigate("/contactus")}
             >
               Contact Store
             </Button>
             <Button
-              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600"
+              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 transition-all duration-200 active:scale-95 hover:scale-105"
               onClick={() => navigate("/products")}
             >
               Buy Again
@@ -338,13 +339,13 @@ const OrderDetails = () => {
         return (
           <>
             <Button
-              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600"
+              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 transition-all duration-200 active:scale-95 hover:scale-105"
               onClick={() => navigate("/contactus")}
             >
               Contact Store
             </Button>
             <Button
-              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600"
+              className="cursor-pointer bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 transition-all duration-200 active:scale-95 hover:scale-105"
               onClick={() => navigate("/products")}
             >
               Buy Again
@@ -680,7 +681,7 @@ const OrderDetails = () => {
 
       {/* Cancel Order Dialog */}
       <Dialog open={isCancelOpen} onOpenChange={setIsCancelOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] bg-white">
           <DialogHeader>
             <DialogTitle>Select Cancellation Reason</DialogTitle>
           </DialogHeader>
