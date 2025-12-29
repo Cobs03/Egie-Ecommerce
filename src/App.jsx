@@ -25,6 +25,7 @@ import OrderDetails from "./views/Purchases/Purchase Components/OrderDetails";
 import MyInquiries from "./views/MyInquiries/MyInquiries";
 import LoadingSpinner from "./components/LoadingSpinner";
 import AIChatBox from "./components/AIChatBox";
+import PopupAdModal from "./components/PopupAdModal";
 import { OrderProvider } from "./views/Purchases/Purchase Components/OrderContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import Tracking from "./views/Purchases/Purchase Components/Tracking";
@@ -273,6 +274,7 @@ const Main = () => {
       </main>
       <Footer isAuth={isAuthPage} />
       <AIChatBox />
+      <PopupAdModal page={location.pathname === "/" ? "home" : location.pathname.includes("/products") ? "products" : "all"} />
       <Toaster richColors position="bottom-right" />
     </>
   );

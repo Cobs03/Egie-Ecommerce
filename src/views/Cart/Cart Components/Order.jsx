@@ -6,18 +6,26 @@ import { FaChevronUp, FaChevronDown, FaExclamationCircle } from "react-icons/fa"
 import { useCart } from "../../../context/CartContext";
 
 const Order = ({ subtotal, discount, total }) => {
-  const { orderNotes, setOrderNotes, deliveryType, setDeliveryType } = useCart();
+  const { 
+    orderNotes, 
+    setOrderNotes, 
+    deliveryType, 
+    setDeliveryType,
+    cartItems,
+    selectedItems,
+    setCheckoutItems,
+  } = useCart();
   // State to track if mobile order details are expanded
   const [isExpanded, setIsExpanded] = useState(false);
   // State to track error message
-  const [error, setError] = useState(false);
+  const [error, setError] = useState(null);
   
   const navigate = useNavigate();
 
   // Toggle function to select a delivery method
   const selectDeliveryMethod = (method) => {
     setDeliveryType(method === 'local' ? 'local_delivery' : 'store_pickup');
-    setError(false); // Clear error when user selects a delivery method
+    setError(null); // Clear error when user selects a delivery method
   };
 
   // Toggle expanded state
@@ -30,13 +38,28 @@ const Order = ({ subtotal, discount, total }) => {
   const handleCheckout = (e) => {
     e.preventDefault();
     
-    if (!deliveryType) {
-      setError(true);
-      setIsExpanded(true); // Expand options when error occurs
+    // Filter only selected items for checkout
+    const selectedCartItems = cartItems.filter(item => selectedItems.has(item.id));
+    
+    // Check if any items are selected
+    if (selectedCartItems.length === 0) {
+      setError("Please select at least one item to checkout");
+      setIsExpanded(true);
       return;
     }
     
-    // If delivery method is selected, proceed to checkout
+    // Check if delivery method is selected
+    if (!deliveryType) {
+      setError("Please select a delivery method before proceeding");
+      setIsExpanded(true);
+      return;
+    }
+    
+    // Save selected items to context before navigation
+    setCheckoutItems(selectedCartItems);
+    
+    // Clear any errors and proceed to checkout
+    setError(null);
     navigate("/checkout");
   };
 
@@ -71,7 +94,7 @@ const Order = ({ subtotal, discount, total }) => {
         {error && (
           <div className="text-red-500 flex items-center gap-2 text-sm mb-3">
             <FaExclamationCircle />
-            <span>Please select a delivery method before proceeding</span>
+            <span>{error}</span>
           </div>
         )}
         <div className="flex justify-between mb-4">
@@ -146,7 +169,7 @@ const Order = ({ subtotal, discount, total }) => {
               {error && (
                 <div className="text-red-500 flex items-center gap-2 text-sm mb-3">
                   <FaExclamationCircle />
-                  <span>Please select a delivery method</span>
+                  <span>{error}</span>
                 </div>
               )}
               <div className="flex justify-between mb-4">

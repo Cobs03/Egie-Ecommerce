@@ -1114,38 +1114,182 @@ const AIChatBox = () => {
 
   // Quick Action Handlers
   const handleShowCheaperOptions = async (currentProducts) => {
+    if (!currentProducts || currentProducts.length === 0) return;
+    
     setIsTyping(true);
-    const products = await AIService.fetchProducts();
+    
+    try {
+      const allProducts = await AIService.fetchProducts();
+      
+      // Get category from current products - use component type for accuracy
+      let category = 'product';
+      const firstProduct = currentProducts[0];
+      
+      // Try to get category from selected_components first (most accurate)
+      try {
+        if (firstProduct.selected_components) {
+          const components = typeof firstProduct.selected_components === 'string' 
+            ? JSON.parse(firstProduct.selected_components) 
+            : firstProduct.selected_components;
+          if (Array.isArray(components) && components.length > 0) {
+            category = (components[0].name || '').toLowerCase().trim();
+          }
+        }
+      } catch (e) {
+        // Fallback to name-based detection - extract first word that might be category
+        const categoryName = firstProduct?.name?.toLowerCase() || '';
+        // Try to match against common patterns
+        const possibleCategories = ['laptop', 'processor', 'cpu', 'ram', 'memory', 'gpu', 'graphics', 
+                                    'motherboard', 'ssd', 'hdd', 'power supply', 'psu', 'cooling', 
+                                    'fan', 'case', 'monitor', 'keyboard', 'mouse', 'speaker', 'headset'];
+        for (const cat of possibleCategories) {
+          if (categoryName.includes(cat)) {
+            category = cat;
+            break;
+          }
+        }
+      }
+      
+      console.log('🏷️ Detected category:', category);
+      
+      // Find ALL products in same category, then sort by price
+      const sameCategory = allProducts.filter(p => {
+        let productCategory = '';
+        try {
+          if (p.selected_components) {
+            const components = typeof p.selected_components === 'string' 
+              ? JSON.parse(p.selected_components) 
+              : p.selected_components;
+            if (Array.isArray(components) && components.length > 0) {
+              productCategory = (components[0].name || '').toLowerCase().trim();
+            }
+          }
+        } catch (e) {
+          // Fallback to name matching
+          const pName = p.name.toLowerCase();
+          if (pName.includes(category)) productCategory = category;
+        }
+        
+        // Flexible category matching - works for ALL categories dynamically
+        // Matches if either string contains the other (handles variations like "cooling" vs "fan")
+        const categoryLower = category.toLowerCase();
+        const productCategoryLower = productCategory.toLowerCase();
+        const isMatch = productCategoryLower.includes(categoryLower) || 
+                       categoryLower.includes(productCategoryLower) ||
+                       productCategoryLower === categoryLower;
+        
+        return isMatch && p.stock_quantity > 0;
+      }).sort((a, b) => a.price - b.price);
 
-    // Get products in same category but cheaper
-    const cheaper = products.filter(p =>
-      currentProducts.some(cp =>
-        p.selected_components?.some(sc =>
-          cp.selected_components?.some(csc => sc.name === csc.name)
-        ) && p.price < cp.price
-      )
-    ).slice(0, 5);
+      console.log(`💰 Found ${sameCategory.length} products in category "${category}"`);
+      
+      // Get the 3-5 cheapest options that are NOT in current products
+      const currentProductIds = new Set(currentProducts.map(p => p.id));
+      const cheaper = sameCategory
+        .filter(p => !currentProductIds.has(p.id)) // Exclude already shown products
+        .slice(0, 5); // Show top 5 cheapest alternatives
 
-    const aiResponse = {
-      id: Date.now(),
-      text: cheaper.length > 0
-        ? "Here are some more affordable alternatives:"
-        : "These are already among the most affordable options available!",
-      sender: "ai",
-      timestamp: new Date(),
-      products: cheaper.length > 0 ? cheaper : null,
-      isGeneralQuestion: false
-    };
+      console.log(`✅ Found ${cheaper.length} cheaper alternatives`);
 
-    setMessages(prev => [...prev, aiResponse]);
-    setIsTyping(false);
+      if (cheaper.length === 0) {
+        const noOptionsText = selectedLanguage === 'tl'
+          ? "Magandang balita! Ang mga produktong ipinakita ko sa'yo ay ilan na sa pinaka-abot-kayang opsyon sa kanilang kategorya. Nakakuha ka ng magandang halaga para sa iyong budget. Gusto mo bang tumingin sa ibang kategorya o baguhin ang iyong mga pangangailangan?"
+          : selectedLanguage === 'es'
+          ? "¡Buenas noticias! Los productos que te mostré ya están entre las opciones más asequibles de su categoría. Estás obteniendo un gran valor por tu presupuesto. ¿Te gustaría explorar otras categorías o ajustar tus requisitos?"
+          : "Good news! The products I showed you are already among the most affordable options in their category. You're getting great value for your budget. Would you like to explore other categories or adjust your requirements?";
+        
+        const noOptionsMsg = {
+          id: Date.now(),
+          text: noOptionsText,
+          sender: "ai",
+          timestamp: new Date(),
+          isGeneralQuestion: false
+        };
+        setMessages(prev => [...prev, noOptionsMsg]);
+        setIsTyping(false);
+        return;
+      }
+
+      // Use AI to generate intelligent explanation WITH language support
+      const languageName = selectedLanguage === 'tl' ? 'Tagalog' : selectedLanguage === 'es' ? 'Spanish' : 'English';
+      
+      // Calculate price comparisons
+      const currentPrices = currentProducts.map(p => parseFloat(p.price));
+      const avgCurrentPrice = currentPrices.reduce((a, b) => a + b, 0) / currentPrices.length;
+      const maxCurrentPrice = Math.max(...currentPrices);
+      
+      const cheaperExplanationPrompt = `You are a friendly computer hardware sales assistant. A customer was looking at these products:
+
+${currentProducts.map(p => `- ${p.name} (₱${parseFloat(p.price).toLocaleString()})`).join('\n')}
+
+They want more budget-friendly options. Here are cheaper alternatives in the same category:
+
+${cheaper.map((p, idx) => {
+  const price = parseFloat(p.price);
+  const savings = maxCurrentPrice - price;
+  return `${idx + 1}. ${p.name}
+   Price: ₱${price.toLocaleString()}${savings > 0 ? ` (Save up to ₱${savings.toLocaleString()} vs most expensive option)` : ''}
+   Stock: ${p.stock_quantity} units
+   ${p.description ? p.description.substring(0, 100) + '...' : ''}`;
+}).join('\n\n')}
+
+IMPORTANT: Respond in ${languageName} language.
+
+Write a helpful, conversational response (2-3 sentences) that:
+1. Acknowledges their budget concern
+2. Briefly explains these are more affordable options in the same category
+3. Mentions potential savings compared to the pricier options
+4. Encourages them to ask questions
+
+IMPORTANT: Write naturally like a helpful salesperson. NO asterisks, NO markdown formatting. Just plain conversational text.`;
+
+      const aiExplanation = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: cheaperExplanationPrompt }],
+          temperature: 0.7,
+          max_tokens: 300
+        })
+      });
+
+      const aiData = await aiExplanation.json();
+      const explanation = aiData.choices[0].message.content.replace(/\*\*/g, '').replace(/\*/g, '');
+
+      const aiResponse = {
+        id: Date.now(),
+        text: explanation,
+        sender: "ai",
+        timestamp: new Date(),
+        products: cheaper,
+        isGeneralQuestion: false
+      };
+
+      setMessages(prev => [...prev, aiResponse]);
+      saveMessageToHistory(aiResponse);
+    } catch (error) {
+      console.error('Error getting cheaper options:', error);
+      const errorMsg = {
+        id: Date.now(),
+        text: "I had trouble finding cheaper alternatives. Please try asking me directly, like 'show me budget laptops' or 'affordable processors'.",
+        sender: "ai",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
-  const handleCompareProducts = (products) => {
+  const handleCompareProducts = async (products) => {
     if (products.length < 2) {
       const noProductsMsg = {
         id: Date.now(),
-        text: "I need at least 2 products to compare. Please ask me to show you multiple items from the same category!",
+        text: "I need at least 2 products to compare. Please ask me to show you multiple items from the same category first!",
         sender: "ai",
         timestamp: new Date(),
       };
@@ -1153,57 +1297,217 @@ const AIChatBox = () => {
       return;
     }
 
-    // Group products by category (selected_components)
-    const categoryGroups = {};
-    products.forEach(product => {
-      const category = product.selected_components?.[0]?.name || 'other';
-      if (!categoryGroups[category]) {
-        categoryGroups[category] = [];
-      }
-      categoryGroups[category].push(product);
-    });
+    setIsTyping(true);
 
-    // Find the category with the most products
-    let largestCategory = null;
-    let largestCount = 0;
-    Object.entries(categoryGroups).forEach(([category, prods]) => {
-      if (prods.length >= 2 && prods.length > largestCount) {
-        largestCategory = category;
-        largestCount = prods.length;
-      }
-    });
+    try {
+      // Smart category detection from product names
+      const detectCategory = (productName) => {
+        const name = productName.toLowerCase();
+        if (name.includes('laptop') || name.includes('notebook')) return 'laptop';
+        if (name.includes('processor') || name.includes('cpu') || name.includes('ryzen') || name.includes('intel core')) return 'processor';
+        if (name.includes('ram') || name.includes('memory') || name.includes('ddr')) return 'ram';
+        if (name.includes('gpu') || name.includes('graphics') || name.includes('rtx') || name.includes('gtx') || name.includes('radeon')) return 'gpu';
+        if (name.includes('motherboard') || name.includes('mobo')) return 'motherboard';
+        if (name.includes('ssd') || name.includes('nvme') || name.includes('hdd') || name.includes('hard drive')) return 'storage';
+        if (name.includes('power supply') || name.includes('psu')) return 'psu';
+        if (name.includes('monitor') || name.includes('display')) return 'monitor';
+        if (name.includes('keyboard')) return 'keyboard';
+        if (name.includes('mouse')) return 'mouse';
+        return 'unknown';
+      };
 
-    // If no category has 2+ products, show error
-    if (!largestCategory) {
-      const mixedMsg = {
+      // Group by detected category
+      const categoryGroups = {};
+      products.forEach(product => {
+        const category = detectCategory(product.name);
+        if (!categoryGroups[category]) {
+          categoryGroups[category] = [];
+        }
+        categoryGroups[category].push(product);
+      });
+
+      // Check if we have products from same category
+      const categories = Object.keys(categoryGroups);
+      const validCategories = categories.filter(cat => cat !== 'unknown' && categoryGroups[cat].length >= 2);
+
+      if (validCategories.length === 0) {
+        const mixedMsg = {
+          id: Date.now(),
+          text: "I noticed the products shown are from different categories. For a fair comparison, please make sure all products are from the same category. For example, compare laptops with laptops, or processors with processors. Would you like me to show you products from a specific category?",
+          sender: "ai",
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, mixedMsg]);
+        setIsTyping(false);
+        return;
+      }
+
+      // Use the category with most products
+      const mainCategory = validCategories.sort((a, b) => 
+        categoryGroups[b].length - categoryGroups[a].length
+      )[0];
+      
+      const productsToCompare = categoryGroups[mainCategory];
+
+      // Generate AI comparison
+      const comparisonPrompt = `You are a helpful computer hardware sales assistant. Compare these ${mainCategory} products for a customer:
+
+${productsToCompare.map((p, idx) => `
+Product ${idx + 1}: ${p.name}
+- Price: ₱${p.price.toLocaleString()}
+- Brand: ${p.brands?.name || 'N/A'}
+- Stock: ${p.stock_quantity} units
+- Description: ${p.description || 'No description'}`).join('\n')}
+
+Provide a natural, conversational comparison that:
+1. Starts with a brief intro (1 sentence)
+2. Compares key differences (price, specs if you can tell from names, value)
+3. Gives a recommendation based on different use cases or budgets
+4. Ends with encouragement to ask questions
+
+IMPORTANT RULES:
+- Write like you're talking to a customer in a store
+- NO asterisks (**), NO markdown formatting
+- Use simple, clear language
+- Be helpful and friendly
+- Keep it conversational (3-4 short paragraphs max)`;
+
+      const aiComparison = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: comparisonPrompt }],
+          temperature: 0.7,
+          max_tokens: 500
+        })
+      });
+
+      const aiData = await aiComparison.json();
+      const comparisonText = aiData.choices[0].message.content.replace(/\*\*/g, '').replace(/\*/g, '');
+
+      const aiResponse = {
         id: Date.now(),
-        text: "These products are from different categories, so I can't compare them directly. Try asking for multiple products from the same category, like:\n\n• 'Show me processors'\n• 'What RAMs do you have?'\n• 'Available graphics cards'",
+        text: comparisonText,
         sender: "ai",
         timestamp: new Date(),
+        products: productsToCompare.slice(0, 4), // Show compared products
+        isGeneralQuestion: false
       };
-      setMessages(prev => [...prev, mixedMsg]);
-      return;
+
+      setMessages(prev => [...prev, aiResponse]);
+      saveMessageToHistory(aiResponse);
+    } catch (error) {
+      console.error('Error comparing products:', error);
+      const errorMsg = {
+        id: Date.now(),
+        text: "I had trouble comparing those products. Please try asking me directly, like 'compare these laptops' or 'what's the difference between product A and B'?",
+        sender: "ai",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsTyping(false);
     }
+  };
 
-    // Compare first 2 products from the same category
-    const productsToCompare = categoryGroups[largestCategory].slice(0, 2);
-    setComparisonMode(true);
-    setProductsToCompare(productsToCompare);
+  const handleFindCompatibleParts = async (product) => {
+    if (!product) return;
+    
+    setIsTyping(true);
 
-    const comparison = CompatibilityService.compareProducts(productsToCompare[0], productsToCompare[1]);
-    const comparisonText = CompatibilityService.formatComparisonText(comparison);
+    try {
+      // Detect product category
+      const detectCategory = (productName) => {
+        const name = productName.toLowerCase();
+        if (name.includes('processor') || name.includes('cpu')) return 'processor';
+        if (name.includes('motherboard')) return 'motherboard';
+        if (name.includes('ram') || name.includes('memory')) return 'ram';
+        if (name.includes('gpu') || name.includes('graphics')) return 'gpu';
+        if (name.includes('ssd') || name.includes('nvme') || name.includes('storage')) return 'storage';
+        if (name.includes('power supply') || name.includes('psu')) return 'psu';
+        if (name.includes('laptop')) return 'laptop';
+        return 'component';
+      };
 
-    const aiResponse = {
-      id: Date.now(),
-      text: comparisonText + `\n\n💡 Both products are **${largestCategory}** components, making this a fair comparison!`,
-      sender: "ai",
-      timestamp: new Date(),
-      isGeneralQuestion: false
-    };
+      const category = detectCategory(product.name);
+      const allProducts = await AIService.fetchProducts();
 
-    setMessages(prev => [...prev, aiResponse]);
-    saveMessageToHistory(aiResponse);
-    setComparisonMode(false);
+      // Use AI to find compatible parts intelligently
+      const productList = allProducts.slice(0, 40).map(p => `- ${p.name} (PHP ${p.price.toLocaleString()})`).join('\n');
+      
+      const compatibilityPrompt = `You are a computer hardware compatibility expert. A customer has this product:
+
+Product: ${product.name}
+Price: PHP ${product.price.toLocaleString()}
+Category: ${category}
+${product.description ? `Description: ${product.description}` : ''}
+
+Based on this ${category}, what OTHER components would work well with it? Available products:
+
+${productList}
+
+Provide a helpful response that:
+1. Starts with a friendly acknowledgment (1 sentence)
+2. Suggests 3-5 compatible products from the list that would work well together
+3. Briefly explains WHY each suggestion makes sense
+4. Keeps total response conversational and helpful
+
+IMPORTANT:
+- Write naturally, like talking to a customer
+- NO asterisks or markdown formatting
+- Be specific about compatibility (RAM speed, socket type, power requirements, etc.)
+- Consider the customer's budget based on their current selection
+- If it's a laptop, suggest accessories (not internal components)`;
+
+      const aiResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: compatibilityPrompt }],
+          temperature: 0.7,
+          max_tokens: 500
+        })
+      });
+
+      const aiData = await aiResponse.json();
+      const compatibilityText = aiData.choices[0].message.content.replace(/\*\*/g, '').replace(/\*/g, '');
+
+      // Extract mentioned product names from AI response to show as cards
+      const mentionedProducts = allProducts.filter(p => 
+        compatibilityText.toLowerCase().includes(p.name.toLowerCase().split(' ').slice(0, 3).join(' '))
+      ).slice(0, 5);
+
+      const aiMessage = {
+        id: Date.now(),
+        text: compatibilityText,
+        sender: "ai",
+        timestamp: new Date(),
+        products: mentionedProducts.length > 0 ? mentionedProducts : null,
+        isGeneralQuestion: false
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+      saveMessageToHistory(aiMessage);
+    } catch (error) {
+      console.error('Error finding compatible parts:', error);
+      const errorMsg = {
+        id: Date.now(),
+        text: "I had trouble finding compatible parts. Please try asking me directly, like 'what works well with this processor?' or 'what components are compatible with this motherboard?'",
+        sender: "ai",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const handleCheckCompatibility = async () => {
@@ -1894,18 +2198,37 @@ User said: "${userInput}"
 Analyze the intent and respond in JSON format:
 {
   "isCommand": true/false,
-  "action": "add_to_cart" | "compare" | "build_pc" | "show_details" | "view_cart" | "none",
+  "action": "add_to_cart" | "compare" | "build_pc" | "view_cart" | "none",
   "productReference": "product name or position (1, 2, first, last)" or null,
   "confidence": 0.0-1.0,
   "reasoning": "brief explanation"
 }
 
+IMPORTANT: Only detect ACTIONS, not questions or recommendations!
+- "add to cart" / "buy this" / "I'll take it" / "buy it now" → add_to_cart
+- "I'll buy it later" / "maybe later" / "add later" → NOT add to cart (action: "none")
+- "that's good" / "sounds good" / "nice" / "okay" → NOT add to cart (action: "none")
+- "compare these" / "which is better" → compare
+- "build me a PC" / "make a bundle" → build_pc
+- "show my cart" / "what's in my cart" → view_cart
+- "recommend a laptop" / "which is best" / "tell me about" → NOT a command (action: "none")
+- "show all X" / "I mean all X" / "display all X" / "list all X" → NOT add to cart (action: "none")
+
 Examples:
 - "put that in my shopping bag" → {"isCommand": true, "action": "add_to_cart", "productReference": "that", "confidence": 0.9}
+- "I'll buy it later" → {"isCommand": false, "action": "none", "productReference": null, "confidence": 0.95}
+- "that's really good" → {"isCommand": false, "action": "none", "productReference": null, "confidence": 0.9}
+- "oh nice" → {"isCommand": false, "action": "none", "productReference": null, "confidence": 0.85}
+- "add to cart now" → {"isCommand": true, "action": "add_to_cart", "productReference": "product", "confidence": 0.95}
 - "can you build that for me?" → {"isCommand": true, "action": "build_pc", "productReference": null, "confidence": 0.95}
 - "compare these two" → {"isCommand": true, "action": "compare", "productReference": "first two", "confidence": 0.9}
 - "show me what's in my cart" → {"isCommand": true, "action": "view_cart", "productReference": null, "confidence": 0.95}
-- "what's the warranty?" → {"isCommand": false, "action": "none", "productReference": null, "confidence": 0.8}`;
+- "what's the warranty?" → {"isCommand": false, "action": "none", "productReference": null, "confidence": 0.8}
+- "recommend the best gaming laptop" → {"isCommand": false, "action": "none", "productReference": null, "confidence": 0.9}
+- "which one is better?" → {"isCommand": false, "action": "none", "productReference": null, "confidence": 0.7}
+- "show all rams" → {"isCommand": false, "action": "none", "productReference": null, "confidence": 0.85}
+- "I mean all ram" → {"isCommand": false, "action": "none", "productReference": null, "confidence": 0.9}
+- "display all processors" → {"isCommand": false, "action": "none", "productReference": null, "confidence": 0.9}`;
 
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -2073,136 +2396,291 @@ Examples:
       return false;
     }
 
-    const normalizedTerms = AIService.normalizeCategoryKeyword(searchTerm || intent.category || input);
-    console.log('🔄 Normalized search terms:', normalizedTerms);
+    // Use new intelligent intent detection instead of keyword normalization
+    console.log('🧠 Using intelligent AI search...');
 
     setIsTyping(true);
 
     try {
-      const productsSnapshot = catalog.products.length
-        ? catalog.products
-        : await ensureProductsLoaded();
+      // Use AI to detect intent and search intelligently
+      const detectedIntent = await AIService.detectIntent(input);
+      console.log('🎯 AI Detected Intent:', detectedIntent);
 
-      const categoryInfo = resolveCategoryInfo(searchTerm || intent.category, categoriesSnapshot);
-      let foundProducts = [];
+      // Search products using intelligent matching
+      let foundProducts = await AIService.searchProductsByIntent(detectedIntent);
+      
+      console.log('✅ Intelligent search found:', foundProducts.length, 'products');
 
-      if (categoryInfo) {
-        foundProducts = productsSnapshot.filter((product) =>
-          productMatchesCategory(product, categoryInfo.slug) ||
-          productMatchesCategory(product, categoryInfo.id)
+      // Apply additional filters if needed
+      if (intent.brandPreferences && intent.brandPreferences.length > 0) {
+        const brandFiltered = foundProducts.filter((product) => 
+          productMatchesBrand(product, intent.brandPreferences)
         );
-      }
-
-      if (!foundProducts.length && searchTerm) {
-        const normalizedSearch = searchTerm.toLowerCase();
-        foundProducts = productsSnapshot.filter((product) => {
-          const searchableText = `${product.name || ''} ${product.description || ''} ${product.brands?.name || ''}`.toLowerCase();
-          return searchableText.includes(normalizedSearch);
-        });
-      }
-
-      if (!foundProducts.length && intent.brandPreferences.length) {
-        foundProducts = productsSnapshot.filter((product) => productMatchesBrand(product, intent.brandPreferences));
-      } else if (intent.brandPreferences.length) {
-        const brandFiltered = foundProducts.filter((product) => productMatchesBrand(product, intent.brandPreferences));
-        if (brandFiltered.length) {
+        if (brandFiltered.length > 0) {
           foundProducts = brandFiltered;
         }
       }
 
-      const budgetFiltered = filterByBudgetSignals(foundProducts, intent, categoryInfo?.slug);
-      if (budgetFiltered.length) {
+      // Apply budget filters if specified in original intent
+      const budgetFiltered = filterByBudgetSignals(foundProducts, intent, detectedIntent.category);
+      if (budgetFiltered.length > 0) {
         foundProducts = budgetFiltered;
       }
 
       if (!foundProducts.length) {
-        for (const term of normalizedTerms) {
-          const results = await AIService.fetchProductsByCategory(term);
-          foundProducts = [...foundProducts, ...results];
-        }
+        // No products found - generate AI natural response instead of hardcoded message
+        setIsTyping(true);
+        
+        try {
+          const conversationHistory = messages.slice(-6).map(m => ({
+            role: m.sender === 'user' ? 'user' : 'assistant',
+            content: m.text
+          }));
 
-        foundProducts = foundProducts.filter((product, index, self) =>
-          index === self.findIndex((p) => p.id === product.id)
-        );
-      }
+          const noResultsPrompt = `You are a helpful e-commerce assistant. The user asked: "${input}"
 
-      if (intent.brandPreferences.length) {
-        const brandFiltered = foundProducts.filter((product) => productMatchesBrand(product, intent.brandPreferences));
-        if (brandFiltered.length) {
-          foundProducts = brandFiltered;
-        }
-      }
+Unfortunately, we don't have any ${detectedIntent.category || 'products'} available right now.
 
-      if (!foundProducts.length && categoryInfo) {
-        const fallbackProducts = productsSnapshot.slice(0, 4);
-        const unavailableMsg = {
-          id: Date.now(),
-          text: `I checked our ${categoryInfo.name} inventory, but it's currently sold out. I can flag you when new stock arrives or suggest comparable parts right away.`,
-          sender: 'ai',
-          timestamp: new Date(),
-          products: fallbackProducts.length ? fallbackProducts : null,
-        };
-        setMessages((prev) => [...prev, unavailableMsg]);
-        setRecommendedProducts(fallbackProducts);
-        setIsTyping(false);
-        return true;
-      }
+Generate a SHORT, natural, apologetic response (2-3 sentences max) explaining we don't have this item currently. Be friendly and offer to help with alternatives or notify them when it's available.
 
-      if (!foundProducts.length && searchTerm && !categoryInfo) {
-        console.log('🔍 No exact matches, trying fuzzy search...');
-        const fuzzyMatches = fuzzyMatchProduct(searchTerm, productsSnapshot);
-        if (fuzzyMatches.length > 0) {
-          foundProducts = fuzzyMatches.slice(0, 20);
-          const fuzzyMessage = {
-            id: Date.now(),
-            text: `I couldn't find exact matches for "${searchTerm}", but I found similar products that might interest you:`,
-            sender: 'ai',
-            timestamp: new Date(),
-            products: foundProducts,
-          };
+Examples:
+- "I'm sorry, we don't have any SSDs in stock at the moment. Would you like me to notify you when they arrive, or can I help you find something else?"
+- "Unfortunately, we're currently out of keyboards. I can let you know as soon as we restock, or I could show you our mouse collection instead?"
+- "We don't have any processors available right now, but I'd be happy to alert you when new stock arrives!"
 
-          updateContext({
-            lastProducts: foundProducts,
-            lastCategory: searchTerm,
-            lastSearchTerm: searchTerm,
-            lastAction: 'product_search',
+Your response:`;
+
+          const aiResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
+            },
+            body: JSON.stringify({
+              model: 'llama-3.3-70b-versatile',
+              messages: [
+                // Send only current prompt, no history to avoid context mixing
+                { role: 'user', content: noResultsPrompt }
+              ],
+              temperature: 0.7,
+              max_tokens: 150,
+            }),
           });
 
-          setMessages((prev) => [...prev, fuzzyMessage]);
-          setRecommendedProducts(foundProducts);
-          setIsTyping(false);
-          return true;
-        }
-      }
+          const data = await aiResponse.json();
+          const aiText = data.choices[0].message.content.trim();
 
-      if (!foundProducts.length) {
-        console.log('❌ No products found, suggesting alternatives...');
-        const fallbackProducts = productsSnapshot.slice(0, 6);
-        const sorryMessage = {
-          id: Date.now(),
-          text: `I couldn't find any products matching "${searchTerm || intent.category || 'that request'}" in our inventory.\n\nHere are a few popular items you might consider instead:`,
-          sender: 'ai',
-          timestamp: new Date(),
-          products: fallbackProducts,
-        };
-        setMessages((prev) => [...prev, sorryMessage]);
-        setRecommendedProducts(fallbackProducts);
+          const noResultsMsg = {
+            id: Date.now(),
+            text: aiText,
+            sender: 'ai',
+            timestamp: new Date(),
+            products: null,
+          };
+          
+          setMessages((prev) => [...prev, noResultsMsg]);
+        } catch (error) {
+          console.error('❌ Error generating no results response:', error);
+          // Fallback to simple message
+          const noResultsMsg = {
+            id: Date.now(),
+            text: `I don't have any ${detectedIntent.category || 'products'} available at the moment. Can I help you find something else?`,
+            sender: 'ai',
+            timestamp: new Date(),
+            products: null,
+          };
+          setMessages((prev) => [...prev, noResultsMsg]);
+        }
+        
         setIsTyping(false);
         return true;
       }
 
-      const tailoredProducts = applyIntentFilters(foundProducts, intent, { categoryInfo });
+      // Apply intent filters and format response
+      const tailoredProducts = applyIntentFilters(foundProducts, intent, { categoryInfo: null });
       const summaryProducts = tailoredProducts.length ? tailoredProducts : foundProducts;
-      const displayLabel = categoryInfo?.name || (searchTerm
-        ? searchTerm.replace(/\b\w/g, (char) => char.toUpperCase())
-        : null);
-      const responseSummary = formatProfessionalProductSummary(
-        summaryProducts,
-        intent,
-        displayLabel,
-        categoryInfo
-      );
-      const responseText = responseSummary || `I found ${foundProducts.length} products matching "${searchTerm}". Let me know if you'd like a comparison, detailed specs, or compatible accessories.`;
+      
+      const displayLabel = detectedIntent.category 
+        ? detectedIntent.category.charAt(0).toUpperCase() + detectedIntent.category.slice(1)
+        : 'products';
+      
+      // Generate AI-powered natural response instead of template
+      let responseText = '';
+      try {
+        const productSummary = summaryProducts.slice(0, 5).map((p, idx) => 
+          `${idx + 1}. ${p.name} - ₱${formatCurrency(getNumericPrice(p))} (Stock: ${p.stock_quantity || 0})`
+        ).join('\n');
+
+        // IMPORTANT: Only include conversation history if it's related to the CURRENT category
+        // This prevents mixing laptop context when asking about RAM, etc.
+        const currentCategory = detectedIntent.category?.toLowerCase();
+        const relevantHistory = messages.slice(-6).filter(m => {
+          if (m.sender === 'user') {
+            // Check if user message mentions current category
+            const msgLower = m.text.toLowerCase();
+            return !currentCategory || msgLower.includes(currentCategory);
+          }
+          // Include AI responses only if they're about current category
+          if (m.products && m.products.length > 0) {
+            // Check if products match current category
+            try {
+              const firstProduct = m.products[0];
+              if (firstProduct.selected_components) {
+                const components = typeof firstProduct.selected_components === 'string' 
+                  ? JSON.parse(firstProduct.selected_components) 
+                  : firstProduct.selected_components;
+                if (Array.isArray(components) && components.length > 0) {
+                  const msgCategory = (components[0].name || '').toLowerCase();
+                  return !currentCategory || msgCategory.includes(currentCategory) || currentCategory.includes(msgCategory);
+                }
+              }
+            } catch (e) {
+              // Fallback: include if text mentions category
+              return !currentCategory || m.text.toLowerCase().includes(currentCategory);
+            }
+          }
+          return false; // Exclude unrelated messages
+        }).map(m => ({
+          role: m.sender === 'user' ? 'user' : 'assistant',
+          content: m.text
+        }));
+
+        // If no relevant history, start fresh with just current query
+        const conversationHistory = relevantHistory.length > 0 ? relevantHistory : [];
+
+        // Detect if user asked for "affordable" products
+        const askedForAffordable = input.toLowerCase().includes('affordable') || 
+                                   input.toLowerCase().includes('budget') || 
+                                   input.toLowerCase().includes('cheap') ||
+                                   input.toLowerCase().includes('cheapest');
+        
+        // Calculate price range for context
+        const prices = summaryProducts.map(p => getNumericPrice(p));
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        const avgPrice = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
+        
+        const priceContext = askedForAffordable 
+          ? `IMPORTANT CONTEXT: User asked for AFFORDABLE/CHEAP options. These products are sorted by price (cheapest first). Price range: ₱${minPrice.toLocaleString()} to ₱${maxPrice.toLocaleString()}. The cheapest option is ₱${minPrice.toLocaleString()}.`
+          : `Price range: ₱${minPrice.toLocaleString()} to ₱${maxPrice.toLocaleString()}.`;
+
+        // Use AI to generate natural introduction WITH language support
+        const languageName = selectedLanguage === 'tl' ? 'Tagalog' : selectedLanguage === 'es' ? 'Spanish' : 'English';
+        const introPrompt = `You are a helpful e-commerce assistant. The user just asked: "${input}"
+
+IMPORTANT: This is a NEW question about ${displayLabel.toUpperCase()}. DO NOT reference previous products or categories.
+
+You found ${summaryProducts.length} ${displayLabel.toLowerCase()} products:
+${productSummary}
+
+${priceContext}
+${detectedIntent.budget?.min || detectedIntent.budget?.max ? `User specified budget: ${detectedIntent.budget.min ? '₱' + detectedIntent.budget.min.toLocaleString() : ''} ${detectedIntent.budget.max ? 'to ₱' + detectedIntent.budget.max.toLocaleString() : ''}` : ''}
+
+IMPORTANT: Respond in ${languageName} language.
+
+Generate a SHORT, natural, conversational introduction (1-2 sentences max) for these ${displayLabel.toLowerCase()} products. Be friendly and helpful.
+${askedForAffordable ? `EMPHASIZE that these are the CHEAPEST/most AFFORDABLE ${displayLabel.toLowerCase()} options, sorted by price. Mention the starting price ₱${minPrice.toLocaleString()}.` : ''}
+
+DO NOT mention any other product categories or previous conversations. Focus ONLY on these ${displayLabel.toLowerCase()} products.
+
+Examples (${languageName}):
+${selectedLanguage === 'tl' 
+  ? `- "Nakita ko ang mga pinakamurang laptops! Nagsisimula sa ₱${minPrice.toLocaleString()}!"
+- "Ito ang mga abot-kayang keyboard, sorted by price!"
+- "Mayroon akong 5 laptops mula ₱${minPrice.toLocaleString()} hanggang ₱${maxPrice.toLocaleString()}!"
+- "Narito ang pinaka-budget friendly na opsyon:"`
+  : selectedLanguage === 'es'
+  ? `- "¡Encontré las portátiles más baratas! Desde ₱${minPrice.toLocaleString()}!"
+- "Aquí están los teclados más económicos, ordenados por precio!"
+- "¡Tengo 5 portátiles desde ₱${minPrice.toLocaleString()} hasta ₱${maxPrice.toLocaleString()}!"
+- "Estas son las opciones más económicas:"`
+  : `- "I found the cheapest laptops! Starting at ₱${minPrice.toLocaleString()}!"
+- "Here are the most affordable keyboards, sorted by price!"
+- "I've got 5 laptops ranging from ₱${minPrice.toLocaleString()} to ₱${maxPrice.toLocaleString()}!"
+- "Here are the most budget-friendly options:"`}
+
+Your response:`;
+
+        const aiResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              // ONLY send current query context, not full history
+              // This prevents mixing laptop context when asking about RAM
+              { role: 'user', content: introPrompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 150,
+          }),
+        });
+
+        const data = await aiResponse.json();
+        const aiIntro = data.choices[0].message.content.trim();
+        
+        // Build detailed product list WITHOUT asterisks for clean, readable format
+        const productLines = summaryProducts.slice(0, 5).map((product, index) => {
+          const name = product.name || product.title;
+          const brand = product.brands?.name ? ` • Brand: ${product.brands.name}` : '';
+          const stock = typeof product.stock_quantity !== 'undefined' ? product.stock_quantity : product.stock || 0;
+          const shortDescription = product.description?.split('. ')[0];
+          const descriptionText = shortDescription ? ` • ${shortDescription}` : '';
+          return `${index + 1}. ${name} — ₱${formatCurrency(getNumericPrice(product))} • Stock: ${stock}${brand}${descriptionText}`;
+        }).join('\n\n');
+
+        // Generate AI closing message in correct language
+        const closingPrompt = `Generate a SHORT closing question (1 sentence) asking if they want more details or help comparing products.
+
+Language: ${languageName}
+
+Examples (${languageName}):
+${selectedLanguage === 'tl'
+  ? `- "Gusto mo bang makita ang mas maraming detalye, o tulungan kita na ihambing sila?"
+- "May gusto ka bang malaman pa tungkol dito?"
+- "Interesado ka ba sa isa sa mga ito?"`
+  : selectedLanguage === 'es'
+  ? `- "¿Quieres más detalles o te ayudo a compararlos?"
+- "¿Te interesa alguno de estos?"
+- "¿Necesitas más información?"`
+  : `- "Would you like more details about any of these, or shall I help you compare them?"
+- "Interested in any of these?"
+- "Need more information about these products?"`}
+
+Your response (${languageName}):`;
+
+        const closingResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [{ role: 'user', content: closingPrompt }],
+            temperature: 0.7,
+            max_tokens: 80,
+          }),
+        });
+
+        const closingData = await closingResponse.json();
+        const aiClosing = closingData.choices[0].message.content.trim();
+
+        responseText = `${aiIntro}\n\n${productLines}\n\n${aiClosing}`;
+        
+      } catch (error) {
+        console.error('❌ Error generating AI intro:', error);
+        // Fallback to simple response
+        const fallbackText = selectedLanguage === 'tl' 
+          ? `Nakita ko ${summaryProducts.length} ${displayLabel.toLowerCase()} para sa'yo. Sabihin mo lang kung gusto mo ng mas maraming detalye!`
+          : selectedLanguage === 'es'
+          ? `Encontré ${summaryProducts.length} ${displayLabel.toLowerCase()} para ti. ¡Dime si quieres más detalles!`
+          : `I found ${summaryProducts.length} ${displayLabel.toLowerCase()} for you. Let me know if you'd like more details or have specific preferences!`;
+        responseText = fallbackText;
+      }
 
       const aiMessage = {
         id: Date.now(),
@@ -2214,10 +2692,11 @@ Examples:
 
       updateContext({
         lastProducts: summaryProducts.slice(0, 20),
-        lastCategory: categoryInfo?.slug || searchTerm,
-        lastSearchTerm: searchTerm,
+        lastCategory: detectedIntent.category,
+        lastSearchTerm: input,
         lastAction: 'product_search',
         budget: intent.priceFocus,
+        detectedIntent: detectedIntent, // Store AI-detected intent
       });
 
       setMessages((prev) => [...prev, aiMessage]);
@@ -2295,15 +2774,67 @@ Examples:
             ? `at least ₱${minBudget.toLocaleString()}`
             : 'your budget';
       
-      const noBudgetMatchMsg = {
-        id: Date.now(),
-        text: `I couldn't find any products within ${budgetLabel}.\n\nThe closest options I have are:`,
-        sender: 'ai',
-        timestamp: new Date(),
-        products: allProducts.slice(0, 3),
-      };
-      setMessages(prev => [...prev, noBudgetMatchMsg]);
-      setRecommendedProducts(allProducts.slice(0, 3));
+      // Generate AI response for no budget matches
+      try {
+        const closestProducts = allProducts.slice(0, 3);
+        const productSummary = closestProducts.map((p, idx) => 
+          `${idx + 1}. ${p.name} - ₱${formatCurrency(getNumericPrice(p))}`
+        ).join('\n');
+
+        const noBudgetPrompt = `You are a helpful e-commerce assistant. The user is looking for products within ${budgetLabel}, but we don't have any exact matches.
+
+However, we have these close alternatives:
+${productSummary}
+
+Generate a SHORT, apologetic response (1-2 sentences) explaining we don't have products in their exact budget, but here are the closest options. Be friendly and helpful.
+
+Examples:
+- "I don't have anything exactly at ₱30,000, but here are the closest options I found!"
+- "Unfortunately nothing fits that exact budget, but these are pretty close and might work for you:"
+- "I couldn't find products at that price point, but check out these nearby options:"
+
+Your response:`;
+
+        const aiResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [{ role: 'user', content: noBudgetPrompt }],
+            temperature: 0.7,
+            max_tokens: 100,
+          }),
+        });
+
+        const data = await aiResponse.json();
+        const aiText = data.choices[0].message.content.trim();
+
+        const noBudgetMatchMsg = {
+          id: Date.now(),
+          text: aiText,
+          sender: 'ai',
+          timestamp: new Date(),
+          products: closestProducts,
+        };
+        setMessages(prev => [...prev, noBudgetMatchMsg]);
+        setRecommendedProducts(closestProducts);
+      } catch (error) {
+        console.error('❌ Error generating no budget match response:', error);
+        // Fallback
+        const noBudgetMatchMsg = {
+          id: Date.now(),
+          text: `I don't have products exactly within ${budgetLabel}, but here are the closest options:`,
+          sender: 'ai',
+          timestamp: new Date(),
+          products: allProducts.slice(0, 3),
+        };
+        setMessages(prev => [...prev, noBudgetMatchMsg]);
+        setRecommendedProducts(allProducts.slice(0, 3));
+      }
+      
       return true;
     }
     
@@ -2564,6 +3095,240 @@ Rules:
       }
     }
 
+    // ===== SHOW PRODUCT DETAILS COMMANDS =====
+    const detailsPatterns = [
+      // "show me the details/specs"
+      /show\s+(me\s+)?(the\s+)?details/i,
+      /show\s+(me\s+)?(the\s+)?spec(ification)?s?/i,
+      
+      // "specs/details of X"
+      /spec(ification)?s?\s+(of|for|about)/i,
+      /details?\s+(of|for|about)/i,
+      
+      // "what are the specs"
+      /what\s+(are|is)\s+(the\s+)?spec(ification)?s?/i,
+      /what\s+(are|is)\s+(the\s+)?details?/i,
+      
+      // "tell me about"
+      /tell\s+me\s+(more\s+)?about/i,
+      /tell\s+me\s+(the\s+)?spec(ification)?s?/i,
+      
+      // "more info"
+      /more\s+info(rmation)?/i,
+      
+      // "how about its specs"
+      /(how\s+)?about\s+(its|the)\s+spec(ification)?s?/i,
+      
+      // Just "specification" or "specifications"
+      /^spec(ification)?s?$/i,
+      
+      // "first/second one" with specs/details
+      /(first|second|last|that)\s+(one|product|item|keyboard|laptop|mouse|processor|ram|gpu).*spec/i,
+      /(first|second|last|that)\s+(one|product|item).*details?/i,
+      
+      // "specs of the asus" or "specs of first"
+      /spec(ification)?s?\s+of\s+(the\s+)?(first|second|last|asus|amd|intel|corsair|msi)/i,
+    ];
+
+    const isDetailsRequest = detailsPatterns.some(pattern => pattern.test(input));
+
+    if (isDetailsRequest) {
+      console.log('📄 PRODUCT DETAILS COMMAND DETECTED!');
+      
+      // Get the last shown products from context
+      const { lastProducts } = conversationContext;
+      
+      if (!lastProducts || lastProducts.length === 0) {
+        const noProductMsg = {
+          id: Date.now(),
+          text: `I don't have any products to show details for. Please search for a product first, and then I can show you more details!`,
+          sender: "ai",
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, noProductMsg]);
+        return true;
+      }
+
+      // Smart product selection based on user's query
+      let productToShow = null;
+      const lowerInput = input.toLowerCase();
+      
+      // Check for position keywords (first, second, last)
+      if (/\b(first|1st|one)\b/i.test(lowerInput)) {
+        productToShow = lastProducts[0];
+        console.log('📍 Selected: FIRST product');
+      } else if (/\b(second|2nd|two)\b/i.test(lowerInput)) {
+        productToShow = lastProducts[1] || lastProducts[0];
+        console.log('📍 Selected: SECOND product');
+      } else if (/\b(third|3rd|three)\b/i.test(lowerInput)) {
+        productToShow = lastProducts[2] || lastProducts[0];
+        console.log('📍 Selected: THIRD product');
+      } else if (/\blast\b/i.test(lowerInput)) {
+        productToShow = lastProducts[lastProducts.length - 1];
+        console.log('📍 Selected: LAST product');
+      } else {
+        // Try to match by product name or brand
+        for (const product of lastProducts) {
+          const productName = (product.name || '').toLowerCase();
+          const brandName = (product.brands?.name || '').toLowerCase();
+          
+          // Extract significant words from input (remove common words)
+          const significantWords = lowerInput
+            .replace(/\b(show|me|the|specs?|specification|details?|of|about|for|can|you|please|keyboard|mouse|laptop|ram|gpu)\b/gi, '')
+            .trim()
+            .split(/\s+/)
+            .filter(word => word.length > 2);
+          
+          console.log('🔍 Searching for words:', significantWords);
+          console.log('🔍 In product:', productName);
+          
+          // Check if any significant words match product name or brand
+          const matchesProduct = significantWords.some(word => 
+            productName.includes(word) || brandName.includes(word)
+          );
+          
+          if (matchesProduct) {
+            productToShow = product;
+            console.log('📍 Selected by name match:', product.name);
+            break;
+          }
+        }
+        
+        // Default to first product if no specific match
+        if (!productToShow) {
+          productToShow = lastProducts[0];
+          console.log('📍 Selected: DEFAULT (first product)');
+        }
+      }
+      
+      console.log(`📦 Showing details for: "${productToShow.name}"`);
+      console.log(`📦 Product data:`, {
+        id: productToShow.id,
+        name: productToShow.name,
+        selected_components: productToShow.selected_components,
+        specifications: productToShow.specifications,
+        description: productToShow.description
+      });
+      
+      // Extract specifications from database
+      let specificationsText = '';
+      let hasSpecs = false;
+      
+      if (productToShow.selected_components && Array.isArray(productToShow.selected_components)) {
+        productToShow.selected_components.forEach(component => {
+          if (component.specifications) {
+            hasSpecs = true;
+            specificationsText += `\n**${component.name} Specifications:**\n`;
+            const specs = typeof component.specifications === 'string' 
+              ? JSON.parse(component.specifications) 
+              : component.specifications;
+            
+            // Handle nested specifications properly
+            Object.entries(specs).forEach(([key, value]) => {
+              if (value && typeof value === 'object' && !Array.isArray(value)) {
+                // If value is an object, extract its properties
+                Object.entries(value).forEach(([subKey, subValue]) => {
+                  if (subValue) {
+                    const formattedKey = subKey.replace(/([A-Z_])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+                    specificationsText += `• ${formattedKey}: ${subValue}\n`;
+                  }
+                });
+              } else if (value && typeof value !== 'object') {
+                // Simple value - display directly
+                const formattedKey = key.replace(/([A-Z_])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+                specificationsText += `• ${formattedKey}: ${value}\n`;
+              }
+            });
+          }
+        });
+      }
+      
+      // Also check top-level specifications field
+      if (productToShow.specifications && typeof productToShow.specifications === 'object') {
+        const specs = productToShow.specifications;
+        
+        Object.entries(specs).forEach(([key, value]) => {
+          if (value && typeof value === 'object' && !Array.isArray(value)) {
+            // This is a nested specification object (like the keyboard has)
+            hasSpecs = true;
+            
+            // Check if this is a component ID (UUID format) or actual spec name
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(key);
+            
+            if (!isUUID) {
+              specificationsText += `\n**${key} Specifications:**\n`;
+            } else {
+              // If it's a UUID, don't show it as a heading, just show the specs
+              if (!specificationsText.includes('**Product Specifications:**')) {
+                specificationsText += `\n**Product Specifications:**\n`;
+              }
+            }
+            
+            // Extract the actual specification values
+            Object.entries(value).forEach(([specKey, specValue]) => {
+              if (specValue) {
+                const formattedKey = specKey.replace(/([A-Z_])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+                specificationsText += `• ${formattedKey}: ${specValue}\n`;
+              }
+            });
+          } else if (value && typeof value !== 'object') {
+            // Simple value at top level
+            hasSpecs = true;
+            if (!specificationsText.includes('**Product Specifications:**')) {
+              specificationsText += `\n**Product Specifications:**\n`;
+            }
+            const formattedKey = key.replace(/([A-Z_])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+            specificationsText += `• ${formattedKey}: ${value}\n`;
+          }
+        });
+      }
+      
+      console.log(`📋 Specifications found:`, hasSpecs ? 'Yes' : 'No');
+      console.log(`📋 Specifications text:`, specificationsText);
+
+      // If no specifications found in database, show a helpful message
+      if (!hasSpecs) {
+        const noSpecsMsg = {
+          id: Date.now(),
+          text: `**${productToShow.name}**\n\n💰 Price: ₱${formatCurrency(getNumericPrice(productToShow))}\n🏷️ Brand: ${productToShow.brands?.name || 'N/A'}\n📦 Stock: ${productToShow.stock_quantity || 0} units available\n\n${productToShow.description || 'No description available.'}\n\n⚠️ **Detailed specifications are not available for this product yet.** Our team is working on updating the product database with complete technical specifications.\n\nWould you like to:\n• Add this to your cart anyway?\n• See other similar products?\n• Ask about something else?`,
+          sender: "ai",
+          timestamp: new Date(),
+          products: [productToShow],
+        };
+        
+        setMessages(prev => [...prev, noSpecsMsg]);
+        setIsTyping(false);
+        return true;
+      }
+
+      // DIRECTLY format specifications without AI interpretation
+      // This ensures 100% accuracy from database
+      let formattedSpecsMessage = `**${productToShow.name}**\n\n`;
+      formattedSpecsMessage += `💰 **Price:** ₱${formatCurrency(getNumericPrice(productToShow))}\n`;
+      formattedSpecsMessage += `🏷️ **Brand:** ${productToShow.brands?.name || 'N/A'}\n`;
+      formattedSpecsMessage += `📦 **Stock:** ${productToShow.stock_quantity || 0} units available\n`;
+      
+      if (productToShow.description) {
+        formattedSpecsMessage += `\n📝 **Description:**\n${productToShow.description}\n`;
+      }
+      
+      formattedSpecsMessage += `\n📋 **Specifications:**\n${specificationsText}`;
+      formattedSpecsMessage += `\nWould you like to add this to your cart or see other options?`;
+
+      const specsMsg = {
+        id: Date.now(),
+        text: formattedSpecsMessage,
+        sender: "ai",
+        timestamp: new Date(),
+        products: [productToShow],
+      };
+      
+      setMessages(prev => [...prev, specsMsg]);
+      setMessages(prev => [...prev, specsMsg]);
+      setIsTyping(false);
+      return true;
+    }
+
     // ===== ADD TO CART COMMANDS =====
     const addToCartPatterns = [
       /add\s+(to\s+)?(my\s+)?cart/i,
@@ -2581,6 +3346,14 @@ Rules:
     });
 
     console.log('🛒 Is add to cart command?', isAddToCart);
+
+    // Check if user is asking to "show all" or clarifying, not adding
+    const isClarificationOrShowAll = /(show|display|list|I mean|clarify|all of|view all)\s+(all|the|these|those)?\s+\w+/i.test(input);
+    
+    if (isClarificationOrShowAll) {
+      console.log('⚠️ Detected clarification/show-all phrase, not add-to-cart');
+      return false; // Let product search handle it
+    }
 
     if (isAddToCart) {
       console.log('✅ ADD TO CART COMMAND DETECTED!');
@@ -2793,49 +3566,6 @@ Rules:
       }
     }
 
-    // ===== SHOW DETAILS COMMANDS =====
-    const showDetailsPatterns = [
-      /show\s+(me\s+)?(more\s+)?details/i,
-      /tell\s+me\s+more\s+about/i,
-      /what\s+are\s+the\s+specs/i,
-      /(full\s+)?specifications?/i,
-      /more\s+info(rmation)?/i,
-    ];
-
-    const isShowDetails = showDetailsPatterns.some(pattern => pattern.test(input));
-
-    if (isShowDetails) {
-      let productToShow = products[0];
-
-      // Detect specific product reference
-      if (/first|1st/i.test(input)) productToShow = products[0];
-      else if (/second|2nd/i.test(input)) productToShow = products[1];
-      else if (/third|3rd/i.test(input)) productToShow = products[2];
-      else if (/last/i.test(input)) productToShow = products[products.length - 1];
-
-      if (productToShow) {
-        const specs = productToShow.specs || [];
-        const features = productToShow.features || [];
-        
-        const detailsText = `📋 **${productToShow.title || productToShow.name}**\n\n` +
-          `💰 **Price:** ₱${productToShow.price.toLocaleString()}\n` +
-          `📦 **Stock:** ${productToShow.stock || 0} units\n` +
-          `⭐ **Rating:** ${productToShow.rating || 'N/A'}/5\n\n` +
-          (specs.length > 0 ? `**Specifications:**\n${specs.map(s => `• ${s.name}: ${s.value}`).join('\n')}\n\n` : '') +
-          (features.length > 0 ? `**Features:**\n${features.map(f => `• ${f}`).join('\n')}` : '');
-
-        const responseMsg = {
-          id: Date.now(),
-          text: detailsText,
-          sender: "ai",
-          timestamp: new Date(),
-        };
-
-        setMessages(prev => [...prev, responseMsg]);
-        return true;
-      }
-    }
-
     // ===== COMPARE COMMANDS =====
     const comparePatterns = [
       /compare\s+(these|them|all)?/i,
@@ -2985,30 +3715,6 @@ Rules:
           return true;
         }
         
-        case 'show_details': {
-          console.log('🤖 AI wants to show details');
-          const productToShow = products[0];
-          const specs = productToShow.specs || [];
-          const features = productToShow.features || [];
-          
-          const detailsText = `📋 **${productToShow.title || productToShow.name}**\n\n` +
-            `💰 **Price:** ₱${productToShow.price.toLocaleString()}\n` +
-            `📦 **Stock:** ${productToShow.stock || 0} units\n` +
-            `⭐ **Rating:** ${productToShow.rating || 'N/A'}/5\n\n` +
-            (specs.length > 0 ? `**Specifications:**\n${specs.map(s => `• ${s.name}: ${s.value}`).join('\n')}\n\n` : '') +
-            (features.length > 0 ? `**Features:**\n${features.map(f => `• ${f}`).join('\n')}` : '');
-
-          const responseMsg = {
-            id: Date.now(),
-            text: detailsText,
-            sender: "ai",
-            timestamp: new Date(),
-          };
-          
-          setMessages(prev => [...prev, responseMsg]);
-          return true;
-        }
-        
         case 'view_cart': {
           console.log('🤖 AI wants to view cart');
           
@@ -3098,6 +3804,28 @@ Rules:
     
     const userInput = inputMessage; // Store before clearing
     setInputMessage("");
+
+    // ===== CHECK FOR SIMPLE ACKNOWLEDGMENTS (DON'T SHOW PRODUCTS AGAIN) =====
+    const simpleAcknowledgments = /^(oh\s+)?(that'?s?\s+)?(really\s+)?(good|great|nice|cool|awesome|okay|ok|alright|thanks|thank you|fine|perfect)(\s+thanks?)?[!.]*$/i;
+    if (simpleAcknowledgments.test(userInput.trim())) {
+      console.log('👍 Simple acknowledgment detected - responding without showing products again');
+      const ackResponses = [
+        "Great! Let me know if you need anything else or have any questions!",
+        "Awesome! I'm here if you need more help or want to explore other options.",
+        "Glad you like it! Feel free to ask if you need more information.",
+        "Perfect! Just let me know if there's anything else I can help you with.",
+        "Nice! I'm here if you want to check out other products or need assistance."
+      ];
+      const ackMsg = {
+        id: Date.now(),
+        text: ackResponses[Math.floor(Math.random() * ackResponses.length)],
+        sender: "ai",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, ackMsg]);
+      setIsTyping(false);
+      return;
+    }
 
     // ===== DEFINITION & EDUCATIONAL QUESTIONS (HIGH PRIORITY) =====
     const definitionHandled = await handleComponentQuestion(userInput);
@@ -3704,18 +4432,9 @@ Rules:
                         </button>
                       )}
 
-                      {/* Check Compatibility */}
+                      {/* Find Compatible Parts - Intelligent AI-based */}
                       <button
-                        onClick={handleCheckCompatibility}
-                        className="flex items-center gap-1.5 text-xs bg-green-50 hover:bg-green-100 text-green-700 px-3 py-1.5 rounded-full transition-colors border border-green-200"
-                      >
-                        <span>⚙️</span>
-                        <span className="whitespace-nowrap">Check Build</span>
-                      </button>
-
-                      {/* Find Compatible Parts */}
-                      <button
-                        onClick={() => setInputMessage(`What components work well with ${message.products[0].name}?`)}
+                        onClick={() => handleFindCompatibleParts(message.products[0])}
                         className="flex items-center gap-1.5 text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 px-3 py-1.5 rounded-full transition-colors border border-orange-200"
                       >
                         <span>🧩</span>

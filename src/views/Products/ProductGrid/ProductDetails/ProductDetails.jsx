@@ -11,6 +11,8 @@ import Bundles from "./DetailsComponents/Bundles";
 
 // Import Supabase service
 import { ProductService } from "../../../../services/ProductService";
+import ProductAnalyticsService from "../../../../services/ProductAnalyticsService";
+import { supabase } from "../../../../lib/supabase";
 
 const ProductDetails = () => {
   const location = useLocation();
@@ -39,6 +41,10 @@ const ProductDetails = () => {
         
         if (result.success && result.data) {
           setProduct(result.data);
+          
+          // Track product view for analytics
+          const { data: { user } } = await supabase.auth.getUser();
+          await ProductAnalyticsService.trackProductView(id, user?.id);
         } else {
           setError(result.error || "Product not found");
         }
