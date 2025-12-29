@@ -542,55 +542,72 @@ const ComparisonTable = ({ products, onRemoveProduct, onAddProduct }) => {
         </div>
       </div>
       
-      {/* Mobile Specifications - Stacked View */}
-      <div className="md:hidden space-y-6">
-        {products.map((product, productIndex) => (
-          <div 
-            key={`mobile-product-${product.id}`}
-            className="space-y-4"
-          >
-            {/* Product Title Bar */}
-            <div className={`rounded-xl p-3 text-center font-semibold shadow-md border-t-4 ${getProductColorClass(productIndex)}`}>
-              {product.productName || product.name}
-            </div>
-
-            {/* Combined Specifications Box */}
-            <div className={`rounded-xl shadow-md p-5 border-t-4 ${getProductColorClass(productIndex)}`}>
-              {/* Brand & Price Section */}
-              <div className="mb-5 pb-5 border-b-2 border-gray-300">
-                <div className="mb-4 bg-white/50 p-3 rounded-lg">
-                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-medium">Brand</div>
-                  <div className="text-lg font-semibold text-gray-800">{product.brand || "N/A"}</div>
+      {/* Mobile Specifications - Horizontal Scroll View */}
+      <div className="md:hidden">
+        <div className="overflow-x-auto -mx-4 px-4 pb-4">
+          <div className="flex gap-4 min-w-max">
+            {products.map((product, productIndex) => (
+              <div 
+                key={`mobile-product-${product.id}`}
+                className="w-[85vw] flex-shrink-0"
+              >
+                {/* Product Title Bar */}
+                <div className={`rounded-xl p-3 text-center font-semibold shadow-md border-t-4 mb-4 ${getProductColorClass(productIndex)}`}>
+                  {product.productName || product.name}
                 </div>
-                <div className="bg-white/50 p-3 rounded-lg">
-                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-medium">Price</div>
-                  <div className="text-2xl font-bold text-green-600">₱{Number(product.price).toLocaleString()}</div>
+
+                {/* Combined Specifications Box */}
+                <div className={`rounded-xl shadow-md p-5 border-t-4 ${getProductColorClass(productIndex)}`}>
+                  {/* Brand & Price Section */}
+                  <div className="mb-5 pb-5 border-b-2 border-gray-300">
+                    <div className="mb-4 bg-white/50 p-3 rounded-lg">
+                      <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-medium">Brand</div>
+                      <div className="text-lg font-semibold text-gray-800">{product.brand || "N/A"}</div>
+                    </div>
+                    <div className="bg-white/50 p-3 rounded-lg">
+                      <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-medium">Price</div>
+                      <div className="text-2xl font-bold text-green-600">₱{Number(product.price).toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  {/* Specifications Section */}
+                  <div className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-4 flex items-center">
+                    <span className="border-b-2 border-green-500 pb-1">Specifications</span>
+                  </div>
+                  <div className="space-y-3">
+                    {extractSpecifications(product).map((specItem, specIndex) => (
+                      <div 
+                        key={`mobile-spec-${product.id}-${specIndex}`} 
+                        className="text-sm bg-white/30 p-3 rounded-lg hover:bg-white/50 transition-colors"
+                      >
+                        <div className="font-semibold text-gray-700 mb-1">{specItem.label}</div>
+                        <div className="text-gray-600 pl-2 border-l-2 border-gray-300">{renderSpecificationValue(specItem)}</div>
+                      </div>
+                    ))}
+                    {extractSpecifications(product).length === 0 && (
+                      <div className="text-sm text-gray-400 italic text-center py-8 bg-white/30 rounded-lg">
+                        No specifications available
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-
-              {/* Specifications Section */}
-              <div className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-4 flex items-center">
-                <span className="border-b-2 border-green-500 pb-1">Specifications</span>
-              </div>
-              <div className="space-y-3">
-                {extractSpecifications(product).map((specItem, specIndex) => (
-                  <div 
-                    key={`mobile-spec-${product.id}-${specIndex}`} 
-                    className="text-sm bg-white/30 p-3 rounded-lg hover:bg-white/50 transition-colors"
-                  >
-                    <div className="font-semibold text-gray-700 mb-1">{specItem.label}</div>
-                    <div className="text-gray-600 pl-2 border-l-2 border-gray-300">{renderSpecificationValue(specItem)}</div>
-                  </div>
-                ))}
-                {extractSpecifications(product).length === 0 && (
-                  <div className="text-sm text-gray-400 italic text-center py-8 bg-white/30 rounded-lg">
-                    No specifications available
-                  </div>
-                )}
-              </div>
-            </div>
+            ))}
           </div>
-        ))}
+        </div>
+        
+        {/* Scroll indicator hint */}
+        {products.length > 1 && (
+          <div className="text-center mt-4 text-xs text-gray-500 flex items-center justify-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+            </svg>
+            <span>Swipe left/right to view more</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </div>
+        )}
         
         {/* Mobile Add Product Button */}
         {products.length < 3 && (

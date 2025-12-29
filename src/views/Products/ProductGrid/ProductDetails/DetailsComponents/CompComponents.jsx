@@ -17,11 +17,15 @@ const CompComponents = ({ product }) => {
     const fetchCompatibleProducts = async () => {
       // Check if product has compatibility tags
       if (!product?.compatibility_tags || product.compatibility_tags.length === 0) {
+        console.log('❌ No compatibility_tags found for product:', product?.name);
+        console.log('Product data:', product);
         setLoading(false);
         return;
       }
 
       setLoading(true);
+      console.log('🔍 Searching for compatible products with tags:', product.compatibility_tags);
+      
       try {
         // Query products with matching tags
         const { data, error } = await supabase
@@ -33,14 +37,14 @@ const CompComponents = ({ product }) => {
           .limit(12); // Fetch more for pagination
 
         if (error) {
-          console.error('Error fetching compatible products:', error);
+          console.error('❌ Error fetching compatible products:', error);
           setCompatibleProducts([]);
         } else {
-          console.log(`Found ${data.length} compatible products for tags:`, product.compatibility_tags);
+          console.log(`✅ Found ${data.length} compatible products for tags:`, product.compatibility_tags);
           setCompatibleProducts(data || []);
         }
       } catch (err) {
-        console.error('Error:', err);
+        console.error('❌ Error:', err);
         setCompatibleProducts([]);
       } finally {
         setLoading(false);
@@ -53,18 +57,42 @@ const CompComponents = ({ product }) => {
   // If no compatible products found, don't render this section
   if (loading) {
     return (
-      <div className="mt-6">
-        <h2 className="text-lg font-semibold mb-4">Compatible Components</h2>
-        <div className="flex justify-center items-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
-          <span className="ml-3 text-gray-600">Loading compatible products...</span>
+      <div className="py-8 border-t">
+        <h2 className="text-2xl font-bold mb-6">Compatible Components</h2>
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-10 w-10 border-4 border-green-500 border-t-transparent"></div>
+          <span className="ml-4 text-gray-600 text-lg">Loading compatible products...</span>
         </div>
       </div>
     );
   }
 
+  // Show debug info when no compatibility tags exist
+  if (!product?.compatibility_tags || product.compatibility_tags.length === 0) {
+    return (
+      <div className="py-8 border-t">
+        <h2 className="text-2xl font-bold mb-6">Compatible Components</h2>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <p className="text-sm text-yellow-700">
+            ⚠️ This product doesn't have compatibility tags set. Add compatibility tags in the admin panel to show compatible products.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message when no matching products found
   if (compatibleProducts.length === 0) {
-    return null;
+    return (
+      <div className="py-8 border-t">
+        <h2 className="text-2xl font-bold mb-6">Compatible Components</h2>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <p className="text-sm text-blue-700">
+            ℹ️ No compatible products found with tags: {product.compatibility_tags.join(', ')}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   const totalPages = Math.ceil(compatibleProducts.length / pageSize);
@@ -85,14 +113,14 @@ const CompComponents = ({ product }) => {
   );
 
   return (
-    <div ref={ref} className={`transition-all duration-1000 ${
-      isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-    }`}>
-      <h2 className="text-lg font-semibold mt-6 mb-4">Compatible Components</h2>
-      <p className="text-sm text-gray-600 mb-4">
-        Products that work with this item based on compatibility tags
+    <div className="py-8 border-t">
+      <h2 className="text-2xl font-bold mb-6">Compatible Components</h2>
+      <p className="text-sm text-gray-600 mb-6">
+        Products that work well with this item based on compatibility tags
       </p>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+
+      {/* Compatible Products List */}
+      <div className="space-y-4">
         {paginatedData.map((comp) => {
           // Get first image or use placeholder
           const imageUrl = comp.images && comp.images.length > 0 
@@ -102,82 +130,96 @@ const CompComponents = ({ product }) => {
           return (
             <div
               key={comp.id}
-              className="bg-white border p-4 rounded-lg shadow cursor-pointer hover:shadow-lg transition"
+              className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => handleOpenModal(comp)}
             >
-              <div className="h-32 w-full mb-3 flex items-center justify-center bg-gray-50 rounded overflow-hidden">
-                <img
-                  src={imageUrl}
-                  alt={comp.name}
-                  className="max-w-full max-h-full object-contain"
-                />
-              </div>
+              <div className="flex gap-4">
+                {/* Product Image */}
+                <div className="w-24 h-24 flex-shrink-0 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center">
+                  <img
+                    src={imageUrl}
+                    alt={comp.name}
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
 
-              <h3 className="font-semibold text-gray-800 mb-1 truncate" title={comp.name}>
-                {comp.name}
-              </h3>
-              
-              {/* Show matching tags */}
-              <div className="flex flex-wrap gap-1 mb-2">
-                {comp.compatibility_tags && comp.compatibility_tags.slice(0, 2).map((tag, idx) => (
-                  <span 
-                    key={idx} 
-                    className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded"
-                  >
-                    {tag}
-                  </span>
-                ))}
-                {comp.compatibility_tags && comp.compatibility_tags.length > 2 && (
-                  <span className="text-xs text-gray-500">
-                    +{comp.compatibility_tags.length - 2}
-                  </span>
-                )}
-              </div>
+                {/* Product Info */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-900 text-lg mb-1 truncate" title={comp.name}>
+                    {comp.name}
+                  </h3>
+                  
+                  {/* Compatibility Tags */}
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {comp.compatibility_tags && comp.compatibility_tags.slice(0, 3).map((tag, idx) => (
+                      <span 
+                        key={idx} 
+                        className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full border border-green-200"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                    {comp.compatibility_tags && comp.compatibility_tags.length > 3 && (
+                      <span className="text-xs text-gray-500 px-2 py-1">
+                        +{comp.compatibility_tags.length - 3} more
+                      </span>
+                    )}
+                  </div>
 
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-green-600 font-bold text-lg">
-                  ₱{comp.price?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
+                  {/* Price and Stock */}
+                  <div className="flex items-center gap-4 mt-2">
+                    <span className="text-green-600 font-bold text-xl">
+                      ₱{comp.price?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className={`text-sm ${comp.stock_quantity > 0 ? 'text-gray-600' : 'text-red-500'}`}>
+                      {comp.stock_quantity > 0 
+                        ? `${comp.stock_quantity} in stock` 
+                        : 'Out of stock'}
+                    </span>
+                  </div>
+                </div>
               </div>
-              
-              <p className="text-xs text-gray-500">
-                Stock: {comp.stock_quantity > 0 ? `${comp.stock_quantity} available` : 'Out of stock'}
-              </p>
             </div>
           );
         })}
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-center items-center mt-6 gap-2">
-        <button
-          className="px-3 py-1 rounded border bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all active:scale-95"
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-        >
-          Prev
-        </button>
-        {[...Array(totalPages)].map((_, i) => (
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center mt-8 gap-2">
           <button
-            key={i}
-            className={`px-3 py-1 rounded border transition-all active:scale-95 ${
-              currentPage === i + 1
-                ? "bg-green-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-            onClick={() => setCurrentPage(i + 1)}
+            className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
           >
-            {i + 1}
+            Previous
           </button>
-        ))}
-        <button
-          className="px-3 py-1 rounded border bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all active:scale-95"
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-        >
-          Next
-        </button>
-      </div>
+          
+          <div className="flex gap-1">
+            {[...Array(totalPages)].map((_, i) => (
+              <button
+                key={i}
+                className={`px-3 py-2 rounded-lg border transition-colors ${
+                  currentPage === i + 1
+                    ? "bg-green-500 text-white border-green-500"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                }`}
+                onClick={() => setCurrentPage(i + 1)}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+
+          <button
+            className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       {/* Product Modal */}
       {modalOpen && selectedComponent && (

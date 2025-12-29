@@ -729,7 +729,7 @@ const Navbar = ({ isAuth }) => {
                         onClick={() => {
                           setShowMobileMenu(false);
                           setShowProfileAccordion(false);
-                          // Help Center logic here
+                          navigate("/contactus");
                         }}
                       >
                         Help Center
@@ -771,6 +771,7 @@ const Navbar = ({ isAuth }) => {
                     to="/notification"
                     className="relative flex items-center gap-2 px-3 py-2 text-white hover:text-green-400 transition"
                     aria-label="Notifications"
+                    onClick={() => setShowMobileMenu(false)}
                   >
                     <IoIosNotifications className="text-lg sm:text-xl md:text-2xl" />
                     <span className="text-xs sm:text-sm">Notifications</span>
@@ -784,6 +785,7 @@ const Navbar = ({ isAuth }) => {
                     to="/cart"
                     className="relative flex items-center gap-2 px-3 py-2 text-white hover:text-green-400 transition"
                     aria-label="Cart"
+                    onClick={() => setShowMobileMenu(false)}
                   >
                     <div className="relative">
                       <FaShoppingCart className="text-base sm:text-lg md:text-xl" />

@@ -168,11 +168,11 @@ const BundleDetails = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {bundleProducts.map((product, index) => (
                 <div
                   key={index}
-                  className="group border border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-green-500 transition-all duration-300 bg-white"
+                  className="group border border-gray-200 rounded-xl p-3 sm:p-4 hover:shadow-lg hover:border-green-500 transition-all duration-300 bg-white"
                 >
                   <div className="relative mb-4 bg-gray-50 rounded-lg overflow-hidden aspect-square">
                     <img

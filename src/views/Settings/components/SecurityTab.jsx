@@ -75,12 +75,7 @@ const SecurityTab = ({ loading, setLoading }) => {
         </div>
       )}
 
-      <div
-        ref={passwordFormAnim.ref}
-        className={`mb-8 transition-all duration-700 ${
-          passwordFormAnim.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-        }`}
-      >
+      <div className="mb-8">
         <h3 className="text-lg font-medium mb-4">Change Password</h3>
         <form onSubmit={handlePasswordSubmit}>
           <div className="mb-4">
