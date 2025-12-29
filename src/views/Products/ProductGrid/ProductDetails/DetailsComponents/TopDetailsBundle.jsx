@@ -240,19 +240,6 @@ const TopDetailsBundle = ({ product }) => {
               ))}
             </Slider>
           </div>
-
-          {/* Selected Product Indicator */}
-          <div
-            className={`mt-4 text-center ${
-              selectedFilter !== "All" ? "text-black" : "text-green-500"
-            } bg-gray-100 py-2 px-4 rounded`}
-          >
-            Viewing:{" "}
-            <span className="font-semibold text-green-500">
-              {selectedFilter}
-            </span>{" "}
-            Images
-          </div>
         </div>
 
         {/* Bundle Details */}

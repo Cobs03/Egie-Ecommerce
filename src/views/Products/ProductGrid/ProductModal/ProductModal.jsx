@@ -3,6 +3,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
 import React, { useState, useEffect, useRef } from "react";
+import ReactDOM from "react-dom";
 import Slider from "react-slick";
 
 import {
@@ -98,13 +99,13 @@ const ProductModal = ({ product, onClose, noBackground = false }) => {
 
   const [quantity, setQuantity] = useState(1);
 
-  return (
+  return ReactDOM.createPortal(
     <div
-      className={`fixed inset-0 flex items-center justify-center z-[999] ${!noBackground ? 'bg-black/80' : ''}`}
+      className={`fixed inset-0 flex items-center justify-center z-[9999] ${!noBackground ? 'bg-black/80' : ''}`}
       onClick={onClose}
     >
       <div
-        className="bg-black text-white p-6 rounded-lg w-[90%] max-h-[90vh] overflow-y-auto shadow-lg relative animate-fadeIn modal-scrollbar-hide"
+        className="bg-black text-white p-6 rounded-lg w-[95%] lg:w-[90%] max-w-7xl max-h-[95vh] overflow-y-auto shadow-lg relative animate-fadeIn modal-scrollbar-hide"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button and Report */}
@@ -328,8 +329,22 @@ const ProductModal = ({ product, onClose, noBackground = false }) => {
 
               <button
                 onClick={() => {
-                  toast.success("Added to compare!", {
-                    description: "Product added to comparison list.",
+                  onClose();
+                  navigate('/compare', {
+                    state: {
+                      products: [{
+                        id: product.id,
+                        productName: product.name || product.title,
+                        price: price,
+                        imageUrl: images[0] || product.imageUrl,
+                        brand: product.brand || 'Unknown',
+                        category: product.category || 'Uncategorized',
+                        stock: stock,
+                        // Add other relevant product details
+                        specifications: product.specifications || {},
+                        metadata: product.metadata || {}
+                      }]
+                    }
                   });
                 }}
                 className="flex-1 bg-gray-600 text-white font-normal py-3 rounded hover:bg-gray-700 transition-all text-center cursor-pointer active:scale-95 active:shadow-inner"
@@ -372,7 +387,8 @@ const ProductModal = ({ product, onClose, noBackground = false }) => {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

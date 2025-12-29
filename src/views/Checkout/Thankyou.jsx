@@ -70,7 +70,7 @@ const ThankYou = () => {
               : "opacity-0 translate-y-8"
           }`}
         >
-          <OtherCart noBackground={true} />
+          <OtherCart />
         </div>
       </div>
 

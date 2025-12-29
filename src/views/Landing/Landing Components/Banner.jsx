@@ -66,6 +66,11 @@ const LandingBanner = () => {
         }}
         navigation={true}
         loop={true}
+        autoplay={{
+          delay: 1000,
+          disableOnInteraction: false,
+          pauseOnMouseEnter: true,
+        }}
         modules={[Navigation, Pagination, Autoplay]}
         spaceBetween={0}
         slidesPerView={1}

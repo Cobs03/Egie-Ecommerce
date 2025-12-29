@@ -8,7 +8,9 @@ import { useCart } from "../../../../context/CartContext";
 // Import components
 import TopDetailsBundle from "./DetailsComponents/TopDetailsBundle";
 import Description from "./DetailsComponents/Description";
+import Reviews from "./DetailsComponents/Reviews";
 import Warranty from "./DetailsComponents/Warranty";
+import Bundles from "./DetailsComponents/Bundles";
 
 const BundleDetails = () => {
   const { bundleId } = useParams();
@@ -127,66 +129,137 @@ const BundleDetails = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Bundle Header */}
-        <div className="mb-6">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-gray-600 hover:text-gray-800 mb-4 flex items-center gap-2 transition-all active:scale-95"
-          >
-            ← Back
-          </button>
-          <h1 className="text-3xl font-bold text-gray-800">Bundle Details</h1>
-        </div>
+    <div className="mt-10">
+      {/* Top Details Section */}
+      <TopDetailsBundle product={bundleData} onAddToCart={handleAddToCart} />
 
-        {/* Top Details Section */}
-        <TopDetailsBundle 
-          product={bundleData} 
-          onAddToCart={handleAddToCart}
-        />
+      <div className="flex flex-col lg:flex-row max-w-7xl mx-auto px-4 py-4 sm:py-6 md:py-8 w-full gap-4 sm:gap-6 md:gap-10">
+        {/* Details Left - 75% width on desktop */}
+        <div className="flex flex-col mb-4 bg-white p-4 sm:p-6 md:p-8 rounded-lg shadow-md w-full lg:w-3/4">
+          {/* Description Section */}
+          <Description product={bundleData} />
 
-        {/* Bundle Products Section */}
-        <div className="bg-white p-6 rounded-lg shadow-md mt-6">
-          <h2 className="text-2xl font-semibold mb-4">Included Products</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {bundleProducts.map((product, index) => (
-              <div
-                key={index}
-                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
-              >
-                <img
-                  src={product.product_image || '/images/placeholder.png'}
-                  alt={product.product_name}
-                  className="w-full h-48 object-contain mb-3 bg-gray-50 rounded"
-                  onError={(e) => {
-                    e.target.src = '/images/placeholder.png';
-                  }}
-                />
-                <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2">
-                  {product.product_name}
-                </h3>
-                <p className="text-sm text-gray-500 mb-2">
-                  {product.product_code || 'N/A'}
-                </p>
-                <p className="text-green-600 font-bold text-lg">
-                  ₱{parseFloat(product.product_price || 0).toLocaleString()}
+          {/* Bundle Products Section */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Included Products
+                </h2>
+                <p className="text-gray-500 mt-1">
+                  {bundleProducts.length} components in this bundle
                 </p>
               </div>
-            ))}
+              <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full">
+                <svg
+                  className="w-5 h-5 text-green-600"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span className="text-sm font-semibold text-green-700">
+                  All Verified
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {bundleProducts.map((product, index) => (
+                <div
+                  key={index}
+                  className="group border border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-green-500 transition-all duration-300 bg-white"
+                >
+                  <div className="relative mb-4 bg-gray-50 rounded-lg overflow-hidden aspect-square">
+                    <img
+                      src={product.product_image || "/images/placeholder.png"}
+                      alt={product.product_name}
+                      className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.target.src = "/images/placeholder.png";
+                      }}
+                    />
+                    <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full shadow-sm">
+                      <span className="text-xs font-semibold text-gray-600">
+                        #{index + 1}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 min-h-[2.5rem] group-hover:text-green-600 transition-colors">
+                      {product.product_name}
+                    </h3>
+
+                    {product.product_code && (
+                      <p className="text-xs text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded inline-block">
+                        {product.product_code}
+                      </p>
+                    )}
+
+                    <div className="pt-2 border-t border-gray-100">
+                      <p className="text-green-600 font-bold text-lg">
+                        ₱
+                        {parseFloat(product.product_price || 0).toLocaleString(
+                          "en-US",
+                          {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          }
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Total Price Summary */}
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <div className="flex items-center justify-between max-w-md ml-auto bg-gray-50 p-4 rounded-xl">
+                <span className="text-gray-700 font-medium">Bundle Total:</span>
+                <span className="text-2xl font-bold text-green-600">
+                  ₱
+                  {parseFloat(bundleData.price || 0).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+              {bundleData.oldPrice &&
+                bundleData.oldPrice > bundleData.price && (
+                  <div className="flex items-center justify-end gap-2 mt-2 max-w-md ml-auto">
+                    <span className="text-sm text-gray-500">
+                      Regular Price:
+                    </span>
+                    <span className="text-sm text-gray-400 line-through">
+                      ₱{parseFloat(bundleData.oldPrice).toLocaleString()}
+                    </span>
+                    <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-1 rounded">
+                      Save ₱
+                      {(
+                        bundleData.oldPrice - bundleData.price
+                      ).toLocaleString()}
+                    </span>
+                  </div>
+                )}
+            </div>
           </div>
+
+          <Reviews product={bundleData} />
         </div>
 
-        {/* Description Section */}
-        <Description product={bundleData} />
+        {/* Details Right - 25% width on desktop */}
+        <div className="w-full lg:w-1/4">
+          <Warranty product={bundleData} />
 
-        {/* Warranty Section */}
-        {bundle.warranty && (
-          <Warranty warranty={bundle.warranty} />
-        )}
-
-        {/* Compatible Components Section (if applicable) */}
-        {/* You can add this if you want to show compatible products for the bundle */}
+          {/* Show Bundles component */}
+          <Bundles />
+        </div>
       </div>
     </div>
   );

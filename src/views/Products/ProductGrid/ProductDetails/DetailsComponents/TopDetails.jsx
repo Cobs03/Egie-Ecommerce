@@ -166,7 +166,7 @@ const ProductDetails = ({ product }) => {
                   <img
                     src={image}
                     alt={`Product ${index + 1}`}
-                    className="object-cover max-h-full max-w-full"
+                    className="object-contain max-h-full max-w-full m-auto"
                   />
                 </div>
               ))}
@@ -193,7 +193,7 @@ const ProductDetails = ({ product }) => {
                     <img
                       src={image}
                       alt={`Thumbnail ${index + 1}`}
-                      className="object-contain max-h-full max-w-full"
+                      className="object-contain max-h-full max-w-full m-auto"
                     />
                   </div>
                 </div>
