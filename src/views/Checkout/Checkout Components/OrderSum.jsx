@@ -4,14 +4,26 @@ import VoucherService from "../../../services/VoucherService";
 import { toast } from "sonner";
 
 const OrderSum = () => {
-  const { cartItems: dbCartItems, cartTotal, deliveryType, orderNotes, loadCart, appliedVoucher, setAppliedVoucher } = useCart();
+  const { 
+    cartItems: dbCartItems, 
+    checkoutItems, // Use checkout items instead of all cart items
+    cartTotal, 
+    deliveryType, 
+    orderNotes, 
+    loadCart, 
+    appliedVoucher, 
+    setAppliedVoucher 
+  } = useCart();
   
   useEffect(() => {
     loadCart();
   }, []);
 
+  // Use checkoutItems if available, otherwise fall back to all cart items
+  const itemsToDisplay = checkoutItems.length > 0 ? checkoutItems : dbCartItems;
+
   // Transform database cart items for display
-  const products = dbCartItems.map(item => ({
+  const products = itemsToDisplay.map(item => ({
     id: item.id,
     name: item.product_name,
     variant: item.variant_name,
@@ -24,9 +36,13 @@ const OrderSum = () => {
   const [voucherError, setVoucherError] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
 
+  // Calculate subtotal from selected checkout items only
+  const subtotal = itemsToDisplay.reduce((sum, item) => {
+    return sum + (item.price_at_add * item.quantity);
+  }, 0);
+
   // Calculate shipping fee based on delivery type
   const shippingFee = deliveryType === 'store_pickup' ? 0 : 100;
-  const subtotal = cartTotal;
   const voucherDiscount = appliedVoucher ? appliedVoucher.discountAmount : 0;
   const total = subtotal + shippingFee - voucherDiscount;
 

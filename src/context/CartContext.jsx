@@ -24,6 +24,10 @@ export const CartProvider = ({ children }) => {
   const [orderNotes, setOrderNotes] = useState('');
   const [deliveryType, setDeliveryType] = useState(null); // 'local_delivery' or 'store_pickup'
   const [appliedVoucher, setAppliedVoucher] = useState(null); // { code, voucherId, discountAmount, discountType, voucherValue }
+  
+  // Selected items for checkout
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const [checkoutItems, setCheckoutItems] = useState([]); // Filtered items for checkout page
 
   // Load cart when user logs in
   useEffect(() => {
@@ -48,6 +52,8 @@ export const CartProvider = ({ children }) => {
         setOrderNotes('');
         setDeliveryType(null);
         setAppliedVoucher(null);
+        setSelectedItems(new Set());
+        setCheckoutItems([]);
       }
     });
 
@@ -226,6 +232,8 @@ export const CartProvider = ({ children }) => {
       setCartTotal(0);
       setOrderNotes('');
       setDeliveryType(null);
+      setSelectedItems(new Set());
+      setCheckoutItems([]);
 
       // Only show toast if explicitly requested (when user manually clears cart)
       if (showToast) {
@@ -260,6 +268,11 @@ export const CartProvider = ({ children }) => {
     setDeliveryType,
     appliedVoucher,
     setAppliedVoucher,
+    // Selected items for checkout
+    selectedItems,
+    setSelectedItems,
+    checkoutItems,
+    setCheckoutItems,
   };
 
   return (

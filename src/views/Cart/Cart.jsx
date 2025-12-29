@@ -5,8 +5,14 @@ import OtherCart from "./Cart Components/OtherCart";
 import { useCart } from "../../context/CartContext";
 
 const Cart = () => {
-  const { cartItems: dbCartItems, cartTotal, loading, loadCart } = useCart();
-  const [selectedItems, setSelectedItems] = useState(new Set());
+  const { 
+    cartItems: dbCartItems, 
+    cartTotal, 
+    loading, 
+    loadCart,
+    selectedItems,
+    setSelectedItems,
+  } = useCart();
   
   // Load cart on mount
   useEffect(() => {
