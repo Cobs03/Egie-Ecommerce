@@ -1,14 +1,17 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
+import ContactService from "../../../services/ContactService";
 
 const ContactForm = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     message: "",
+    phone: "",
     acceptTerms: false
   });
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -46,7 +49,7 @@ const ContactForm = () => {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     const newErrors = validateForm();
@@ -57,17 +60,33 @@ const ContactForm = () => {
       return;
     }
 
-    console.log("Form submitted:", formData);
-    toast.success("Message sent successfully!");
-    
-    // Reset form
-    setFormData({
-      name: "",
-      email: "",
-      message: "",
-      acceptTerms: false
-    });
-    setErrors({});
+    setIsSubmitting(true);
+
+    try {
+      // Submit to Supabase database
+      const result = await ContactService.submitContactForm(formData);
+
+      if (result.success) {
+        toast.success(result.message || "Message sent successfully!");
+        
+        // Reset form
+        setFormData({
+          name: "",
+          email: "",
+          message: "",
+          phone: "",
+          acceptTerms: false
+        });
+        setErrors({});
+      } else {
+        toast.error(result.error || "Failed to send message. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast.error("An unexpected error occurred. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -153,9 +172,10 @@ const ContactForm = () => {
         
         <button
           type="submit"
-          className="w-full bg-green-500 text-black font-bold py-3 rounded hover:bg-green-400 transition-all duration-200 uppercase tracking-wider cursor-pointer active:scale-95 hover:scale-105"
+          disabled={isSubmitting}
+          className="w-full bg-green-500 text-black font-bold py-3 rounded hover:bg-green-400 transition-all duration-200 uppercase tracking-wider cursor-pointer active:scale-95 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         >
-          SUBMIT
+          {isSubmitting ? "SENDING..." : "SUBMIT"}
         </button>
       </form>
     </div>

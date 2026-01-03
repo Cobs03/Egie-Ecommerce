@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { FaEye } from "react-icons/fa";
 import { IoMdEyeOff } from "react-icons/io";
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
+import { useWebsiteSettings } from '../../hooks/useWebsiteSettings';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -16,6 +17,7 @@ const ResetPassword = () => {
   const [error, setError] = useState('');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { settings } = useWebsiteSettings();
 
   // Scroll animations
   const formAnim = useScrollAnimation({ threshold: 0.1 });
@@ -100,8 +102,8 @@ const ResetPassword = () => {
           <div className="flex items-center mb-3 justify-center">
             <img
               className="w-24 h-16 md:w-28 md:h-20 object-contain"
-              src="https://i.ibb.co/Cpx2BBt5/egie-removebg-preview-1.png"
-              alt="Logo"
+              src={settings?.logoUrl || "https://i.ibb.co/Cpx2BBt5/egie-removebg-preview-1.png"}
+              alt={settings?.brandName || "Logo"}
             />
           </div>
           <div className="text-center">
@@ -128,8 +130,8 @@ const ResetPassword = () => {
         <div className="flex items-center mb-3 justify-center">
           <img
             className="w-24 h-16 md:w-28 md:h-20 object-contain"
-            src="https://i.ibb.co/Cpx2BBt5/egie-removebg-preview-1.png"
-            alt="Logo"
+            src={settings?.logoUrl || "https://i.ibb.co/Cpx2BBt5/egie-removebg-preview-1.png"}
+            alt={settings?.brandName || "Logo"}
           />
         </div>
 

@@ -16,7 +16,7 @@ export const fetchComponentModel = async (scene, componentType, productData, onP
     return null;
   }
 
-  const productName = productData.productName || componentType;
+  const productName = productData.name || productData.productName || componentType;
   console.log('🔄 Fetching model for:', productName);
 
   // Update status callback

@@ -687,6 +687,80 @@ Return ONLY valid JSON with this EXACT structure:
     }
     return false;
   }
+
+  /**
+   * Find related/compatible products based on a matched product
+   * @param {Object} product - The main product
+   * @param {Array} allProducts - All available products
+   * @returns {Array} - Related products
+   */
+  findRelatedProducts(product, allProducts) {
+    console.log('🔗 Finding related products for:', product.name || product.title);
+    
+    const relatedScores = allProducts
+      .filter(p => p.id !== product.id) // Exclude the product itself
+      .map(p => {
+        let score = 0;
+        
+        // Extract brand and category info
+        const productBrand = (product.brands?.name || product.brand_name || product.brand || '').toLowerCase();
+        const relatedBrand = (p.brands?.name || p.brand_name || p.brand || '').toLowerCase();
+        
+        const productCategory = (product.category_id || product.category || '').toLowerCase();
+        const relatedCategory = (p.category_id || p.category || '').toLowerCase();
+        
+        // Same brand = related (accessories, peripherals)
+        if (productBrand && relatedBrand && productBrand === relatedBrand) {
+          score += 20;
+        }
+        
+        // Same category = compatible/alternative
+        if (productCategory && relatedCategory && productCategory === relatedCategory) {
+          score += 30;
+        }
+        
+        // Similar price range (within 30%)
+        if (product.price && p.price) {
+          const priceDiff = Math.abs(product.price - p.price) / product.price;
+          if (priceDiff <= 0.3) {
+            score += 15;
+          }
+        }
+        
+        // Check for compatibility tags if available
+        const productTags = (product.compatibility_tags || []).map(t => t.toLowerCase());
+        const relatedTags = (p.compatibility_tags || []).map(t => t.toLowerCase());
+        const sharedTags = productTags.filter(tag => relatedTags.includes(tag));
+        score += sharedTags.length * 10;
+        
+        return { product: p, score };
+      })
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score);
+    
+    console.log('🎯 Found', relatedScores.length, 'related products');
+    return relatedScores.slice(0, 6).map(item => ({
+      ...item.product,
+      relationScore: item.score
+    }));
+  }
+
+  /**
+   * Check if a product is in stock
+   * @param {Object} product - The product to check
+   * @returns {Object} - Stock status information
+   */
+  getStockStatus(product) {
+    const quantity = product.stock_quantity || product.quantity || 0;
+    
+    return {
+      inStock: quantity > 0,
+      quantity: quantity,
+      status: quantity > 10 ? 'In Stock' : quantity > 0 ? 'Low Stock' : 'Out of Stock',
+      statusEmoji: quantity > 10 ? '✅' : quantity > 0 ? '⚠️' : '❌'
+    };
+  }
 }
 
 export default new VisionService();
+

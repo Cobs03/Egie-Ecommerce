@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { components } from "../../Data/components";
 import ProductModal from "../../Products/ProductGrid/ProductModal/ProductModal";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
@@ -11,9 +10,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const Selected = ({ selectedType, selectedProducts, onAddProduct, onRemoveProduct, darkMode = false }) => {
-  const selectedComponent = components.find((c) => c.type === selectedType);
-  const products = selectedComponent ? selectedComponent.products : [];
+const Selected = ({ 
+  selectedType, 
+  selectedProducts, 
+  onAddProduct, 
+  onRemoveProduct, 
+  componentProducts = {}, 
+  isLoadingProducts = false,
+  darkMode = false 
+}) => {
+  // Get products from database for selected component type
+  const products = selectedType && componentProducts[selectedType] ? componentProducts[selectedType] : [];
 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedBrand, setSelectedBrand] = useState("all");
@@ -32,13 +39,14 @@ const Selected = ({ selectedType, selectedProducts, onAddProduct, onRemoveProduc
     setSearchTerm("");
   }, [selectedType]);
 
-  const brands = [...new Set(products.map((p) => p.brand))];
-  const subCategories = [...new Set(products.map((p) => p.subCategory))];
+  // Extract unique brands and subcategories from database products
+  const brands = [...new Set(products.map((p) => p.brand))].sort();
+  const subCategories = [...new Set(products.map((p) => p.subcategory))].sort();
 
   const filteredProducts = products.filter((p) => {
     const matchesBrand = selectedBrand === "all" || p.brand === selectedBrand;
-    const matchesSub = selectedSubCategory === "all" || p.subCategory === selectedSubCategory;
-    const matchesSearch = p.productName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSub = selectedSubCategory === "all" || p.subcategory === selectedSubCategory;
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesBrand && matchesSub && matchesSearch;
   });
 
@@ -64,7 +72,7 @@ const Selected = ({ selectedType, selectedProducts, onAddProduct, onRemoveProduc
               <div key={type} className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
                 <div className="flex-1 min-w-0">
                   <span className="font-medium text-gray-600">{type}:</span>
-                  <span className="ml-1 text-gray-800 truncate">{product.productName}</span>
+                  <span className="ml-1 text-gray-800 truncate">{product.name}</span>
                 </div>
                 {onRemoveProduct && (
                   <button
@@ -146,7 +154,12 @@ const Selected = ({ selectedType, selectedProducts, onAddProduct, onRemoveProduc
             : 'opacity-0 translate-x-4'
         }`}
       >
-        {!selectedType ? (
+        {isLoadingProducts ? (
+          <div className="flex flex-col items-center justify-center h-full text-gray-400">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-lime-500 mb-2"></div>
+            <p className="text-sm">Loading products...</p>
+          </div>
+        ) : !selectedType ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <p className="text-sm text-center">
               Click on a component row to view available products
@@ -173,10 +186,10 @@ const Selected = ({ selectedType, selectedProducts, onAddProduct, onRemoveProduc
                   <div className="flex items-start gap-3">
                     {/* Product Image */}
                     <div className="w-14 h-14 bg-gray-200 flex items-center justify-center rounded flex-shrink-0 overflow-hidden">
-                      {product.imageUrl ? (
+                      {product.image ? (
                         <img 
-                          src={product.imageUrl} 
-                          alt={product.productName}
+                          src={product.image} 
+                          alt={product.name}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -187,10 +200,10 @@ const Selected = ({ selectedType, selectedProducts, onAddProduct, onRemoveProduc
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-gray-800 truncate">
-                        {product.productName}
+                        {product.name}
                       </p>
                       <p className="text-xs text-gray-500 truncate">
-                        {product.brand} • {product.subCategory}
+                        {product.brand} • {product.subcategory}
                       </p>
                       <p className="text-sm font-bold text-gray-700 mt-1">
                         ₱{product.price?.toLocaleString() || '0'}

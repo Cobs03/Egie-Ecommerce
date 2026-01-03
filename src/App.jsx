@@ -18,6 +18,7 @@ import Checkout from "./views/Checkout/Checkout";
 import ThankYou from "./views/Checkout/Thankyou";
 import ScrollToTop from "./views/Components/ScrollToTop/ScrollToTop";
 import SystemBuild from "./views/SystemBuild/SystemBuild";
+import MyBuilds from "./views/MyBuilds/MyBuilds";
 import ContactUs from "./views/ContactUs/ContactUs";
 import Notification from "./views/Notifications/Notification";
 import Purchases from "./views/Purchases/Purchases";
@@ -35,6 +36,7 @@ import ForgotPassword from "./views/ForgotPassword/ForgotPassword";
 import ResetPassword from "./views/ResetPassword/ResetPassword";
 import Terms from "./views/Policy and Terms/Terms";
 import Policy from "./views/Policy and Terms/Policy";
+import About from "./views/About/About";
 import Settings from "./views/Settings/Settings";
 import PaymentSuccess from "./views/Payment/PaymentSuccess";
 import PaymentFailed from "./views/Payment/PaymentFailed";
@@ -183,6 +185,14 @@ const Main = () => {
             }
           />
           <Route
+            path="/mybuilds"
+            element={
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
+                <MyBuilds />
+              </div>
+            }
+          />
+          <Route
             path="/contactus"
             element={
               <div className="mt-[120px] max-md:mt-[65px] container-responsive">
@@ -243,6 +253,14 @@ const Main = () => {
             element={
               <div className="mt-[120px] max-md:mt-[65px] container-responsive">
                 <Terms />
+              </div>
+            }
+          />
+          <Route
+            path="/about"
+            element={
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
+                <About />
               </div>
             }
           />

@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 
 const Terms = () => {
   const containerAnim = useScrollAnimation({ threshold: 0.1 });
+  const { settings } = useWebsiteSettings();
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -25,6 +27,13 @@ const Terms = () => {
           </div>
 
           <div className="prose prose-lg max-w-none">
+            {settings?.termsAndConditions ? (
+              <div 
+                className="whitespace-pre-wrap"
+                dangerouslySetInnerHTML={{ __html: settings.termsAndConditions }}
+              />
+            ) : (
+              <>
             <p className="mb-6">
               Please read these terms and conditions carefully before using Our
               Service.
@@ -233,6 +242,8 @@ const Terms = () => {
                 <li>By phone number: +1 (555) 123-4567</li>
               </ul>
             </section>
+              </>
+            )}
           </div>
         </div>
       </div>

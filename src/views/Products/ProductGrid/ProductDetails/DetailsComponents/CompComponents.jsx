@@ -72,9 +72,13 @@ const CompComponents = ({ product }) => {
     return (
       <div className="py-8 border-t">
         <h2 className="text-2xl font-bold mb-6">Compatible Components</h2>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <p className="text-sm text-yellow-700">
-            ⚠️ This product doesn't have compatibility tags set. Add compatibility tags in the admin panel to show compatible products.
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+          <div className="text-5xl mb-4">🔧</div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">
+            No Compatible Products Yet
+          </h3>
+          <p className="text-gray-600 max-w-md mx-auto">
+            We're working on adding compatibility information for this product. Check back soon to see what works well with it!
           </p>
         </div>
       </div>
@@ -86,9 +90,13 @@ const CompComponents = ({ product }) => {
     return (
       <div className="py-8 border-t">
         <h2 className="text-2xl font-bold mb-6">Compatible Components</h2>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <p className="text-sm text-blue-700">
-            ℹ️ No compatible products found with tags: {product.compatibility_tags.join(', ')}
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+          <div className="text-5xl mb-4">🔍</div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">
+            No Matching Products Found
+          </h3>
+          <p className="text-gray-600 max-w-md mx-auto">
+            We couldn't find any compatible products at the moment. Our inventory is constantly being updated, so please check back later!
           </p>
         </div>
       </div>

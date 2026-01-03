@@ -521,10 +521,6 @@ const AIChatBox = () => {
   const isAuthPage = location.pathname === '/signin' || location.pathname === '/signup' || 
                       location.pathname === '/sign-in' || location.pathname === '/sign-up' ||
                       location.pathname.includes('/auth');
-  
-  if (isAuthPage) {
-    return null;
-  }
 
   const ensureProductsLoaded = useCallback(async () => {
     if (catalog.products.length) return catalog.products;
@@ -1313,40 +1309,86 @@ IMPORTANT: Write naturally like a helpful salesperson. NO asterisks, NO markdown
     setIsTyping(true);
 
     try {
-      // Smart category detection from product names
-      const detectCategory = (productName) => {
-        const name = productName.toLowerCase();
-        if (name.includes('laptop') || name.includes('notebook')) return 'laptop';
-        if (name.includes('processor') || name.includes('cpu') || name.includes('ryzen') || name.includes('intel core')) return 'processor';
-        if (name.includes('ram') || name.includes('memory') || name.includes('ddr')) return 'ram';
-        if (name.includes('gpu') || name.includes('graphics') || name.includes('rtx') || name.includes('gtx') || name.includes('radeon')) return 'gpu';
-        if (name.includes('motherboard') || name.includes('mobo')) return 'motherboard';
-        if (name.includes('ssd') || name.includes('nvme') || name.includes('hdd') || name.includes('hard drive')) return 'storage';
-        if (name.includes('power supply') || name.includes('psu')) return 'psu';
-        if (name.includes('monitor') || name.includes('display')) return 'monitor';
-        if (name.includes('keyboard')) return 'keyboard';
-        if (name.includes('mouse')) return 'mouse';
+      // Smart category detection from product names, descriptions, and categories
+      const detectCategory = (product) => {
+        const name = (product.name || '').toLowerCase();
+        const desc = (product.description || '').toLowerCase();
+        const category = (product.category_id || product.category || '').toLowerCase();
+        const combined = `${name} ${desc} ${category}`;
+        
+        if (combined.includes('laptop') || combined.includes('notebook')) return 'laptop';
+        if (combined.includes('processor') || combined.includes('cpu') || combined.includes('ryzen') || combined.includes('intel core')) return 'processor';
+        if (combined.includes('ram') || combined.includes('memory') || combined.includes('ddr')) return 'ram';
+        if (combined.includes('gpu') || combined.includes('graphics') || combined.includes('rtx') || combined.includes('gtx') || combined.includes('radeon')) return 'gpu';
+        if (combined.includes('motherboard') || combined.includes('mobo')) return 'motherboard';
+        if (combined.includes('ssd') || combined.includes('nvme') || combined.includes('hdd') || combined.includes('hard drive')) return 'storage';
+        if (combined.includes('power supply') || combined.includes('psu')) return 'psu';
+        if (combined.includes('monitor') || combined.includes('display')) return 'monitor';
+        if (combined.includes('keyboard')) return 'keyboard';
+        if (combined.includes('mouse')) return 'mouse';
+        if (combined.includes('headset') || combined.includes('headphone')) return 'headset';
         return 'unknown';
       };
 
       // Group by detected category
       const categoryGroups = {};
       products.forEach(product => {
-        const category = detectCategory(product.name);
+        const category = detectCategory(product);
         if (!categoryGroups[category]) {
           categoryGroups[category] = [];
         }
         categoryGroups[category].push(product);
       });
 
+      console.log('📊 Category groups:', categoryGroups);
+
       // Check if we have products from same category
       const categories = Object.keys(categoryGroups);
       const validCategories = categories.filter(cat => cat !== 'unknown' && categoryGroups[cat].length >= 2);
 
-      if (validCategories.length === 0) {
+      // Smart handling: If we have BOTH known and unknown products, 
+      // and the user explicitly wants to compare them all, merge them
+      let productsToCompare = [];
+      
+      if (validCategories.length > 0) {
+        // Use the category with most products
+        const mainCategory = validCategories.sort((a, b) => 
+          categoryGroups[b].length - categoryGroups[a].length
+        )[0];
+        productsToCompare = categoryGroups[mainCategory];
+        
+        // If there are "unknown" products and they're from the same brand family as the main category,
+        // include them too (e.g., "LENOVO", "MSI" products when comparing laptops)
+        if (categoryGroups['unknown'] && categoryGroups['unknown'].length > 0) {
+          const unknownProducts = categoryGroups['unknown'];
+          const knownBrands = productsToCompare.map(p => (p.brands?.name || '').toLowerCase());
+          
+          // Add unknown products if they share brands with known products
+          unknownProducts.forEach(unknownProd => {
+            const unknownBrand = (unknownProd.brands?.name || '').toLowerCase();
+            if (knownBrands.includes(unknownBrand) || productsToCompare.length + unknownProducts.length <= 6) {
+              // If same brand OR if total products is reasonable, include them
+              productsToCompare.push(unknownProd);
+            }
+          });
+        }
+      } else if (categoryGroups['unknown']?.length >= 2) {
+        // All products are unknown, but user wants to compare them
+        console.log('⚠️ Multiple unknown products, allowing comparison anyway');
+        productsToCompare = categoryGroups['unknown'];
+        
         const mixedMsg = {
           id: Date.now(),
-          text: "I noticed the products shown are from different categories. For a fair comparison, please make sure all products are from the same category. For example, compare laptops with laptops, or processors with processors. Would you like me to show you products from a specific category?",
+          text: "I'll compare these products for you. Note: For the most accurate comparison, products should have detailed descriptions. Here's what I found:",
+          sender: "ai",
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, mixedMsg]);
+      } else {
+        // Truly mixed categories
+        const mixedMsg = {
+          id: Date.now(),
+          text: "I noticed the products shown are from different categories. For a fair comparison, products should be from the same category. For example, compare laptops with laptops, or processors with processors. Would you like me to show you products from a specific category?",
           sender: "ai",
           timestamp: new Date(),
         };
@@ -1355,15 +1397,11 @@ IMPORTANT: Write naturally like a helpful salesperson. NO asterisks, NO markdown
         return;
       }
 
-      // Use the category with most products
-      const mainCategory = validCategories.sort((a, b) => 
-        categoryGroups[b].length - categoryGroups[a].length
-      )[0];
-      
-      const productsToCompare = categoryGroups[mainCategory];
+      console.log(`🔍 Comparing ${productsToCompare.length} products`);
 
       // Generate AI comparison
-      const comparisonPrompt = `You are a helpful computer hardware sales assistant. Compare these ${mainCategory} products for a customer:
+      const category = validCategories.length > 0 ? validCategories[0] : 'product';
+      const comparisonPrompt = `You are a helpful computer hardware sales assistant. Compare ALL ${productsToCompare.length} ${category} products for a customer:
 
 ${productsToCompare.map((p, idx) => `
 Product ${idx + 1}: ${p.name}
@@ -1373,17 +1411,19 @@ Product ${idx + 1}: ${p.name}
 - Description: ${p.description || 'No description'}`).join('\n')}
 
 Provide a natural, conversational comparison that:
-1. Starts with a brief intro (1 sentence)
-2. Compares key differences (price, specs if you can tell from names, value)
-3. Gives a recommendation based on different use cases or budgets
-4. Ends with encouragement to ask questions
+1. Start by acknowledging you're comparing ALL ${productsToCompare.length} products
+2. Compare key differences (price range, specs if you can tell from names, value propositions)
+3. Give recommendations based on different use cases or budgets (budget option, mid-range, premium)
+4. Mention stock availability if relevant
+5. End with encouragement to ask questions
 
 IMPORTANT RULES:
 - Write like you're talking to a customer in a store
 - NO asterisks (**), NO markdown formatting
 - Use simple, clear language
 - Be helpful and friendly
-- Keep it conversational (3-4 short paragraphs max)`;
+- Keep it conversational (3-5 short paragraphs)
+- Make sure to mention ALL products by name at least once`;
 
       const aiComparison = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -1407,7 +1447,7 @@ IMPORTANT RULES:
         text: comparisonText,
         sender: "ai",
         timestamp: new Date(),
-        products: productsToCompare.slice(0, 4), // Show compared products
+        products: productsToCompare, // Show ALL compared products (no limit)
         isGeneralQuestion: false
       };
 
@@ -1781,9 +1821,10 @@ IMPORTANT:
       setIsRecording(true);
       const recordingMsg = {
         id: Date.now(),
-        text: "🎤 Listening... Speak now!",
+        text: "recording", // Special flag for animated recording
         sender: "ai",
         timestamp: new Date(),
+        isRecording: true, // Flag to show animated recording
       };
       setMessages(prev => [...prev, recordingMsg]);
     };
@@ -1792,22 +1833,34 @@ IMPORTANT:
       const transcript = event.results[0][0].transcript;
       setInputMessage(transcript);
       setIsRecording(false);
+      // Remove the recording message
+      setMessages(prev => prev.filter(msg => !msg.isRecording));
     };
 
     recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
       setIsRecording(false);
-      const errorMsg = {
-        id: Date.now(),
-        text: `⚠️ Voice recognition error: ${event.error}. Please try again.`,
-        sender: "ai",
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMsg]);
+      // Remove the recording message
+      setMessages(prev => prev.filter(msg => !msg.isRecording));
+      
+      // Only show error message for actual errors, not for user actions
+      const ignoredErrors = ['no-speech', 'aborted', 'audio-capture'];
+      
+      if (!ignoredErrors.includes(event.error)) {
+        const errorMsg = {
+          id: Date.now(),
+          text: `⚠️ Voice recognition error: ${event.error}. Please try again.`,
+          sender: "ai",
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, errorMsg]);
+      }
     };
 
     recognition.onend = () => {
       setIsRecording(false);
+      // Remove the recording message if still present
+      setMessages(prev => prev.filter(msg => !msg.isRecording));
     };
 
     recognitionRef.current = recognition;
@@ -1818,6 +1871,8 @@ IMPORTANT:
     if (recognitionRef.current) {
       recognitionRef.current.stop();
       setIsRecording(false);
+      // Remove the recording message
+      setMessages(prev => prev.filter(msg => !msg.isRecording));
     }
   };
 
@@ -1924,30 +1979,79 @@ IMPORTANT:
 
       setIsTyping(false);
 
+      // Skip the technical detection message - go straight to results for better UX
+
       // Show results
       if (matchedProducts.length > 0) {
-        // Limit to top 5 results
-        const resultsToShow = matchedProducts.slice(0, 5);
+        // Check if we have an exact or very close match
+        const topMatch = matchedProducts[0];
+        const isExactMatch = topMatch.matchScore >= 80;
+        
+        // Separate exact matches from similar products
+        const exactMatches = matchedProducts.filter(p => p.matchScore >= 80);
+        const similarProducts = matchedProducts.filter(p => p.matchScore < 80);
 
-        setRecommendedProducts(resultsToShow);
+        if (isExactMatch) {
+          // Show exact match with stock status
+          const stockInfo = VisionService.getStockStatus(topMatch);
+          const stockStatus = `${stockInfo.statusEmoji} ${stockInfo.status} ${stockInfo.quantity > 0 ? `(${stockInfo.quantity} available)` : ''}`;
+          
+          const exactMatchMsg = {
+            id: Date.now() + 3,
+            text: `Great news! I found exactly what you're looking for! 🎉\n\n${stockStatus}\n\nHere's your product:`,
+            sender: "ai",
+            timestamp: new Date(),
+            products: [topMatch],
+            hasProducts: true,
+          };
+          setMessages(prev => [...prev, exactMatchMsg]);
+          setRecommendedProducts([topMatch]);
 
-        // Show products directly with professional message
-        const resultsMsg = {
-          id: Date.now() + 3,
-          text: matchedProducts.length === 1
-            ? `I found this product that matches your image:`
-            : `I found ${matchedProducts.length} products that match your image. Here are the top ${resultsToShow.length} results:`,
-          sender: "ai",
-          timestamp: new Date(),
-          products: resultsToShow,
-          hasProducts: true,
-        };
-        setMessages(prev => [...prev, resultsMsg]);
+          // Find and show related/compatible products using the new method
+          const relatedProducts = VisionService.findRelatedProducts(topMatch, allProducts);
+          
+          if (relatedProducts.length > 0) {
+            const relatedMsg = {
+              id: Date.now() + 4,
+              text: `You might also be interested in these related products that work great with your selection:`,
+              sender: "ai",
+              timestamp: new Date(),
+              products: relatedProducts.slice(0, 4),
+              hasProducts: true,
+            };
+            setMessages(prev => [...prev, relatedMsg]);
+          } else if (similarProducts.length > 0) {
+            // Fallback to similar products if no related products found
+            const relatedMsg = {
+              id: Date.now() + 4,
+              text: `I also found these similar products you might like:`,
+              sender: "ai",
+              timestamp: new Date(),
+              products: similarProducts.slice(0, 4),
+              hasProducts: true,
+            };
+            setMessages(prev => [...prev, relatedMsg]);
+          }
+        } else {
+          // Show all matches as similar products
+          const resultsToShow = matchedProducts.slice(0, 5);
+          setRecommendedProducts(resultsToShow);
+
+          const resultsMsg = {
+            id: Date.now() + 3,
+            text: `I found several great options that match what you're looking for! Here are the top ${resultsToShow.length} products I'd recommend:`,
+            sender: "ai",
+            timestamp: new Date(),
+            products: resultsToShow,
+            hasProducts: true,
+          };
+          setMessages(prev => [...prev, resultsMsg]);
+        }
 
         // Add follow-up suggestions
         const followUpMsg = {
-          id: Date.now() + 4,
-          text: "Would you like to:\n• See more details about any product?\n• Compare these products?\n• Add one to your cart?\n• Upload another image?",
+          id: Date.now() + 5,
+          text: "How can I help you further?\n\n• I can show you more details about any product\n• Compare these products side-by-side\n• Help you add items to your cart\n• Find compatible accessories\n• Search for something else",
           sender: "ai",
           timestamp: new Date(),
         };
@@ -1955,30 +2059,197 @@ IMPORTANT:
       } else {
         // No matches found - show alternatives
         const visionCategorySlug = getVisionCategorySlug(visionData.productType);
-        const detectedProduct = [visionData.brand, visionData.model || visionData.productType]
-          .filter(Boolean)
-          .join(' ')
-          .trim() || 'that product';
+        
+        // First, refine the product type if it's too generic
+        let refinedProductType = visionData.productType;
+        if (visionData.productType && visionData.productType.toLowerCase() === 'peripheral' && visionData.keywords && Array.isArray(visionData.keywords)) {
+          const keywords = visionData.keywords.map(k => k.toLowerCase()).join(' ');
+          if (keywords.includes('keyboard') || keywords.includes('keys')) {
+            refinedProductType = 'Keyboard';
+          } else if (keywords.includes('mouse') || keywords.includes('mice')) {
+            refinedProductType = 'Mouse';
+          } else if (keywords.includes('headset') || keywords.includes('headphone')) {
+            refinedProductType = 'Headset';
+          } else if (keywords.includes('speaker') || keywords.includes('audio')) {
+            refinedProductType = 'Speaker';
+          }
+        }
+        
+        // Build a meaningful product description from detected data
+        let detectedProduct = 'that product';
+        if (refinedProductType && refinedProductType !== 'Unknown' && refinedProductType !== 'Electronics') {
+          // Use product type if available
+          if (visionData.brand && visionData.brand !== 'Unknown') {
+            if (visionData.model && visionData.model !== 'Unknown') {
+              detectedProduct = `${visionData.brand} ${visionData.model}`;
+            } else {
+              detectedProduct = `${visionData.brand} ${refinedProductType}`;
+            }
+          } else {
+            detectedProduct = refinedProductType;
+          }
+        } else if (visionData.description && visionData.description !== 'Product') {
+          // Fallback to description
+          detectedProduct = visionData.description;
+        }
 
-        // Use detected clues to recommend the closest alternatives
-        const curatedAlternatives = rankProductsByVisionClues(visionData, allProducts);
-        const alternatives = (curatedAlternatives.length > 0 ? curatedAlternatives : allProducts).slice(0, 4);
+        // Filter products by category first if we detected a category
+        let alternatives = [];
+        if (refinedProductType && refinedProductType !== 'Unknown' && refinedProductType !== 'Electronics') {
+          let detectedType = refinedProductType.toLowerCase();
+          
+          // If detected as generic "peripheral", try to determine specific type from keywords
+          if (detectedType === 'peripheral' && visionData.keywords && Array.isArray(visionData.keywords)) {
+            const keywords = visionData.keywords.map(k => k.toLowerCase()).join(' ');
+            if (keywords.includes('keyboard') || keywords.includes('keys')) {
+              detectedType = 'keyboard';
+            } else if (keywords.includes('mouse') || keywords.includes('mice')) {
+              detectedType = 'mouse';
+            } else if (keywords.includes('headset') || keywords.includes('headphone')) {
+              detectedType = 'headset';
+            } else if (keywords.includes('speaker') || keywords.includes('audio')) {
+              detectedType = 'speaker';
+            }
+            console.log('🔍 Refined peripheral type to:', detectedType);
+          }
+          
+          // Expand search terms based on product type
+          const categoryMap = {
+            'speaker': ['speaker', 'speakers', 'audio', 'sound'],
+            'speakers': ['speaker', 'speakers', 'audio', 'sound'],
+            'mouse': ['mouse', 'mice', 'gaming mouse'],
+            'keyboard': ['keyboard', 'keyboards', 'gaming keyboard'],
+            'headset': ['headset', 'headphone', 'headphones', 'earphone', 'audio'],
+            'monitor': ['monitor', 'display', 'screen'],
+            'graphics card': ['graphics', 'gpu', 'video card', 'rtx', 'gtx'],
+            'processor': ['processor', 'cpu', 'ryzen', 'intel'],
+            'motherboard': ['motherboard', 'mobo', 'mainboard'],
+            'ram': ['ram', 'memory', 'ddr'],
+            'storage': ['storage', 'ssd', 'hdd', 'drive'],
+            'power supply': ['power supply', 'psu'],
+            'case': ['case', 'chassis', 'tower'],
+            'cooling': ['cooling', 'cooler', 'fan'],
+            'peripheral': ['keyboard', 'mouse', 'headset', 'speaker', 'webcam'] // Generic fallback
+          };
+          
+          // Get expanded keywords
+          let searchKeywords = [detectedType];
+          for (const [key, synonyms] of Object.entries(categoryMap)) {
+            if (detectedType.includes(key) || key.includes(detectedType)) {
+              searchKeywords = synonyms;
+              break;
+            }
+          }
+          
+          // Also add specific keywords from vision data (but filter out too generic ones)
+          if (visionData.keywords && Array.isArray(visionData.keywords)) {
+            const specificKeywords = visionData.keywords
+              .map(k => k.toLowerCase())
+              .filter(k => k.length > 3 && !['peripheral', 'device', 'product', 'item'].includes(k));
+            searchKeywords.push(...specificKeywords);
+          }
+          
+          console.log('🔍 Searching for alternatives with keywords:', searchKeywords);
+          
+          alternatives = allProducts.filter(product => {
+            const productName = (product.name || product.title || '').toLowerCase();
+            const categoryName = (product.category_id || product.category || '').toLowerCase();
+            const productDesc = (product.description || '').toLowerCase();
+            
+            // Define incompatible categories to exclude
+            const incompatibleCategories = {
+              'keyboard': ['gpu', 'graphics', 'processor', 'cpu', 'motherboard', 'ram', 'memory', 'ssd', 'hdd', 'storage', 'psu', 'power supply'],
+              'mouse': ['gpu', 'graphics', 'processor', 'cpu', 'motherboard', 'ram', 'memory', 'ssd', 'hdd', 'storage', 'psu', 'power supply'],
+              'headset': ['gpu', 'graphics', 'processor', 'cpu', 'motherboard', 'ram', 'memory', 'ssd', 'hdd', 'storage', 'psu', 'power supply'],
+              'speaker': ['gpu', 'graphics', 'processor', 'cpu', 'motherboard', 'ram', 'memory', 'ssd', 'hdd', 'storage', 'psu', 'power supply'],
+              'monitor': ['keyboard', 'mouse', 'headset', 'speaker'],
+            };
+            
+            // Check if product is from an incompatible category
+            const excludeKeywords = incompatibleCategories[detectedType] || [];
+            const isIncompatible = excludeKeywords.some(excluded => 
+              productName.includes(excluded) || categoryName.includes(excluded)
+            );
+            
+            if (isIncompatible) {
+              return false; // Skip this product
+            }
+            
+            // Check if any keyword matches
+            const matches = searchKeywords.some(kw => 
+              productName.includes(kw) || 
+              categoryName.includes(kw) ||
+              productDesc.includes(kw)
+            );
+            
+            if (matches) {
+              console.log('✅ Match found:', product.name || product.title);
+            }
+            
+            return matches;
+          });
+          
+          console.log(`📦 Found ${alternatives.length} category matches`);
+        }
+
+        // If no category matches, try brand matches
+        if (alternatives.length === 0 && visionData.brand && visionData.brand !== 'Unknown') {
+          console.log('🔍 Trying brand match:', visionData.brand);
+          alternatives = allProducts.filter(product => {
+            const brandName = (product.brands?.name || product.brand_name || product.brand || '').toLowerCase();
+            return brandName.includes(visionData.brand.toLowerCase());
+          });
+          console.log(`📦 Found ${alternatives.length} brand matches`);
+        }
+
+        // If still no matches, show a message that we don't have this category
+        if (alternatives.length === 0) {
+          const noProductsMsg = {
+            id: Date.now() + 3,
+            text: `I'm sorry, but we don't currently have any ${detectedProduct} in our inventory. 😔\n\nWould you like to see our available products in other categories? I can help you find:\n• Computer components (CPU, GPU, RAM, Storage)\n• Gaming peripherals (Keyboards, Mice, Headsets)\n• PC accessories\n\nJust let me know what you're interested in!`,
+            sender: "ai",
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, noProductsMsg]);
+          setUploadedImage(null);
+          return;
+        }
+
+        // Use detected clues to recommend the closest alternatives from filtered products only
+        const curatedAlternatives = rankProductsByVisionClues(visionData, alternatives);
+        const topAlternatives = curatedAlternatives.slice(0, 6);
 
         const categoryLabel = getCategoryDisplayName(visionCategorySlug);
-        const guidanceText = categoryLabel
-          ? `I could not find that exact ${detectedProduct}, but here are ${categoryLabel} items we currently have in stock:`
-          : `I could not find that exact ${detectedProduct}, but here are the closest matches I found in our inventory:`;
+        
+        // Build friendly message without "None" or undefined values
+        let guidanceText;
+        if (categoryLabel) {
+          guidanceText = `I couldn't find that exact ${detectedProduct} in our current inventory, but I found some excellent ${categoryLabel} alternatives that might interest you:`;
+        } else if (detectedProduct !== 'that product') {
+          guidanceText = `I couldn't find that exact ${detectedProduct} right now, but here are some great alternatives I think you'll like:`;
+        } else {
+          guidanceText = `I analyzed your image and found these products that might be what you're looking for:`;
+        }
 
         const noResultsMsg = {
           id: Date.now() + 3,
-          text: `${guidanceText}`,
+          text: guidanceText,
           sender: "ai",
           timestamp: new Date(),
-          products: alternatives,
+          products: topAlternatives,
           hasProducts: true,
         };
         setMessages(prev => [...prev, noResultsMsg]);
-        setRecommendedProducts(alternatives);
+        setRecommendedProducts(topAlternatives);
+
+        // Add helpful suggestion
+        const suggestionMsg = {
+          id: Date.now() + 4,
+          text: "Need help finding something specific? Just let me know what features or specs you're looking for, and I'll help you find the perfect match!",
+          sender: "ai",
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, suggestionMsg]);
       }
 
       setUploadedImage(null);
@@ -2036,7 +2307,7 @@ IMPORTANT:
       // Show results message
       const searchMsg = {
         id: Date.now() + 6,
-        text: "🔍 **Keyword-Based Search Results**\n\nBased on your description, I found these products:",
+        text: "Let me search our inventory based on your description...",
         sender: "ai",
         timestamp: new Date(),
       };
@@ -2049,7 +2320,7 @@ IMPORTANT:
 
         const resultsMsg = {
           id: Date.now() + 7,
-          text: `Found ${resultsToShow.length} similar product${resultsToShow.length > 1 ? 's' : ''}:`,
+          text: `Perfect! I found ${resultsToShow.length} product${resultsToShow.length > 1 ? 's' : ''} that match your description:`,
           sender: "ai",
           timestamp: new Date(),
           products: resultsToShow,
@@ -2060,8 +2331,8 @@ IMPORTANT:
         const noResultsMsg = {
           id: Date.now() + 7,
           text: userMessage
-            ? `❌ Sorry, I couldn't find any products matching "${userMessage}".\n\nTry keywords like: "RAM", "processor", "GPU", "headset", "keyboard"`
-            : "❌ Please add a description with your image, like:\n• 'gaming mouse'\n• 'graphics card'\n• 'RGB keyboard'",
+            ? `I couldn't find any products matching "${userMessage}". Could you try describing it differently?\n\nFor example: "gaming keyboard", "16GB RAM", or "RTX graphics card"`
+            : "To help me find the right product, could you describe what you're looking for?\n\nFor example:\n• 'gaming mouse'\n• 'graphics card'\n• '32GB RAM'",
           sender: "ai",
           timestamp: new Date(),
         };
@@ -2513,6 +2784,69 @@ Your response:`;
       const tailoredProducts = applyIntentFilters(foundProducts, intent, { categoryInfo: null });
       const summaryProducts = tailoredProducts.length ? tailoredProducts : foundProducts;
       
+      // Validate that products match the requested category
+      const requestedCategory = detectedIntent.category?.toLowerCase();
+      if (requestedCategory && summaryProducts.length > 0) {
+        const firstProduct = summaryProducts[0];
+        let productCategory = '';
+        
+        try {
+          if (firstProduct.selected_components) {
+            const components = typeof firstProduct.selected_components === 'string' 
+              ? JSON.parse(firstProduct.selected_components) 
+              : firstProduct.selected_components;
+            if (Array.isArray(components) && components.length > 0) {
+              productCategory = (components[0].name || '').toLowerCase();
+            }
+          }
+        } catch (e) {
+          productCategory = '';
+        }
+        
+        // Check if product category matches requested category
+        const categoryMatches = productCategory.includes(requestedCategory) || 
+                               requestedCategory.includes(productCategory) ||
+                               firstProduct.name.toLowerCase().includes(requestedCategory);
+        
+        if (!categoryMatches) {
+          console.warn(`⚠️ Category mismatch: User asked for "${requestedCategory}" but got "${productCategory}"`);
+          
+          // Generate apology and correct search
+          const apologyMsg = {
+            id: Date.now(),
+            text: `I apologize for the confusion. Let me search specifically for ${requestedCategory}s...`,
+            sender: 'ai',
+            timestamp: new Date(),
+            products: null,
+          };
+          
+          setMessages((prev) => [...prev, apologyMsg]);
+          
+          // Retry with stricter search
+          const correctedProducts = await AIService.searchProductsByIntent({
+            ...detectedIntent,
+            category: requestedCategory
+          });
+          
+          if (correctedProducts.length === 0) {
+            const noResultsMsg = {
+              id: Date.now(),
+              text: `Unfortunately, we don't have any ${requestedCategory}s available right now. Would you like me to show you other products or notify you when they're back in stock?`,
+              sender: 'ai',
+              timestamp: new Date(),
+              products: null,
+            };
+            setMessages((prev) => [...prev, noResultsMsg]);
+            setIsTyping(false);
+            return true;
+          }
+          
+          // Use corrected products
+          summaryProducts.length = 0;
+          summaryProducts.push(...correctedProducts);
+        }
+      }
+      
       const displayLabel = detectedIntent.category 
         ? detectedIntent.category.charAt(0).toUpperCase() + detectedIntent.category.slice(1)
         : 'products';
@@ -2596,21 +2930,12 @@ ${askedForAffordable ? `EMPHASIZE that these are the CHEAPEST/most AFFORDABLE ${
 
 DO NOT mention any other product categories or previous conversations. Focus ONLY on these ${displayLabel.toLowerCase()} products.
 
-Examples (${languageName}):
-${selectedLanguage === 'tl' 
-  ? `- "Nakita ko ang mga pinakamurang laptops! Nagsisimula sa ₱${minPrice.toLocaleString()}!"
-- "Ito ang mga abot-kayang keyboard, sorted by price!"
-- "Mayroon akong 5 laptops mula ₱${minPrice.toLocaleString()} hanggang ₱${maxPrice.toLocaleString()}!"
-- "Narito ang pinaka-budget friendly na opsyon:"`
-  : selectedLanguage === 'es'
-  ? `- "¡Encontré las portátiles más baratas! Desde ₱${minPrice.toLocaleString()}!"
-- "Aquí están los teclados más económicos, ordenados por precio!"
-- "¡Tengo 5 portátiles desde ₱${minPrice.toLocaleString()} hasta ₱${maxPrice.toLocaleString()}!"
-- "Estas son las opciones más económicas:"`
-  : `- "I found the cheapest laptops! Starting at ₱${minPrice.toLocaleString()}!"
-- "Here are the most affordable keyboards, sorted by price!"
-- "I've got 5 laptops ranging from ₱${minPrice.toLocaleString()} to ₱${maxPrice.toLocaleString()}!"
-- "Here are the most budget-friendly options:"`}
+Style Guidelines:
+- Be natural and conversational
+- Vary your wording - don't use the same phrases repeatedly
+- If user asked for affordable items, mention the starting price
+- Keep it brief (1-2 sentences)
+- Sound enthusiastic and helpful
 
 Your response:`;
 
@@ -3944,7 +4269,7 @@ Rules:
     }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -4060,6 +4385,11 @@ Rules:
       setMessages((prev) => [...prev, errorMsg]);
     }
   };
+
+  // Don't render on auth pages
+  if (isAuthPage) {
+    return null;
+  }
 
   return (
     <>
@@ -4198,7 +4528,24 @@ Rules:
                         />
                       </div>
                     )}
-                    <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                    
+                    {/* Show animated recording indicator if recording */}
+                    {message.isRecording ? (
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                          {/* Animated sound wave bars */}
+                          <div className="w-1 bg-red-500 rounded-full animate-pulse" style={{ height: '12px', animationDelay: '0ms', animationDuration: '800ms' }}></div>
+                          <div className="w-1 bg-red-500 rounded-full animate-pulse" style={{ height: '20px', animationDelay: '150ms', animationDuration: '800ms' }}></div>
+                          <div className="w-1 bg-red-500 rounded-full animate-pulse" style={{ height: '16px', animationDelay: '300ms', animationDuration: '800ms' }}></div>
+                          <div className="w-1 bg-red-500 rounded-full animate-pulse" style={{ height: '24px', animationDelay: '450ms', animationDuration: '800ms' }}></div>
+                          <div className="w-1 bg-red-500 rounded-full animate-pulse" style={{ height: '18px', animationDelay: '600ms', animationDuration: '800ms' }}></div>
+                        </div>
+                        <span className="text-sm font-medium text-red-600">Listening...</span>
+                      </div>
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                    )}
+                    
                     <p
                       className={`text-xs mt-1 ${
                         message.sender === "user"
@@ -4432,7 +4779,7 @@ Rules:
             <div className="flex items-center gap-2 mb-3">
               {/* Voice Input */}
               <Tooltip>
-                <TooltipTrigger>
+                <TooltipTrigger asChild>
                   <button
                     onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
                     className={`p-2.5 rounded-lg transition-all ${
@@ -4452,7 +4799,7 @@ Rules:
 
               {/* Image Upload */}
               <Tooltip>
-                <TooltipTrigger>
+                <TooltipTrigger asChild>
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     className={`p-2.5 rounded-lg transition-all ${
@@ -4521,12 +4868,16 @@ Rules:
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck="false"
                 placeholder={
                   uploadedImage
                     ? "Add a description (optional)..."
                     : isRecording
-                    ? "🎤 Listening..."
+                    ? "Recording... Speak now!"
                     : "Type a message..."
                 }
                 className="flex-1 px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#39FC1D] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"

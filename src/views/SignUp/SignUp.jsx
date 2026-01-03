@@ -5,6 +5,7 @@ import { IoMdEyeOff } from "react-icons/io";
 import { FaGoogle } from "react-icons/fa";
 import { supabase } from "../../lib/supabase";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import { useWebsiteSettings } from "../../hooks/useWebsiteSettings";
 
 const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -16,6 +17,7 @@ const SignUp = () => {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
+  const { settings } = useWebsiteSettings();
 
   // Scroll animations
   const imageAnim = useScrollAnimation({ threshold: 0.1 });
@@ -132,8 +134,8 @@ const SignUp = () => {
         <div className="flex items-center mb-3 justify-center">
           <img
             className="w-24 h-16 md:w-28 md:h-20 object-contain"
-            src="https://i.ibb.co/Cpx2BBt5/egie-removebg-preview-1.png"
-            alt="Logo"
+            src={settings?.logoUrl || "https://i.ibb.co/Cpx2BBt5/egie-removebg-preview-1.png"}
+            alt={settings?.brandName || "Logo"}
           />
         </div>
         <h2 className="font-bold text-xl md:text-3xl mb-2 text-center">
@@ -168,7 +170,7 @@ const SignUp = () => {
                 id="firstName"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="mb-2 p-2 border border-gray-300 rounded w-full text-black"
+                className="mb-2 p-2 border border-gray-300 rounded w-full text-black placeholder-gray-400"
                 placeholder="Bruce"
                 required
               />
@@ -182,7 +184,7 @@ const SignUp = () => {
                 id="lastName"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="mb-2 p-2 border border-gray-300 rounded w-full text-black"
+                className="mb-2 p-2 border border-gray-300 rounded w-full text-black placeholder-gray-400"
                 placeholder="Wayne"
                 required
               />
@@ -197,7 +199,7 @@ const SignUp = () => {
             id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mb-4 p-2 border border-gray-300 rounded w-full text-black"
+            className="mb-4 p-2 border border-gray-300 rounded w-full text-black placeholder-gray-400"
             placeholder="wayne.enterprises@gotham.com"
             required
           />
@@ -212,7 +214,7 @@ const SignUp = () => {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="p-2 border border-gray-300 rounded w-full pr-10 text-black"
+              className="p-2 border border-gray-300 rounded w-full pr-10 text-black placeholder-gray-400"
               placeholder="********"
               required
               minLength={6}
@@ -235,7 +237,7 @@ const SignUp = () => {
               Terms and Conditions
             </Link>{" "}
             and{" "}
-            <Link to="/privacy-policy" className="text-blue-500">
+            <Link to="/privacy" className="text-blue-500">
               Privacy Policy
             </Link>
             .

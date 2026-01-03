@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 
 const Policy = () => {
   const containerAnim = useScrollAnimation({ threshold: 0.1 });
+  const { settings } = useWebsiteSettings();
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -25,6 +27,13 @@ const Policy = () => {
           </div>
 
           <div className="prose prose-lg max-w-none">
+            {settings?.privacyPolicy ? (
+              <div 
+                className="whitespace-pre-wrap"
+                dangerouslySetInnerHTML={{ __html: settings.privacyPolicy }}
+              />
+            ) : (
+              <>
             <p className="mb-6">
               This Privacy Policy describes Our policies and procedures on the
               collection, use and disclosure of Your information when You use
@@ -355,6 +364,8 @@ const Policy = () => {
                 <li>By phone number: +1 (555) 123-4567</li>
               </ul>
             </section>
+              </>
+            )}
           </div>
         </div>
       </div>

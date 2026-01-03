@@ -5,11 +5,13 @@ import { UserOrderService } from "../../services/UserOrderService";
 import { getImageUrl } from "../../lib/supabase";
 import { OrderProvider } from './Purchase Components/OrderContext';
 import { toast } from "sonner";
+import { useWebsiteSettings } from "../../hooks/useWebsiteSettings";
 
 const Purchases = () => {
   const [activeTab, setActiveTab] = useState("All");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { settings } = useWebsiteSettings();
 
   useEffect(() => {
     loadOrders();
@@ -199,8 +201,8 @@ const Purchases = () => {
       <div className="w-full py-6 flex justify-center items-center min-h-[400px]">
         <div className="flex flex-col items-center gap-4">
           <img
-            src="/EGIE LOGO.png"
-            alt="Loading"
+            src={settings?.logoUrl || "/EGIE LOGO.png"}
+            alt={settings?.brandName || "Loading"}
             className="w-20 h-15 object-contain"
           />
           <div className="w-24 h-24 border-8 border-gray-200 border-t-green-500 rounded-full animate-spin" />

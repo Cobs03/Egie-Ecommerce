@@ -4,8 +4,12 @@ import { FaFacebook } from "react-icons/fa";
 import { FaInstagram } from "react-icons/fa";
 import { RiMastercardFill } from "react-icons/ri";
 import { FaCcVisa } from "react-icons/fa";
+import { useWebsiteSettings } from "../../../hooks/useWebsiteSettings";
 
 const Footer = ({ isAuth }) => {
+  const { settings } = useWebsiteSettings();
+  const currentYear = new Date().getFullYear();
+
   return (
     <footer
       className={`${isAuth ? "" : "bg-black text-white py-8 text-center"}`}
@@ -16,8 +20,8 @@ const Footer = ({ isAuth }) => {
             {/* Logo */}
             <div className="mb-6 w-full sm:w-auto">
               <img
-                src="/Logo/Nameless Logo.png"
-                alt="EGIE Game Shop"
+                src={settings?.logoUrl || "/Logo/Nameless Logo.png"}
+                alt={settings?.brandName || "EGIE Game Shop"}
                 className="w-[280px] sm:w-[350px] mx-auto sm:mx-0"
               />
             </div>
@@ -62,30 +66,34 @@ const Footer = ({ isAuth }) => {
             {/* Contact */}
             <div className="mb-6">
               <h4 className="mb-3 font-semibold text-lg">Contact Us</h4>
-              <p>Email: support@[yourstorename].com</p>
-              <p>Phone: (123) 456-7890</p>
+              <p>Email: {settings?.contactEmail || 'support@egiegameshop.com'}</p>
+              <p>Phone: {settings?.contactPhone || '(123) 456-7890'}</p>
             </div>
 
             {/* Socials */}
             <div className="mb-6">
               <h4 className="mb-3 font-semibold text-lg">Follow Us:</h4>
               <div className="flex flex-row gap-2 space-y-1">
-                <a
-                  href="https://facebook.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-                >
-                  <FaFacebook className="text-white hover:text-green-500 text-2xl" />
-                </a>
-                <a
-                  href="https://instagram.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-                >
-                  <FaInstagram className="text-white hover:text-green-500 text-2xl" />
-                </a>
+                {settings?.facebookUrl && (
+                  <a
+                    href={settings.facebookUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    <FaFacebook className="text-white hover:text-green-500 text-2xl" />
+                  </a>
+                )}
+                {settings?.instagramUrl && (
+                  <a
+                    href={settings.instagramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    <FaInstagram className="text-white hover:text-green-500 text-2xl" />
+                  </a>
+                )}
               </div>
             </div>
 
@@ -103,7 +111,7 @@ const Footer = ({ isAuth }) => {
 
           <div className="text-sm px-4">
             <p>
-              © 2025 Egie Gameshop. All rights reserved.{" "}
+              © {currentYear} {settings?.brandName || 'Egie Gameshop'}. {settings?.footerText || 'All rights reserved.'}{" "}
               <Link to="/terms" className="hover:underline">
                 Terms of Service
               </Link>{" "}

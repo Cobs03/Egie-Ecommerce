@@ -1,6 +1,24 @@
 import React from "react";
-import { components } from "../../Data/components";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+
+// Define component types matching database categories
+const COMPONENT_TYPES = [
+  "Case",
+  "Motherboard",
+  "Processor",
+  "GPU",
+  "RAM",
+  "SSD",
+  "HDD",
+  "PSU",
+  "Cooling",
+  "Monitor",
+  "Keyboard",
+  "Mouse",
+  "Headset",
+  "Speaker",
+  "Webcam"
+];
 
 const ComponentSelector = ({ selectedType, setSelectedType, selectedProducts }) => {
   const headerAnim = useScrollAnimation({ threshold: 0.1 });
@@ -27,24 +45,24 @@ const ComponentSelector = ({ selectedType, setSelectedType, selectedProducts }) 
             : 'opacity-0 -translate-x-4'
         }`}
       >
-        {components.map((component) => (
+        {COMPONENT_TYPES.map((type) => (
           <button
-            key={component.type}
-            onClick={() => setSelectedType(component.type)}
+            key={type}
+            onClick={() => setSelectedType(type)}
             className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 border-2 border-dashed relative active:scale-95 hover:scale-105 ${
-              selectedType === component.type
+              selectedType === type
                 ? 'bg-lime-500 text-white font-semibold border-lime-500'
-                : selectedProducts[component.type]
+                : selectedProducts[type]
                 ? 'bg-white text-gray-800 border-lime-500'
                 : 'bg-white text-gray-800 border-gray-300 hover:border-lime-400'
             }`}
           >
             <div className="flex justify-between items-center">
               <span className="font-medium">
-                {selectedProducts[component.type] ? '✓' : '+'} {component.type}
+                {selectedProducts[type] ? '✓' : '+'} {type}
               </span>
               
-              {selectedProducts[component.type] && (
+              {selectedProducts[type] && (
                 <span className="text-xs text-lime-600 font-semibold">Selected</span>
               )}
             </div>
