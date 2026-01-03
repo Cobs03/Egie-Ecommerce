@@ -10,6 +10,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { supabase } from "../../../lib/supabase";
 import { useCart } from "../../../context/CartContext";
 import NotificationService from "../../../services/NotificationService";
+import { useWebsiteSettings } from "../../../hooks/useWebsiteSettings";
 
 import { FaCodeCompare } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
@@ -42,6 +43,7 @@ const Navbar = ({ isAuth }) => {
   const { cartCount } = useCart(); // Real cart count from database
   const [notificationCount, setNotificationCount] = useState(0);
   const { user, signOut } = useAuth();
+  const { settings } = useWebsiteSettings();
   
   // Profile state for avatar
   const [userAvatar, setUserAvatar] = useState("https://randomuser.me/api/portraits/men/32.jpg");
@@ -225,38 +227,44 @@ const Navbar = ({ isAuth }) => {
             {/* UPPER NAVBAR - Desktop */}
             <div className="hidden md:flex bg-gradient-to-r from-green-100 to-green-300 text-black px-5 py-1 justify-around items-center w-full h-10">
               <div className="text-[10px] font-bold">
-                Mon–Sunday: 8:00 AM – 5:30 PM
+                {settings?.showroomHours || 'Mon–Sunday: 8:00 AM – 5:30 PM'}
               </div>
               <div className="text-center text-[12px] font-bold items-center gap-1 md:gap-2">
-                Visit our showroom in 1234 Street Address City Address, 1234{" "}
+                Visit our showroom in {settings?.contactAddress || '1234 Street Address City Address, 1234'}{" "}
                 <a
-                  href="#"
+                  href="/contactus"
                   className="underline text-gray-700 hover:text-black ml-1"
                 >
                   Contact Us
                 </a>
               </div>
               <div className="text-center text-[10px] font-bold">
-                <span>Call Us: +639151855519</span>
+                <span>Call Us: {settings?.contactPhone || '+639151855519'}</span>
               </div>
               <div className="flex items-center gap-2 md:gap-4 text-base md:text-lg font-bold">
-                <a
-                  href="https://www.facebook.com/EGIEGameShop/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <FaSquareFacebook className="text-lg md:text-xl hover:text-[#4AA3E8]" />
-                </a>
-                <a
-                  href="https://www.instagram.com/egie_gameshop/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <AiFillInstagram className="text-xl md:text-2xl hover:text-[#4AA3E8]" />
-                </a>
-                <a href="#" className="text-lg md:text-xl">
-                  <FaTiktok className="text-lg md:text-xl hover:text-[#4AA3E8]" />
-                </a>
+                {settings?.facebookUrl && (
+                  <a
+                    href={settings.facebookUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <FaSquareFacebook className="text-lg md:text-xl hover:text-[#4AA3E8]" />
+                  </a>
+                )}
+                {settings?.instagramUrl && (
+                  <a
+                    href={settings.instagramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <AiFillInstagram className="text-xl md:text-2xl hover:text-[#4AA3E8]" />
+                  </a>
+                )}
+                {settings?.tiktokUrl && (
+                  <a href={settings.tiktokUrl} target="_blank" rel="noopener noreferrer" className="text-lg md:text-xl">
+                    <FaTiktok className="text-lg md:text-xl hover:text-[#4AA3E8]" />
+                  </a>
+                )}
               </div>
             </div>
 
@@ -308,8 +316,8 @@ const Navbar = ({ isAuth }) => {
               <div className="flex-1 flex justify-center md:flex-1 max-md:justify-start">
                 <Link to="/">
                   <img
-                    src="/Logo/Nameless Logo.png"
-                    alt="EGIE logo"
+                    src={settings?.logoUrl || "/Logo/Nameless Logo.png"}
+                    alt={settings?.brandName || "EGIE logo"}
                     className="h-12 md:h-16"
                   />
                 </Link>
@@ -482,6 +490,22 @@ const Navbar = ({ isAuth }) => {
                               <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                             <span>My Purchases</span>
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            className="cursor-pointer hover:bg-gray-100"
+                            onClick={() => navigateAndClose("/mybuilds")}
+                          >
+                            <svg
+                              className="mr-3 h-5 w-5 text-zinc-500"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                            </svg>
+                            <span>My Builds</span>
                           </DropdownMenuItem>
 
                           <DropdownMenuItem
@@ -703,6 +727,16 @@ const Navbar = ({ isAuth }) => {
                         }}
                       >
                         My Purchases
+                      </button>
+                      <button
+                        className="block w-full text-left px-2 py-1 text-sm text-white hover:text-green-400"
+                        onClick={() => {
+                          setShowMobileMenu(false);
+                          setShowProfileAccordion(false);
+                          navigate("/mybuilds");
+                        }}
+                      >
+                        My Builds
                       </button>
                       <button
                         className="block w-full text-left px-2 py-1 text-sm text-white hover:text-green-400"

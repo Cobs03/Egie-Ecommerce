@@ -5,12 +5,14 @@ import { getImageUrl } from "../../../lib/supabase";
 import { MdLocationOn } from "react-icons/md";
 import { BsClipboard, BsTruck, BsBox, BsCheck2Circle } from "react-icons/bs";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import { useWebsiteSettings } from "../../../hooks/useWebsiteSettings";
 
 const Tracking = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { settings } = useWebsiteSettings();
 
   useEffect(() => {
     loadOrder();
@@ -42,8 +44,8 @@ const Tracking = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="flex flex-col items-center gap-4">
           <img
-            src="/EGIE LOGO.png"
-            alt="Loading"
+            src={settings?.logoUrl || "/EGIE LOGO.png"}
+            alt={settings?.brandName || "Loading"}
             className="w-20 h-15 object-contain"
           />
           <div className="w-24 h-24 border-8 border-gray-200 border-t-green-500 rounded-full animate-spin" />

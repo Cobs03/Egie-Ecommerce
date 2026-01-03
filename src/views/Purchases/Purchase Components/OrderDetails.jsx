@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import { useWebsiteSettings } from "../../../hooks/useWebsiteSettings";
 
 const OrderDetails = () => {
   const { id } = useParams();
@@ -23,6 +24,7 @@ const OrderDetails = () => {
   const [orderStatus, setOrderStatus] = useState("preparing");
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [selectedCancelReason, setSelectedCancelReason] = useState("");
+  const { settings } = useWebsiteSettings();
 
   const cancelReasons = [
     "I ordered by mistake",
@@ -149,8 +151,8 @@ const OrderDetails = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="flex flex-col items-center gap-4">
           <img
-            src="/EGIE LOGO.png"
-            alt="Loading"
+            src={settings?.logoUrl || "/EGIE LOGO.png"}
+            alt={settings?.brandName || "Loading"}
             className="w-20 h-15 object-contain"
           />
           <div className="w-24 h-24 border-8 border-gray-200 border-t-green-500 rounded-full animate-spin" />
@@ -501,7 +503,7 @@ const OrderDetails = () => {
             <div className="flex items-start">
               <MdLocationOn className="text-gray-400 mt-1 mr-2" />
               <div>
-                <p className="font-medium">Egie Store</p>
+                <p className="font-medium">{settings?.brandName || 'Egie Store'}</p>
                 <p className="text-sm text-gray-600">Pick up your order at our store location. You'll be notified when it's ready.</p>
               </div>
             </div>

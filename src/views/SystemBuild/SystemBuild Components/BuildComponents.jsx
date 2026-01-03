@@ -1,24 +1,66 @@
-import React, { useState } from "react";
-import { components } from "../../Data/components";
+import React, { useState, useEffect } from "react";
 import { FaMinus, FaPlus, FaTrash, FaShoppingCart } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import ProductModal from "../../Products/ProductGrid/ProductModal/ProductModal";
+
+// Define component types matching database categories
+const COMPONENT_TYPES = [
+  "Case",
+  "Motherboard", 
+  "Processor",
+  "GPU",
+  "RAM",
+  "SSD",
+  "HDD",
+  "PSU",
+  "Cooling",
+  "Monitor",
+  "Keyboard",
+  "Mouse",
+  "Headset",
+  "Speaker",
+  "Webcam"
+];
 
 const BuildComponents = ({
   selectedType,
   setSelectedType,
   selectedProducts,
   setSelectedProducts,
+  selectedVariants,
+  setSelectedVariants,
   onOpenDrawer,
+  onAddToCart,
 }) => {
   const [quantities, setQuantities] = useState(
-    components.reduce((acc, comp) => ({ ...acc, [comp.type]: 0 }), {})
+    COMPONENT_TYPES.reduce((acc, type) => ({ ...acc, [type]: 0 }), {})
   );
+  const [selectedProductForDetails, setSelectedProductForDetails] = useState(null);
 
   // Scroll animation
   const tableAnim = useScrollAnimation({ threshold: 0.1 });
   const summaryAnim = useScrollAnimation({ threshold: 0.1 });
+
+  // Auto-set quantity to 1 when a product is added
+  useEffect(() => {
+    const newQuantities = { ...quantities };
+    let updated = false;
+
+    // Check each selected product
+    Object.keys(selectedProducts).forEach(type => {
+      // If product exists but quantity is 0, set it to 1
+      if (selectedProducts[type] && quantities[type] === 0) {
+        newQuantities[type] = 1;
+        updated = true;
+      }
+    });
+
+    if (updated) {
+      setQuantities(newQuantities);
+    }
+  }, [selectedProducts]);
 
   const handleDecrease = (compType) => {
     if (!selectedProducts[compType]) return;
@@ -49,10 +91,10 @@ const BuildComponents = ({
     }));
   };
 
-  const subtotal = components.reduce((acc, comp) => {
-    const selectedProduct = selectedProducts[comp.type];
+  const subtotal = COMPONENT_TYPES.reduce((acc, type) => {
+    const selectedProduct = selectedProducts[type];
     const price = selectedProduct?.price || 0;
-    const total = price * (quantities[comp.type] || 0);
+    const total = price * (quantities[type] || 0);
     return acc + total;
   }, 0);
 
@@ -71,6 +113,7 @@ const BuildComponents = ({
             <thead className="bg-blue-100 text-gray-700 text-left">
               <tr>
                 <th className="p-2 border">Components</th>
+                <th className="p-2 border">Image</th>
                 <th className="p-2 border">Product</th>
                 <th className="p-2 border text-center">Quantity</th>
                 <th className="p-2 border">Price</th>
@@ -79,24 +122,24 @@ const BuildComponents = ({
               </tr>
             </thead>
             <tbody>
-              {components.map((comp) => {
-                const selectedProduct = selectedProducts[comp.type];
+              {COMPONENT_TYPES.map((type) => {
+                const selectedProduct = selectedProducts[type];
                 const price = selectedProduct?.price || 0;
-                const quantity = quantities[comp.type] || 0;
+                const quantity = quantities[type] || 0;
                 const total = price * quantity;
 
                 if (!selectedProduct) {
                   return (
-                    <tr key={comp.type} className="bg-white hover:bg-gray-100">
+                    <tr key={type} className="bg-white hover:bg-gray-100">
                       <td className="p-2 border font-medium text-gray-700">
-                        {comp.type}
+                        {type}
                       </td>
-                      <td colSpan="5" className="p-4 border text-center">
+                      <td colSpan="6" className="p-4 border text-center">
                         <button
-                          onClick={() => onOpenDrawer ? onOpenDrawer(comp.type) : setSelectedType(comp.type)}
+                          onClick={() => onOpenDrawer ? onOpenDrawer(type) : setSelectedType(type)}
                           className="bg-transparent border-2 border-dashed border-green-500 text-green-600 px-6 py-2 rounded-lg hover:bg-green-50 font-semibold transition-all duration-200 active:scale-95 hover:scale-105 w-full max-w-md"
                         >
-                          + Add a {comp.type} Component
+                          + Add a {type} Component
                         </button>
                       </td>
                     </tr>
@@ -104,19 +147,79 @@ const BuildComponents = ({
                 }
 
                 return (
-                  <tr key={comp.type} className="bg-white hover:bg-gray-100">
+                  <tr key={type} className="bg-white hover:bg-gray-100">
                     <td className="p-2 border font-medium text-gray-700">
-                      {comp.type}
+                      {type}
                     </td>
-                    <td className="p-2 border w-68">
-                      <span className="text-sm font-medium text-gray-800">
-                        {selectedProduct.productName}
-                      </span>
+                    <td className="p-2 border">
+                      <div className="w-16 h-16 bg-gray-100 flex items-center justify-center rounded border border-gray-200 overflow-hidden">
+                        {selectedProduct.image || selectedProduct.img ? (
+                          <img
+                            src={selectedProduct.image || selectedProduct.img}
+                            alt={selectedProduct.name}
+                            className="w-full h-full object-contain p-1"
+                          />
+                        ) : (
+                          <span className="text-gray-400 text-xs">No Image</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-2 border">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-800">
+                            {selectedProduct.name}
+                          </span>
+                          <button
+                            onClick={() => setSelectedProductForDetails(selectedProduct)}
+                            className="text-blue-500 hover:text-blue-700 transition-colors text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded"
+                            title="View Details"
+                          >
+                            Details
+                          </button>
+                        </div>
+                        {/* Show variant dropdown if product has variants OR selected_components */}
+                        {((selectedProduct.variants && selectedProduct.variants.length > 0) ||
+                          (selectedProduct.selected_components && selectedProduct.selected_components.length > 0)) && (
+                          <select
+                            value={selectedVariants?.[type] || ''}
+                            onChange={(e) => {
+                              console.log(`🔧 Variant selected for ${type}:`, e.target.value);
+                              setSelectedVariants(prev => ({ ...prev, [type]: e.target.value }));
+                            }}
+                            className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
+                          >
+                            <option value="">Select Variant</option>
+                            {/* Check if product has variants array */}
+                            {selectedProduct.variants && selectedProduct.variants.length > 0 ? (
+                              selectedProduct.variants.map((variant, idx) => {
+                                const variantLabel = variant.sku || variant.name || variant;
+                                const variantPrice = variant.price || selectedProduct.price;
+                                return (
+                                  <option key={idx} value={variantLabel}>
+                                    {variantLabel} - ₱{variantPrice?.toLocaleString()}
+                                  </option>
+                                );
+                              })
+                            ) : (
+                              /* Fallback to selected_components if no variants */
+                              selectedProduct.selected_components?.map((component, idx) => {
+                                const componentName = typeof component === 'object' && component !== null ? component.name : component;
+                                return (
+                                  <option key={idx} value={componentName}>
+                                    {componentName}
+                                  </option>
+                                );
+                              })
+                            )}
+                          </select>
+                        )}
+                      </div>
                     </td>
                     <td className="p-2 border text-center">
                       <div className="flex justify-center items-center space-x-2">
                         <button
-                          onClick={() => handleDecrease(comp.type)}
+                          onClick={() => handleDecrease(type)}
                           className="cursor-pointer bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-all duration-200 active:scale-90 hover:scale-110"
                         >
                           <FaMinus size={12} />
@@ -125,7 +228,7 @@ const BuildComponents = ({
                           {quantity}
                         </span>
                         <button
-                          onClick={() => handleIncrease(comp.type)}
+                          onClick={() => handleIncrease(type)}
                           className="cursor-pointer bg-green-500 text-white p-1 rounded-full hover:bg-green-600 transition-all duration-200 active:scale-90 hover:scale-110"
                         >
                           <FaPlus size={12} />
@@ -138,7 +241,7 @@ const BuildComponents = ({
                     </td>
                     <td className="p-2 border text-center">
                       <button
-                        onClick={() => handleDelete(comp.type)}
+                        onClick={() => handleDelete(type)}
                         className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 cursor-pointer transition-all duration-200 active:scale-90 hover:scale-110"
                         title="Remove component"
                       >
@@ -162,32 +265,25 @@ const BuildComponents = ({
             <span className="text-lg font-semibold">
               Subtotal: ₱{subtotal.toFixed(2)}
             </span>
-            <Link
-              to="/cart"
-              onClick={(e) => {
-                const hasSelection = Object.keys(selectedProducts).length > 0;
-
-                if (!hasSelection) {
-                  e.preventDefault();
-                  toast.error("No components selected", {
-                    description:
-                      "Please add at least one component before buying.",
-                  });
-                  return;
-                }
-
-                toast.success("Added to cart!", {
-                  description: "Your products have been successfully added.",
-                });
-              }}
-              className="bg-lime-400 text-black px-6 py-2 rounded hover:bg-lime-500 font-semibold transition-all duration-200 active:scale-95 hover:scale-105 flex items-center gap-2"
+            <button
+              onClick={onAddToCart}
+              disabled={Object.keys(selectedProducts).length === 0}
+              className="bg-lime-400 text-black px-6 py-2 rounded hover:bg-lime-500 font-semibold transition-all duration-200 active:scale-95 hover:scale-105 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FaShoppingCart size={16} />
               Add to Cart
-            </Link>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Product Details Modal */}
+      {selectedProductForDetails && (
+        <ProductModal
+          product={selectedProductForDetails}
+          onClose={() => setSelectedProductForDetails(null)}
+        />
+      )}
     </div>
   );
 };

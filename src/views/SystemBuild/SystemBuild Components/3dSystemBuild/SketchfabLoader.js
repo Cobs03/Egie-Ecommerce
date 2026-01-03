@@ -20,6 +20,12 @@ const COMPONENT_CONFIGS = {
     rotation: [-Math.PI / 2, 0, 0],
     fallbackSearch: 'motherboard'
   },
+  Processor: {
+    scale: 0.01,
+    position: [0, 1.2, 0],
+    rotation: [0, 0, 0],
+    fallbackSearch: 'cpu processor intel amd'
+  },
   CPU: {
     scale: 0.01,
     position: [0, 1.2, 0],
@@ -38,17 +44,23 @@ const COMPONENT_CONFIGS = {
     rotation: [0, 0, 0],
     fallbackSearch: 'ram memory'
   },
-  'CPU Cooler': {
-    scale: 0.01,
-    position: [0, 1.5, 0],
-    rotation: [0, 0, 0],
-    fallbackSearch: 'cpu cooler'
-  },
-  Storage: {
+  SSD: {
     scale: 0.01,
     position: [-0.8, 0.5, 0],
     rotation: [0, 0, 0],
-    fallbackSearch: 'ssd storage'
+    fallbackSearch: 'ssd solid state drive'
+  },
+  HDD: {
+    scale: 0.01,
+    position: [-0.8, 0.3, 0],
+    rotation: [0, 0, 0],
+    fallbackSearch: 'hard disk drive hdd'
+  },
+  Cooling: {
+    scale: 0.01,
+    position: [0, 1.5, 0],
+    rotation: [0, 0, 0],
+    fallbackSearch: 'cpu cooler cooling fan'
   },
   PSU: {
     scale: 0.01,
@@ -56,11 +68,41 @@ const COMPONENT_CONFIGS = {
     rotation: [0, 0, 0],
     fallbackSearch: 'power supply'
   },
-  Fans: {
+  Keyboard: {
     scale: 0.01,
-    position: [1, 1.5, 0],
-    rotation: [0, 0, Math.PI / 2],
-    fallbackSearch: 'pc fan'
+    position: [-1.5, 0, 1],
+    rotation: [0, 0, 0],
+    fallbackSearch: 'gaming keyboard mechanical'
+  },
+  Mouse: {
+    scale: 0.01,
+    position: [1.5, 0, 1],
+    rotation: [0, 0, 0],
+    fallbackSearch: 'gaming mouse'
+  },
+  Monitor: {
+    scale: 0.01,
+    position: [0, 1.8, -1.5],
+    rotation: [0, 0, 0],
+    fallbackSearch: 'gaming monitor display'
+  },
+  Headset: {
+    scale: 0.01,
+    position: [-1, 1, 0.5],
+    rotation: [0, 0, 0],
+    fallbackSearch: 'gaming headset headphones'
+  },
+  Speaker: {
+    scale: 0.01,
+    position: [1, 1, 0.5],
+    rotation: [0, 0, 0],
+    fallbackSearch: 'speaker audio'
+  },
+  Webcam: {
+    scale: 0.01,
+    position: [0, 2.2, -1.2],
+    rotation: [0, 0, 0],
+    fallbackSearch: 'webcam camera'
   }
 };
 
@@ -83,7 +125,7 @@ const searchCache = new Map();
 const buildSearchQuery = (productData, componentType) => {
   if (!productData) return null;
   
-  const productName = productData.productName || '';
+  const productName = productData.name || productData.productName || '';
   const brand = productData.brand || '';
   
   // Extract key identifiers (model numbers, series names)
@@ -187,8 +229,8 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
       q: searchTerm,
       type: 'models',
       downloadable: 'true',
-      count: count.toString(),
-      sort_by: '-likeCount'
+      count: '24', // Increased to get more results for better matching
+      sort_by: '-relevance' // Changed from -likeCount to -relevance for better matches
     });
 
     const response = await fetch(
@@ -213,10 +255,55 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
     
     console.log('📥 ' + downloadableModels.length + ' are downloadable');
     
-    // Cache the results
-    searchCache.set(cacheKey, downloadableModels);
+    // Score and sort models by name similarity to search term
+    const searchTermLower = searchTerm.toLowerCase();
+    const searchWords = searchTermLower.split(/\s+/);
     
-    return downloadableModels;
+    const scoredModels = downloadableModels.map(function(model) {
+      const nameLower = model.name.toLowerCase();
+      let score = 0;
+      
+      // Exact match gets highest score
+      if (nameLower === searchTermLower) {
+        score = 1000;
+      }
+      // Contains full search term
+      else if (nameLower.includes(searchTermLower)) {
+        score = 500;
+      }
+      // Count matching words
+      else {
+        searchWords.forEach(function(word) {
+          if (word.length > 2 && nameLower.includes(word)) {
+            score += 100;
+          }
+        });
+      }
+      
+      // Bonus for models with more views/likes (quality indicator)
+      score += Math.min(model.likeCount || 0, 50);
+      score += Math.min((model.viewCount || 0) / 100, 50);
+      
+      return { model: model, score: score };
+    });
+    
+    // Sort by score (highest first)
+    scoredModels.sort(function(a, b) {
+      return b.score - a.score;
+    });
+    
+    const sortedModels = scoredModels.map(function(item) {
+      return item.model;
+    });
+    
+    if (sortedModels.length > 0) {
+      console.log('🎯 Best match: "' + sortedModels[0].name + '" (score: ' + scoredModels[0].score + ')');
+    }
+    
+    // Cache the results
+    searchCache.set(cacheKey, sortedModels);
+    
+    return sortedModels;
   } catch (error) {
     console.error('❌ Sketchfab search failed:', error);
     return [];

@@ -2,10 +2,12 @@ import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaExclamationCircle } from 'react-icons/fa';
 import { useScrollAnimation } from '../../hooks/useScrollAnimation';
+import { useWebsiteSettings } from '../../hooks/useWebsiteSettings';
 
 const PaymentFailed = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { settings } = useWebsiteSettings();
   
   const containerAnim = useScrollAnimation({ threshold: 0.1 });
   
@@ -89,7 +91,7 @@ const PaymentFailed = () => {
         </div>
 
         <p className="mt-6 text-xs text-gray-500">
-          Need help? Contact our support team at support@egiegameshop.com
+          Need help? Contact our support team at {settings?.contactEmail || 'support@egiegameshop.com'}
         </p>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { IoMdEyeOff } from "react-icons/io";
 import { FaGoogle } from "react-icons/fa";
 import { supabase } from "../../lib/supabase";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import { useWebsiteSettings } from "../../hooks/useWebsiteSettings";
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -13,6 +14,7 @@ const SignIn = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { settings } = useWebsiteSettings();
 
   // Scroll animations
   const formAnim = useScrollAnimation({ threshold: 0.1 });
@@ -98,8 +100,8 @@ const SignIn = () => {
         <div className="flex items-center mb-3 justify-center">
           <img
             className="w-24 h-16 md:w-28 md:h-20 object-contain"
-            src="https://i.ibb.co/Cpx2BBt5/egie-removebg-preview-1.png"
-            alt="Logo"
+            src={settings?.logoUrl || "https://i.ibb.co/Cpx2BBt5/egie-removebg-preview-1.png"}
+            alt={settings?.brandName || "Logo"}
           />
         </div>
 
@@ -127,7 +129,7 @@ const SignIn = () => {
             id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="p-2 border border-gray-300 rounded w-full text-black mb-4"
+            className="p-2 border border-gray-300 rounded w-full text-black mb-4 placeholder-gray-400"
             placeholder="wayne.enterprises@gotham.com"
             required
           />
@@ -149,7 +151,7 @@ const SignIn = () => {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="p-2 border border-gray-300 rounded w-full pr-10 text-black"
+                className="p-2 border border-gray-300 rounded w-full pr-10 text-black placeholder-gray-400"
                 placeholder="********"
                 required
               />
@@ -174,7 +176,7 @@ const SignIn = () => {
               Terms and Conditions
             </Link>{" "}
             and{" "}
-            <Link to="/privacy-policy" className="text-blue-500">
+            <Link to="/privacy" className="text-blue-500">
               Privacy Policy
             </Link>
             .

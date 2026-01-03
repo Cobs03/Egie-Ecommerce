@@ -475,15 +475,22 @@ Consider:
           return categoryMatch;
         }
         
-        // Special handling for laptops (can match name/desc/component)
+        // Special handling for laptops - STRICT matching to avoid peripherals
         if (categoryLower === 'laptop') {
-          const hasLaptopMatch = name.includes('laptop') || 
-                                 desc.includes('laptop') || 
-                                 componentType.includes('laptop');
-          const isNotComponentOnly = !name.includes('processor only') &&
-                                     !name.includes('cpu only') &&
-                                     !name.includes('gpu only');
-          return hasLaptopMatch && isNotComponentOnly;
+          // ONLY match if component type is explicitly 'laptop'
+          // OR if product name starts with laptop-related terms
+          const isLaptopComponent = componentType.includes('laptop');
+          const nameStartsWithLaptop = /^(laptop|notebook|gaming laptop|business laptop)/i.test(name);
+          const hasLaptopInName = name.includes('laptop');
+          
+          // Exclude anything that's clearly a peripheral/accessory
+          const isPeripheral = name.includes('headset') || name.includes('mouse') || 
+                              name.includes('keyboard') || name.includes('speaker') ||
+                              name.includes('webcam') || name.includes('charger') ||
+                              componentType.includes('headset') || componentType.includes('mouse') ||
+                              componentType.includes('keyboard') || componentType.includes('speaker');
+          
+          return (isLaptopComponent || (nameStartsWithLaptop && hasLaptopInName)) && !isPeripheral;
         }
         
         // For other categories (generic terms), use broader text search
