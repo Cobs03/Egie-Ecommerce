@@ -116,7 +116,7 @@ const SignUp = () => {
         <div className="rounded-lg w-full h-full bg-opacity-50">
           <img
             className="w-full h-full object-cover"
-            src="https://i.ibb.co/yF04zrC9/vecteezy-computer-electronic-chip-with-processor-transistors-29336852.jpg"
+            src="https://i.ibb.co/yF04zrC9"
             alt="Computer Illustration"
           />
         </div>
@@ -134,7 +134,7 @@ const SignUp = () => {
         <div className="flex items-center mb-3 justify-center">
           <img
             className="w-24 h-16 md:w-28 md:h-20 object-contain"
-            src={settings?.logoUrl || "https://i.ibb.co/Cpx2BBt5/egie-removebg-preview-1.png"}
+            src={settings?.logoUrl || "https://i.ibb.co/Cpx2BBt5"}
             alt={settings?.brandName || "Logo"}
           />
         </div>

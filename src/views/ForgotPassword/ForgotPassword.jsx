@@ -50,7 +50,7 @@ const ForgotPassword = () => {
         <div className="flex items-center mb-3 justify-center">
           <img
             className="w-24 h-16 md:w-28 md:h-20 object-contain"
-            src="https://i.ibb.co/Cpx2BBt5/egie-removebg-preview-1.png"
+            src="https://i.ibb.co/Cpx2BBt5"
             alt="Logo"
           />
         </div>
@@ -128,7 +128,7 @@ const ForgotPassword = () => {
       <div className="hidden md:flex md:w-1/2 bg-gradient-to-r from-blue-200 to-purple-200 items-center justify-center">
         <img
           className="w-full h-full object-cover"
-          src="https://i.ibb.co/yF04zrC9/vecteezy-computer-electronic-chip-with-processor-transistors-29336852.jpg"
+          src="https://i.ibb.co/yF04zrC9"
           alt="Computer Illustration"
         />
       </div>

@@ -465,9 +465,10 @@ const AIChatBox = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: "Hello! I'm your AI assistant. How can I help you today?",
+      text: "Hi! I'm your AI shopping assistant 🤖\n\nI can help you with:\n✅ Find products & compare prices\n✅ Check stock & warranties\n✅ Answer shipping & return questions\n✅ Track your orders\n✅ Build PC configurations\n\nWhat would you like help with today?",
       sender: "ai",
       timestamp: new Date(),
+      showQuickActions: true // 🆕 Flag to show quick action buttons
     },
   ]);
   const [inputMessage, setInputMessage] = useState("");
@@ -4104,6 +4105,15 @@ Rules:
 
   // ============= END COMMAND DETECTION =============
 
+  // 🆕 Handle quick action button clicks
+  const handleQuickQuestion = (question) => {
+    setInputMessage(question);
+    // Auto-send after a brief delay to show the user what was clicked
+    setTimeout(() => {
+      handleSendMessage();
+    }, 100);
+  };
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim() && !uploadedImage) return;
 
@@ -4557,6 +4567,40 @@ Rules:
                     </p>
                   </div>
                 </div>
+
+                {/* 🆕 Quick Action Buttons - Show after first message */}
+                {message.showQuickActions && message.sender === "ai" && (
+                  <div className="mt-3 flex flex-wrap gap-2 justify-start px-2">
+                    <button
+                      onClick={() => handleQuickQuestion("What's your return policy?")}
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium py-2 px-3 rounded-lg border border-blue-200 transition-colors flex items-center gap-1"
+                    >
+                      <span>📦</span>
+                      <span>Return Policy</span>
+                    </button>
+                    <button
+                      onClick={() => handleQuickQuestion("How long does shipping take?")}
+                      className="bg-green-50 hover:bg-green-100 text-green-700 text-xs font-medium py-2 px-3 rounded-lg border border-green-200 transition-colors flex items-center gap-1"
+                    >
+                      <span>🚚</span>
+                      <span>Shipping</span>
+                    </button>
+                    <button
+                      onClick={() => handleQuickQuestion("Show me gaming laptops")}
+                      className="bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-medium py-2 px-3 rounded-lg border border-purple-200 transition-colors flex items-center gap-1"
+                    >
+                      <span>💻</span>
+                      <span>Gaming Laptops</span>
+                    </button>
+                    <button
+                      onClick={() => handleQuickQuestion("Track my order")}
+                      className="bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-medium py-2 px-3 rounded-lg border border-orange-200 transition-colors flex items-center gap-1"
+                    >
+                      <span>📍</span>
+                      <span>Track Order</span>
+                    </button>
+                  </div>
+                )}
 
                 {/* Product Cards - Show if AI message has products */}
                 {message.sender === "ai" && message.products && message.products.length > 0 && (
