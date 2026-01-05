@@ -520,7 +520,7 @@ const SystemBuilder3D = ({ selectedProducts, mini = false }) => {
             </div>
             <div>
               <span style={{ color: "#84cc16", fontWeight: "500" }}>
-                ◉ Space:
+                ◉ G:
               </span>{" "}
               Auto-Rotate
             </div>

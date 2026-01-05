@@ -291,31 +291,6 @@ const BundleModal = ({ bundle, onClose }) => {
               </span>
             </div>
 
-            {/* Category Filter */}
-            {categories.length > 1 && (
-              <div className="mb-4">
-                <label className="block font-normal mb-2 text-white text-base" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                  View Products by Category
-                </label>
-                <div className="flex gap-3 flex-wrap">
-                  {categories.map((category) => (
-                    <button
-                      key={category}
-                      onClick={() => setSelectedFilter(category)}
-                      className={`border px-4 py-2.5 rounded text-sm transition-all cursor-pointer font-normal active:scale-95 ${
-                        selectedFilter === category
-                          ? "border-green-500 bg-green-500 text-white active:shadow-inner"
-                          : "border-gray-600 text-gray-300 hover:border-green-500 hover:text-green-500"
-                      }`}
-                      style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-                    >
-                      {category}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Quantity */}
             <div className="mb-4">
               <label className="block font-normal mb-2 text-white text-base" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -382,37 +357,7 @@ const BundleModal = ({ bundle, onClose }) => {
                 )}
               </button>
 
-              <button
-                onClick={() => {
-                  onClose();
-                  navigate('/compare', {
-                    state: {
-                      products: [{
-                        id: bundleData.id,
-                        productName: bundleName,
-                        price: bundlePrice,
-                        imageUrl: carouselImages[0] || '/images/bundle.png',
-                        brand: 'Bundle',
-                        category: selectedFilter === 'All' ? 'PC Bundle' : selectedFilter,
-                        stock: 100,
-                        isBundle: true,
-                        bundleProducts: selectedFilter === 'All' ? bundleProducts : filteredProducts,
-                        selectedCategory: selectedFilter,
-                        specifications: {
-                          'Product Count': selectedFilter === 'All' ? bundleProducts.length : filteredProducts.length,
-                          'Bundle Type': 'Complete Package',
-                          'Selected Filter': selectedFilter
-                        },
-                        metadata: bundleData
-                      }]
-                    }
-                  });
-                }}
-                className="flex-1 bg-gray-600 text-white font-normal py-3 rounded hover:bg-gray-700 transition-all text-center cursor-pointer active:scale-95 active:shadow-inner"
-                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-              >
-                Compare
-              </button>
+
 
               <button
                 onClick={async () => {

@@ -5,6 +5,8 @@
  */
 
 import axios from 'axios';
+import { supabase } from '../lib/supabase';
+import ThirdPartyAuditService from './ThirdPartyAuditService';
 
 class VisionService {
   constructor() {
@@ -23,12 +25,39 @@ class VisionService {
    * @param {string} userPrompt - Optional user description to guide the analysis
    * @returns {Promise<Object>} - Extracted product features and keywords
    */
-  async analyzeProductImage(imageData, userPrompt = '') {
+  async analyzeProductImage(imageData, userPrompt = '', userId = null) {
     try {
+      // Verify AI consent if userId provided (Vision is part of AI features)
+      if (userId) {
+        const hasConsent = await this.verifyAIConsent(userId);
+        if (!hasConsent) {
+          throw new Error('AI features consent required. Please enable AI consent in your privacy settings.');
+        }
+      }
+
       if (this.provider === 'groq') {
-        return await this.analyzeWithGroq(imageData, userPrompt);
+        const result = await this.analyzeWithGroq(imageData, userPrompt);
+        // Log Groq AI usage
+        if (userId) {
+          await ThirdPartyAuditService.logGroqAIInteraction(
+            userId,
+            'vision_analysis',
+            { provider: 'groq', model: this.groqModel },
+            { hasImage: true, promptLength: userPrompt.length }
+          );
+        }
+        return result;
       } else if (this.provider === 'openai') {
-        return await this.analyzeWithOpenAI(imageData, userPrompt);
+        const result = await this.analyzeWithOpenAI(imageData, userPrompt);
+        // Log OpenAI usage
+        if (userId) {
+          await ThirdPartyAuditService.logOpenAIVisionUsage(
+            userId,
+            { model: this.openaiModel, imageSize: imageData.length },
+            { hasUserPrompt: !!userPrompt }
+          );
+        }
+        return result;
       } else if (this.provider === 'google') {
         return await this.analyzeWithGoogle(imageData, userPrompt);
       } else {
@@ -759,6 +788,31 @@ Return ONLY valid JSON with this EXACT structure:
       status: quantity > 10 ? 'In Stock' : quantity > 0 ? 'Low Stock' : 'Out of Stock',
       statusEmoji: quantity > 10 ? '✅' : quantity > 0 ? '⚠️' : '❌'
     };
+  }
+
+  /**
+   * Verify user consent for AI features (including vision)
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Whether user has consented
+   */
+  async verifyAIConsent(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('user_consents')
+        .select('ai_assistant')
+        .eq('user_id', userId)
+        .single();
+
+      if (error || !data) {
+        console.warn('No AI consent record found for user:', userId);
+        return true; // Fail open for backward compatibility
+      }
+
+      return data.ai_assistant === true;
+    } catch (error) {
+      console.error('Error verifying AI consent:', error);
+      return true;
+    }
   }
 }
 

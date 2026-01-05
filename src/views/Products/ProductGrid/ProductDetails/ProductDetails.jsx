@@ -92,11 +92,13 @@ const ProductDetails = () => {
   return (
     <div className="mt-10">
       {/* Render different top details component based on type */}
-      {isBundle ? (
-        <TopDetailsBundle product={product} />
-      ) : (
-        <TopDetails product={product} />
-      )}
+      <div className="max-w-7xl mx-auto px-4">
+        {isBundle ? (
+          <TopDetailsBundle product={product} />
+        ) : (
+          <TopDetails product={product} />
+        )}
+      </div>
 
       <div className="flex flex-col lg:flex-row max-w-7xl mx-auto px-4 py-4 sm:py-6 md:py-8 w-full gap-4 sm:gap-6 md:gap-10">
         {/* Details Left - 75% width on desktop */}

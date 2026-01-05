@@ -261,8 +261,10 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
     
     const scoredModels = downloadableModels.map(function(model) {
       const nameLower = model.name.toLowerCase();
+      const descriptionLower = (model.description || '').toLowerCase();
       let score = 0;
       
+      // NAME SCORING (Primary)
       // Exact match gets highest score
       if (nameLower === searchTermLower) {
         score = 1000;
@@ -271,11 +273,26 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
       else if (nameLower.includes(searchTermLower)) {
         score = 500;
       }
-      // Count matching words
+      // Count matching words in name
       else {
         searchWords.forEach(function(word) {
           if (word.length > 2 && nameLower.includes(word)) {
             score += 100;
+          }
+        });
+      }
+      
+      // DESCRIPTION SCORING (Secondary - worth less than name but still valuable)
+      if (descriptionLower) {
+        // Full search term in description
+        if (descriptionLower.includes(searchTermLower)) {
+          score += 300; // Good match, but less than name
+        }
+        
+        // Count matching words in description
+        searchWords.forEach(function(word) {
+          if (word.length > 2 && descriptionLower.includes(word)) {
+            score += 50; // Half value of name matches
           }
         });
       }

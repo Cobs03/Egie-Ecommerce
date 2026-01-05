@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { MessageCircle, X, Send, Bot, Maximize2, Minimize2, ShoppingCart, Mic, MicOff, Image as ImageIcon, Globe } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
+import { DotsLoader } from "./ui/LoadingIndicator";
 import { useNavigate, useLocation } from "react-router-dom";
 import AIService from "../services/AIService";
 import VisionService from "../services/VisionService";
@@ -4393,6 +4394,25 @@ Rules:
 
   return (
     <>
+      <style>{`
+        @keyframes shake-bottom {
+          0%, 100% {
+            transform: rotate(0deg);
+          }
+          10%, 30%, 50%, 70%, 90% {
+            transform: rotate(-10deg);
+          }
+          20%, 40%, 60%, 80% {
+            transform: rotate(10deg);
+          }
+        }
+        
+        .animate-spin-smooth {
+          animation: shake-bottom 2s ease-in-out infinite;
+          transform-origin: bottom center;
+        }
+      `}</style>
+      
       {/* AI Chat Button - Only show when chat is closed */}
       {!isOpen && (
         <div className="fixed bottom-6 [@media(min-width:761px)]:bottom-8 right-4 [@media(min-width:761px)]:right-6 z-[600] flex items-end gap-3">
@@ -4418,16 +4438,13 @@ Rules:
               <TooltipTrigger asChild>
                 <button
                   onClick={handleChatToggle}
-                  className="bg-[#39FC1D] hover:bg-[#2dd817] rounded-full p-1.5 [@media(min-width:761px)]:p-2 shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-green-500/30 animate-pulse-glow overflow-hidden"
+                  className="bg-white hover:bg-[#2dd817] border-2 border-solid border-[#2dd817] rounded-full p-1.5 [@media(min-width:761px)]:p-2 shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-green-500/30 animate-pulse-glow overflow-hidden"
                   aria-label="AI Chatbox"
                 >
-                  <video
-                    src="/Logo/gif.mp4"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-10 h-10 [@media(min-width:761px)]:w-12 [@media(min-width:761px)]:h-12 rounded-full object-cover"
+                  <img
+                    src="/Logo/Ai.png"
+                    alt="AI Assistant"
+                    className="w-10 h-10 [@media(min-width:761px)]:w-12 [@media(min-width:761px)]:h-12 rounded-full object-cover animate-spin-smooth"
                   />
                 </button>
               </TooltipTrigger>
@@ -4756,17 +4773,7 @@ Rules:
             {isTyping && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 text-gray-800 rounded-lg rounded-bl-none p-3">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.1s" }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.2s" }}
-                    ></div>
-                  </div>
+                  <DotsLoader color="gray" />
                 </div>
               </div>
             )}
@@ -4869,10 +4876,6 @@ Rules:
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck="false"
                 placeholder={
                   uploadedImage
                     ? "Add a description (optional)..."

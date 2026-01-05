@@ -10,6 +10,9 @@ import ProfileTab from "./components/ProfileTab";
 import SecurityTab from "./components/SecurityTab";
 import AddressesTab from "./components/AddressesTab";
 import NotificationsTab from "./components/NotificationsTab";
+import PrivacyTab from "./components/PrivacyTab";
+import ConsentTab from "./components/ConsentTab";
+import ThirdPartyComplianceTab from "./components/ThirdPartyComplianceTab";
 import AddressModal from "./components/AddressModal";
 
 const Settings = () => {
@@ -54,7 +57,11 @@ const Settings = () => {
     email_promotions: true,
     email_stock_alerts: false,
     push_order_updates: true,
-    push_promotions: false
+    push_promotions: false,
+    email_data_breach: true,
+    email_security_incidents: true,
+    email_privacy_policy_updates: true,
+    email_tos_updates: true
   });
 
   // Scroll animation for header
@@ -259,6 +266,24 @@ const Settings = () => {
                 notificationPreferences={notificationPreferences}
                 setNotificationPreferences={setNotificationPreferences}
               />
+            )}
+
+            {activeTab === "privacy" && (
+              <PrivacyTab
+                loading={loading}
+                setLoading={setLoading}
+              />
+            )}
+
+            {activeTab === "consent" && (
+              <ConsentTab
+                loading={loading}
+                setLoading={setLoading}
+              />
+            )}
+
+            {activeTab === "compliance" && (
+              <ThirdPartyComplianceTab />
             )}
           </div>
         </div>

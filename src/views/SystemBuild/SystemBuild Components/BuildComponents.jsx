@@ -113,7 +113,6 @@ const BuildComponents = ({
             <thead className="bg-blue-100 text-gray-700 text-left">
               <tr>
                 <th className="p-2 border">Components</th>
-                <th className="p-2 border">Image</th>
                 <th className="p-2 border">Product</th>
                 <th className="p-2 border text-center">Quantity</th>
                 <th className="p-2 border">Price</th>
@@ -134,7 +133,7 @@ const BuildComponents = ({
                       <td className="p-2 border font-medium text-gray-700">
                         {type}
                       </td>
-                      <td colSpan="6" className="p-4 border text-center">
+                      <td colSpan="5" className="p-4 border text-center">
                         <button
                           onClick={() => onOpenDrawer ? onOpenDrawer(type) : setSelectedType(type)}
                           className="bg-transparent border-2 border-dashed border-green-500 text-green-600 px-6 py-2 rounded-lg hover:bg-green-50 font-semibold transition-all duration-200 active:scale-95 hover:scale-105 w-full max-w-md"
@@ -150,19 +149,6 @@ const BuildComponents = ({
                   <tr key={type} className="bg-white hover:bg-gray-100">
                     <td className="p-2 border font-medium text-gray-700">
                       {type}
-                    </td>
-                    <td className="p-2 border">
-                      <div className="w-16 h-16 bg-gray-100 flex items-center justify-center rounded border border-gray-200 overflow-hidden">
-                        {selectedProduct.image || selectedProduct.img ? (
-                          <img
-                            src={selectedProduct.image || selectedProduct.img}
-                            alt={selectedProduct.name}
-                            className="w-full h-full object-contain p-1"
-                          />
-                        ) : (
-                          <span className="text-gray-400 text-xs">No Image</span>
-                        )}
-                      </div>
                     </td>
                     <td className="p-2 border">
                       <div className="flex flex-col gap-1">

@@ -228,7 +228,93 @@ const Policy = () => {
 
             <section className="mb-8">
               <h2 className="text-xl font-semibold mb-4 text-gray-800">
-                3. Disclosure of Your Personal Data
+                3. Data We Collect and Why (Transparency Table)
+              </h2>
+              <p className="mb-4">
+                We believe in transparency about what data we collect and how we use it. Here's a detailed breakdown:
+              </p>
+              
+              <div className="overflow-x-auto mb-4">
+                <table className="min-w-full border border-gray-300">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Data Collected</th>
+                      <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose</th>
+                      <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Legal Basis</th>
+                      <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Retention Period</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="border border-gray-300 px-4 py-2">Email, Name</td>
+                      <td className="border border-gray-300 px-4 py-2">Account creation, order processing, communication</td>
+                      <td className="border border-gray-300 px-4 py-2">Contract</td>
+                      <td className="border border-gray-300 px-4 py-2">Until account deletion</td>
+                    </tr>
+                    <tr className="bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-2">Order History</td>
+                      <td className="border border-gray-300 px-4 py-2">Order fulfillment, customer support, legal compliance</td>
+                      <td className="border border-gray-300 px-4 py-2">Contract & Legal Obligation</td>
+                      <td className="border border-gray-300 px-4 py-2">7 years (tax/legal requirements)</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-300 px-4 py-2">Payment Information</td>
+                      <td className="border border-gray-300 px-4 py-2">Transaction processing (processed by payment provider)</td>
+                      <td className="border border-gray-300 px-4 py-2">Contract</td>
+                      <td className="border border-gray-300 px-4 py-2">Per PCI-DSS requirements</td>
+                    </tr>
+                    <tr className="bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-2">Shipping Address</td>
+                      <td className="border border-gray-300 px-4 py-2">Order delivery, shipping calculations</td>
+                      <td className="border border-gray-300 px-4 py-2">Contract</td>
+                      <td className="border border-gray-300 px-4 py-2">Until you delete it or 2 years after last use</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-300 px-4 py-2">IP Address</td>
+                      <td className="border border-gray-300 px-4 py-2">Fraud prevention, security</td>
+                      <td className="border border-gray-300 px-4 py-2">Legitimate Interest</td>
+                      <td className="border border-gray-300 px-4 py-2">90 days</td>
+                    </tr>
+                    <tr className="bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-2">Cookies & Session Data</td>
+                      <td className="border border-gray-300 px-4 py-2">Site functionality, user preferences, analytics</td>
+                      <td className="border border-gray-300 px-4 py-2">Consent (non-essential)</td>
+                      <td className="border border-gray-300 px-4 py-2">Session or up to 1 year</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-300 px-4 py-2">Product Reviews</td>
+                      <td className="border border-gray-300 px-4 py-2">Display customer feedback, improve products</td>
+                      <td className="border border-gray-300 px-4 py-2">Consent</td>
+                      <td className="border border-gray-300 px-4 py-2">Until you delete it or account closure</td>
+                    </tr>
+                    <tr className="bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-2">Browsing History</td>
+                      <td className="border border-gray-300 px-4 py-2">Personalized recommendations, analytics</td>
+                      <td className="border border-gray-300 px-4 py-2">Consent</td>
+                      <td className="border border-gray-300 px-4 py-2">90 days</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2">Your Control</h4>
+                <p className="text-sm text-blue-800 mb-2">
+                  You can manage your data and privacy preferences in your{" "}
+                  <Link to="/settings" className="underline">Account Settings</Link>:
+                </p>
+                <ul className="text-sm text-blue-800 space-y-1 ml-4">
+                  <li>• Download all your data at any time</li>
+                  <li>• Control consent for cookies and analytics</li>
+                  <li>• Object to specific data processing activities</li>
+                  <li>• Request account deletion</li>
+                </ul>
+              </div>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-xl font-semibold mb-4 text-gray-800">
+                4. Disclosure of Your Personal Data
               </h2>
               <p className="mb-3">
                 The Company may share Your personal information in the following
@@ -272,7 +358,7 @@ const Policy = () => {
 
             <section className="mb-8">
               <h2 className="text-xl font-semibold mb-4 text-gray-800">
-                4. Retention of Your Personal Data
+                5. Retention of Your Personal Data
               </h2>
               <p className="mb-4">
                 The Company will retain Your Personal Data only for as long as
@@ -294,7 +380,7 @@ const Policy = () => {
 
             <section className="mb-8">
               <h2 className="text-xl font-semibold mb-4 text-gray-800">
-                5. Security of Your Personal Data
+                6. Security of Your Personal Data
               </h2>
               <p className="mb-4">
                 The security of Your Personal Data is important to Us, but
@@ -307,7 +393,7 @@ const Policy = () => {
 
             <section className="mb-8">
               <h2 className="text-xl font-semibold mb-4 text-gray-800">
-                6. Children's Privacy
+                7. Children's Privacy
               </h2>
               <p className="mb-4">
                 Our Service does not address anyone under the age of 13. We do
@@ -323,7 +409,7 @@ const Policy = () => {
 
             <section className="mb-8">
               <h2 className="text-xl font-semibold mb-4 text-gray-800">
-                7. Changes to this Privacy Policy
+                8. Changes to this Privacy Policy
               </h2>
               <p className="mb-4">
                 We may update our Privacy Policy from time to time. We will
@@ -344,7 +430,7 @@ const Policy = () => {
 
             <section className="mb-4">
               <h2 className="text-xl font-semibold mb-4 text-gray-800">
-                8. Contact Us
+                9. Contact Us
               </h2>
               <p className="mb-2">
                 If you have any questions about this Privacy Policy, You can

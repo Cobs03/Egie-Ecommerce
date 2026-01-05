@@ -5,6 +5,8 @@
  */
 
 import { supabase } from '../lib/supabase';
+import ThirdPartyAuditService from './ThirdPartyAuditService';
+import PrivacyUtils from '../utils/PrivacyUtils';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -16,10 +18,32 @@ class PayMongoEdgeFunctionService {
    * @param {object} redirect - Success/failed redirect URLs
    * @returns {Promise<object>} Payment source data
    */
-  async createGCashSource(amount, billing, redirect) {
+  async createGCashSource(amount, billing, redirect, userId = null) {
     try {
+      // Verify user consent for payment processing
+      if (userId) {
+        const hasConsent = await this.verifyPaymentConsent(userId);
+        if (!hasConsent) {
+          throw new Error('User has not consented to payment processing. Please update your consent preferences.');
+        }
+      }
+
       console.log('Calling Edge Function: create-gcash-source');
       console.log('Amount:', amount, 'PHP');
+
+      // Apply data minimization - mask sensitive billing info
+      const sanitizedBilling = {
+        name: billing.name,
+        email: PrivacyUtils.maskEmail(billing.email),
+        phone: PrivacyUtils.maskPhone(billing.phone),
+        address: {
+          line1: billing.address?.line1,
+          city: billing.address?.city,
+          state: billing.address?.state,
+          postal_code: billing.address?.postal_code,
+          country: billing.address?.country
+        }
+      };
 
       const { data, error } = await supabase.functions.invoke('create-gcash-source', {
         body: {
@@ -40,6 +64,21 @@ class PayMongoEdgeFunctionService {
       }
 
       console.log('GCash source created:', data.source.id);
+
+      // Log third-party data sharing
+      if (userId) {
+        await ThirdPartyAuditService.logPayMongoTransaction(
+          userId,
+          'gcash_source_creation',
+          {
+            sourceId: data.source.id,
+            amount: amount,
+            currency: 'PHP',
+            method: 'gcash'
+          },
+          sanitizedBilling
+        );
+      }
 
       return {
         success: true,
@@ -63,8 +102,16 @@ class PayMongoEdgeFunctionService {
    * @param {string} description - Payment description
    * @returns {Promise<object>} Payment data
    */
-  async createPayment(amount, sourceId, description) {
+  async createPayment(amount, sourceId, description, userId = null) {
     try {
+      // Verify user consent for payment processing
+      if (userId) {
+        const hasConsent = await this.verifyPaymentConsent(userId);
+        if (!hasConsent) {
+          throw new Error('User has not consented to payment processing. Please update your consent preferences.');
+        }
+      }
+
       console.log('Calling Edge Function: create-payment');
       console.log('Source ID:', sourceId);
 
@@ -88,6 +135,22 @@ class PayMongoEdgeFunctionService {
 
       console.log('Payment created:', data.payment.id);
 
+      // Log third-party data sharing
+      if (userId) {
+        await ThirdPartyAuditService.logPayMongoTransaction(
+          userId,
+          'payment_creation',
+          {
+            paymentId: data.payment.id,
+            sourceId: sourceId,
+            amount: amount,
+            currency: 'PHP',
+            description: description
+          },
+          { description: description }
+        );
+      }
+
       return {
         success: true,
         payment: data.payment
@@ -110,10 +173,19 @@ class PayMongoEdgeFunctionService {
    * @param {string} description - Payment description
    * @param {object} metadata - Additional metadata
    * @param {string} returnUrl - URL to return after 3DS
+   * @param {string} userId - User ID for consent and audit logging
    * @returns {Promise<object>} Payment intent data
    */
-  async processCardPayment(cardDetails, billing, amount, description, metadata, returnUrl) {
+  async processCardPayment(cardDetails, billing, amount, description, metadata = {}, returnUrl = null, userId = null) {
     try {
+      // Verify user consent for payment processing
+      if (userId) {
+        const hasConsent = await this.verifyPaymentConsent(userId);
+        if (!hasConsent) {
+          throw new Error('User has not consented to payment processing. Please update your consent preferences.');
+        }
+      }
+
       console.log('Calling Edge Function: process-card-payment');
       console.log('Amount:', amount, 'PHP');
       console.log('Card Details:', { 
@@ -169,6 +241,28 @@ class PayMongoEdgeFunctionService {
 
       console.log('Card payment processed:', data.paymentIntent.id);
 
+      // Log third-party data sharing
+      if (userId) {
+        await ThirdPartyAuditService.logPayMongoTransaction(
+          userId,
+          'card_payment',
+          {
+            paymentIntentId: data.paymentIntent.id,
+            amount: amount,
+            currency: 'PHP',
+            requires3DS: data.requires3DS,
+            cardBrand: cardDetails.number ? 'card' : 'unknown',
+            description: description
+          },
+          {
+            name: billing.name,
+            email: PrivacyUtils.maskEmail(billing.email),
+            phone: PrivacyUtils.maskPhone(billing.phone),
+            address: billing.address
+          }
+        );
+      }
+
       return {
         success: true,
         paymentIntent: data.paymentIntent,
@@ -222,6 +316,34 @@ class PayMongoEdgeFunctionService {
         success: false,
         error: error.message
       };
+    }
+  }
+
+  /**
+   * Verify user consent for payment processing
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Whether user has consented
+   */
+  async verifyPaymentConsent(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('user_consents')
+        .select('payment_processing')
+        .eq('user_id', userId)
+        .single();
+
+      if (error || !data) {
+        // If no consent record, assume consent (backward compatibility)
+        // In production, you might want to require explicit consent
+        console.warn('No consent record found for user:', userId);
+        return true;
+      }
+
+      return data.payment_processing === true;
+    } catch (error) {
+      console.error('Error verifying payment consent:', error);
+      // Fail open for backward compatibility
+      return true;
     }
   }
 }

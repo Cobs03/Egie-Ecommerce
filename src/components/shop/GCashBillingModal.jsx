@@ -64,7 +64,7 @@ const GCashBillingModal = ({ isOpen, onClose, onSubmit, defaultEmail, defaultNam
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center gap-3">
             <img 
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/GCash_logo.svg/512px-GCash_logo.svg.png" 
+              src="../../../public/Logo/Gcash.png" 
               alt="GCash" 
               className="h-8"
             />

@@ -3,6 +3,7 @@ import CartItems from "./Cart Components/CartItems";
 import Order from "./Cart Components/Order";
 import OtherCart from "./Cart Components/OtherCart";
 import { useCart } from "../../context/CartContext";
+import { SectionLoader } from "../../components/ui/LoadingIndicator";
 
 const Cart = () => {
   const { 
@@ -65,8 +66,7 @@ const Cart = () => {
   if (loading) {
     return (
       <div className="flex flex-col max-w-7xl mx-auto px-4 py-6 h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-        <p className="mt-4 text-gray-600">Loading your cart...</p>
+        <SectionLoader message="Loading your cart..." />
       </div>
     );
   }

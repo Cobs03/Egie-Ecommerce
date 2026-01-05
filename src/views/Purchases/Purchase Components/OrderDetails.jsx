@@ -150,12 +150,8 @@ const OrderDetails = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="flex flex-col items-center gap-4">
-          <img
-            src={settings?.logoUrl || "/EGIE LOGO.png"}
-            alt={settings?.brandName || "Loading"}
-            className="w-20 h-15 object-contain"
-          />
-          <div className="w-24 h-24 border-8 border-gray-200 border-t-green-500 rounded-full animate-spin" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+          <div className="text-xl text-gray-600">Loading order details...</div>
         </div>
       </div>
     );

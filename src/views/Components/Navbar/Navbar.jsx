@@ -298,8 +298,8 @@ const Navbar = ({ isAuth }) => {
                     </Link>
                   </NavigationMenuItem>
                   <NavigationMenuItem>
-                    <Link
-                      to="/buildpc"
+                    <button
+                      onClick={() => navigate('/buildpc', { state: { clearDraft: true } })}
                       className={`text-shadow-white transition px-2 md:px-4 py-2 text-xs md:text-sm whitespace-nowrap ${
                         isActive("/buildpc")
                           ? "text-green-400 font-semibold"
@@ -307,7 +307,7 @@ const Navbar = ({ isAuth }) => {
                       }`}
                     >
                       PC Build
-                    </Link>
+                    </button>
                   </NavigationMenuItem>
                 </NavigationMenuList>
               </NavigationMenu>
@@ -658,17 +658,19 @@ const Navbar = ({ isAuth }) => {
                   >
                     All Products
                   </Link>
-                  <Link
-                    to="/buildpc"
-                    className={`block px-3 py-2 text-sm rounded-lg transition ${
+                  <button
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      navigate('/buildpc', { state: { clearDraft: true } });
+                    }}
+                    className={`block px-3 py-2 text-sm rounded-lg transition w-full text-left ${
                       isActive("/buildpc")
                         ? "text-green-400 font-semibold bg-gray-800"
                         : "text-white hover:text-green-400 hover:bg-gray-800"
                     }`}
-                    onClick={() => setShowMobileMenu(false)}
                   >
                     PC Build
-                  </Link>
+                  </button>
                   <Link
                     to="/compare"
                     className={`block px-3 py-2 text-sm rounded-lg transition ${

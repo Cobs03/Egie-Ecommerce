@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { pseudonymizeUserId, sanitizeLogData } from '../utils/PrivacyUtils';
 
 class NotificationService {
   /**
@@ -13,11 +14,9 @@ class NotificationService {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
-        console.error('❌ Auth error in getUserNotifications:', authError);
+        console.error('Auth error in getUserNotifications');
         return { data: [], error: 'User not authenticated' };
       }
-
-      console.log(`📡 Fetching notifications for user ${user.id}, category: ${category}`);
 
       const { data, error } = await supabase.rpc('get_user_notifications', {
         p_user_id: user.id,
@@ -27,14 +26,13 @@ class NotificationService {
       });
 
       if (error) {
-        console.error('❌ RPC error:', error);
+        console.error('RPC error:', sanitizeLogData(error));
         throw error;
       }
 
-      console.log(`✅ Fetched ${data?.length || 0} notifications:`, data);
       return { data: data || [], error: null };
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('Error fetching notifications:', sanitizeLogData(error));
       return { data: [], error: error.message };
     }
   }
@@ -61,7 +59,7 @@ class NotificationService {
 
       return { count: data || 0, error: null };
     } catch (error) {
-      console.error('Error fetching unread count:', error);
+      console.error('Error fetching unread count:', sanitizeLogData(error));
       return { count: 0, error: error.message };
     }
   }
