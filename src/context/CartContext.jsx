@@ -250,6 +250,64 @@ export const CartProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Clear only selected (checked) items from cart
+   * Used after successful checkout to keep unchecked items
+   * @param {boolean} showToast - Whether to show success toast (default: false)
+   */
+  const clearSelectedItems = async (showToast = false) => {
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    setLoading(true);
+    try {
+      // Get IDs of selected items
+      const selectedIds = Array.from(selectedItems);
+      
+      if (selectedIds.length === 0) {
+        return { success: true, data: null };
+      }
+
+      // Remove selected items from database
+      const { data, error } = await CartService.removeMultipleItems(selectedIds);
+
+      if (error) {
+        toast.error('Failed to clear selected items', {
+          description: error
+        });
+        return { success: false, error };
+      }
+
+      // Update local state - keep only unselected items
+      setCartItems(prevItems => prevItems.filter(item => !selectedItems.has(item.id)));
+      
+      // Update cart count
+      setCartCount(prevCount => Math.max(0, prevCount - selectedIds.length));
+      
+      // Recalculate total from remaining items
+      const removedTotal = cartItems
+        .filter(item => selectedItems.has(item.id))
+        .reduce((sum, item) => sum + (item.price_at_add * item.quantity), 0);
+      setCartTotal(prevTotal => Math.max(0, prevTotal - removedTotal));
+      
+      // Clear selection state
+      setSelectedItems(new Set());
+      setCheckoutItems([]);
+
+      // Only show toast if explicitly requested
+      if (showToast) {
+        toast.success('Selected items cleared from cart');
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error clearing selected items:', error);
+      toast.error('Failed to clear selected items');
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value = {
     cartItems,
     cartCount,
@@ -260,6 +318,7 @@ export const CartProvider = ({ children }) => {
     updateQuantity,
     removeFromCart,
     clearCart,
+    clearSelectedItems,
     loadCart,
     // Order checkout data
     orderNotes,

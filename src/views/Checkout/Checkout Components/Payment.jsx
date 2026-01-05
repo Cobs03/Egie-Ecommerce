@@ -11,7 +11,7 @@ import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const Payment = ({ selectedAddress, onShowGCashModal }) => {
   const navigate = useNavigate();
-  const { deliveryType, orderNotes, cartItems, clearCart, appliedVoucher, loadCart } = useCart();
+  const { deliveryType, orderNotes, cartItems, clearSelectedItems, appliedVoucher, loadCart, checkoutItems } = useCart();
   
   // Scroll animations
   const containerAnim = useScrollAnimation({ threshold: 0.1 });
@@ -124,12 +124,16 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
       }
 
       // For COD and Card, proceed with regular order creation
+      // Extract cart_item_ids from checkoutItems
+      const cart_item_ids = checkoutItems.map(item => item.id);
+      
       const orderData = {
         delivery_type: deliveryType,
         shipping_address_id: deliveryType === 'local_delivery' ? selectedAddress?.id : null,
         customer_notes: orderNotes || null,
         payment_method: selectedPayment === 'card' ? 'credit_card' : selectedPayment,
-        voucher: appliedVoucher
+        voucher: appliedVoucher,
+        cart_item_ids: cart_item_ids // Pass selected cart item IDs
       };
 
       const { data, error: orderError } = await OrderService.createOrder(orderData);
@@ -142,7 +146,9 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
         return;
       }
 
-      await clearCart(false);
+      // Cart items are automatically removed by the database function
+      // Reload cart to get updated state
+      await loadCart();
 
       navigate("/thankyou", { 
         state: { 
@@ -177,12 +183,16 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
       console.log('Billing info:', billingInfo);
       
       // First, create the order
+      // Extract cart_item_ids from checkoutItems
+      const cart_item_ids = checkoutItems.map(item => item.id);
+      
       const orderData = {
         delivery_type: deliveryType,
         shipping_address_id: deliveryType === 'local_delivery' ? selectedAddress?.id : null,
         customer_notes: orderNotes || null,
         payment_method: 'gcash',
-        voucher: appliedVoucher
+        voucher: appliedVoucher,
+        cart_item_ids: cart_item_ids // Pass selected cart item IDs
       };
 
       console.log('Creating order with data:', orderData);
@@ -272,8 +282,9 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
         console.log('Order updated with PayMongo source ID');
       }
 
-      // Clear cart before redirect
-      await clearCart(false);
+      // Cart items are automatically removed by the database function
+      // Reload cart to get updated state
+      await loadCart();
 
       // Redirect to GCash payment page
       console.log('Redirecting to GCash payment page...');
@@ -317,12 +328,16 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
       console.log('Parsed expiry:', { expMonth, expYear, fullYear });
       
       // First, create the order
+      // Extract cart_item_ids from checkoutItems
+      const cart_item_ids = checkoutItems.map(item => item.id);
+      
       const orderData = {
         delivery_type: deliveryType,
         shipping_address_id: deliveryType === 'local_delivery' ? selectedAddress?.id : null,
         customer_notes: orderNotes || null,
         payment_method: 'credit_card',
-        voucher: appliedVoucher
+        voucher: appliedVoucher,
+        cart_item_ids: cart_item_ids // Pass selected cart item IDs
       };
 
       console.log('Creating order with data:', orderData);
@@ -429,8 +444,9 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
         console.log('🔐 Redirecting to 3D Secure authentication...');
         toast.info('Redirecting to card authentication...');
         
-        // Clear cart before redirect
-        await clearCart(false);
+        // Cart items are automatically removed by the database function
+        // Reload cart to get updated state
+        await loadCart();
         
         setTimeout(() => {
           window.location.href = paymentResult.redirectUrl;
@@ -442,8 +458,9 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
       if (paymentResult.paymentIntent.status === 'succeeded') {
         console.log('🎉 Payment successful!');
         
-        // Clear cart only after confirming success
-        await clearCart(false);
+        // Cart items are automatically removed by the database function
+        // Reload cart to get updated state
+        await loadCart();
         
         // Navigate to success page
         navigate("/thankyou", { 

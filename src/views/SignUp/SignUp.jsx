@@ -116,7 +116,7 @@ const SignUp = () => {
         <div className="rounded-lg w-full h-full bg-opacity-50">
           <img
             className="w-full h-full object-cover"
-            src="https://i.ibb.co/yF04zrC9"
+            src={settings?.authBackgroundUrl || "https://i.ibb.co/yF04zrC9"}
             alt="Computer Illustration"
           />
         </div>

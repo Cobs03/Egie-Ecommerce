@@ -22,7 +22,7 @@ class ReviewService {
    */
   async getProductReviews(product_id, limit = 10, offset = 0) {
     try {
-      // Get reviews with user info already stored in the table
+      // Get reviews first
       const { data: reviews, error: reviewsError } = await supabase
         .from('product_reviews')
         .select('*')
@@ -35,7 +35,29 @@ class ReviewService {
         return { data: [], error: reviewsError.message };
       }
 
-      // Reviews now include user_email and user_name from the database
+      // Then fetch profile data separately for each review
+      if (reviews && reviews.length > 0) {
+        const userIds = [...new Set(reviews.map(r => r.user_id).filter(id => id))];
+        
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, avatar_url')
+          .in('id', userIds);
+
+        // Map profiles to reviews
+        const profilesMap = {};
+        if (profiles) {
+          profiles.forEach(p => {
+            profilesMap[p.id] = p;
+          });
+        }
+
+        // Attach profile data to each review
+        reviews.forEach(review => {
+          review.profiles = profilesMap[review.user_id] || null;
+        });
+      }
+
       return { data: reviews || [], error: null };
     } catch (error) {
       console.error('Error in getProductReviews:', error);
@@ -146,6 +168,19 @@ class ReviewService {
 
       if (error) {
         return { data: { hasReviewed: false, review: null }, error: error.message };
+      }
+
+      // Fetch profile data separately if review exists
+      if (data && data.user_id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, avatar_url')
+          .eq('id', data.user_id)
+          .single();
+
+        if (profile) {
+          data.profiles = profile;
+        }
       }
 
       return {

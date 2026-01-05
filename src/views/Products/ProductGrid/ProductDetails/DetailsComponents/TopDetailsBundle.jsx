@@ -26,13 +26,10 @@ const TopDetailsBundle = ({ product }) => {
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [quantity, setQuantity] = useState(1);
 
-  // Bundle and product-specific images
-  const bundleImages = [
-    "/images/bundle.png",
-    "/images/bundle.png",
-    "/images/bundle.png",
-    "/images/bundle.png",
-  ];
+  // Bundle and product-specific images - use actual bundle images or fallback
+  const bundleImages = product?.images && product.images.length > 0 
+    ? product.images 
+    : ["/images/bundle.png"];
 
 
 

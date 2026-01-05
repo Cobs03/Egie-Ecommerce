@@ -15,10 +15,10 @@ class OrderService {
   
   /**
    * Create order from cart
-   * @param {Object} orderData - { delivery_type, shipping_address_id, customer_notes, payment_method, voucher }
+   * @param {Object} orderData - { delivery_type, shipping_address_id, customer_notes, payment_method, voucher, cart_item_ids }
    * @returns {Object} { data: { order_id, order_number, payment_id, transaction_id, total }, error }
    */
-  async createOrder({ delivery_type, shipping_address_id, customer_notes, payment_method, voucher = null }) {
+  async createOrder({ delivery_type, shipping_address_id, customer_notes, payment_method, voucher = null, cart_item_ids = null }) {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
@@ -51,7 +51,29 @@ class OrderService {
         p_voucher_discount: 0
       };
 
-      // Call database function to create order from cart
+      // If cart_item_ids provided, use the new function for selected items only
+      if (cart_item_ids && cart_item_ids.length > 0) {
+        const { data, error } = await supabase.rpc('create_order_from_selected_cart_items', {
+          p_user_id: user.id,
+          p_cart_item_ids: cart_item_ids,
+          p_delivery_type: delivery_type,
+          p_shipping_address_id: shipping_address_id,
+          p_customer_notes: customer_notes || null,
+          p_payment_method: payment_method,
+          ...voucherParams
+        });
+
+        if (error) {
+          console.error('Error creating order from selected items:', error);
+          return { data: null, error: error.message };
+        }
+
+        // The function returns an array with one object
+        const orderData = data[0];
+        return { data: orderData, error: null };
+      }
+
+      // Otherwise, use the original function (all cart items)
       const { data, error } = await supabase.rpc('create_order_from_cart', {
         p_user_id: user.id,
         p_delivery_type: delivery_type,
