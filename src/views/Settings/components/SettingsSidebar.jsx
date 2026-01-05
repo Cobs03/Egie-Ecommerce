@@ -1,5 +1,5 @@
 import React from "react";
-import { FaUser, FaLock, FaBell, FaMapMarkerAlt } from "react-icons/fa";
+import { FaUser, FaLock, FaBell, FaMapMarkerAlt, FaShieldAlt, FaCheckCircle, FaFileContract } from "react-icons/fa";
 
 const SettingsSidebar = ({ user, userData, activeTab, setActiveTab }) => {
   return (
@@ -76,6 +76,45 @@ const SettingsSidebar = ({ user, userData, activeTab, setActiveTab }) => {
               >
                 <FaBell className="mr-3" />
                 <span>Notifications</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setActiveTab("privacy")}
+                className={`flex items-center w-full px-4 py-3 rounded-lg text-left transition-all duration-200 active:scale-95 ${
+                  activeTab === "privacy"
+                    ? "bg-green-50 text-green-600"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <FaShieldAlt className="mr-3" />
+                <span>Privacy & Data</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setActiveTab("consent")}
+                className={`flex items-center w-full px-4 py-3 rounded-lg text-left transition-all duration-200 active:scale-95 ${
+                  activeTab === "consent"
+                    ? "bg-green-50 text-green-600"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <FaCheckCircle className="mr-3" />
+                <span>Consent</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setActiveTab("compliance")}
+                className={`flex items-center w-full px-4 py-3 rounded-lg text-left transition-all duration-200 active:scale-95 ${
+                  activeTab === "compliance"
+                    ? "bg-green-50 text-green-600"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <FaFileContract className="mr-3" />
+                <span>Compliance</span>
               </button>
             </li>
           </ul>

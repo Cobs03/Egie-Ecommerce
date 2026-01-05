@@ -569,7 +569,7 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
                 setCardDetails({ ...cardDetails, cardNumber: formatted });
               }
             }}
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-500"
           />
           <div className="flex space-x-2">
             <input
@@ -583,7 +583,7 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
                 }
                 setCardDetails({ ...cardDetails, expiryDate: value });
               }}
-              className="w-1/2 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-1/2 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-500"
               maxLength="5"
             />
             <input
@@ -596,7 +596,7 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
                   setCardDetails({ ...cardDetails, cvv: value });
                 }
               }}
-              className="w-1/2 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-1/2 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-500"
               maxLength="4"
             />
           </div>
@@ -605,18 +605,13 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
             placeholder="Name on Card (e.g., JUAN DELA CRUZ)"
             value={cardDetails.cardName}
             onChange={(e) => setCardDetails({ ...cardDetails, cardName: e.target.value.toUpperCase() })}
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
+            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase text-gray-500"
           />
           <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800">
             🔒 Your card details are encrypted and processed securely through PayMongo
           </div>
         </div>
       )}
-
-      <div className="flex space-x-2 mb-4">
-        <FaCcVisa size={22} />
-        <RiMastercardFill size={22} />
-      </div>
 
       {/* Changed from Link to button to handle validation */}
       <button

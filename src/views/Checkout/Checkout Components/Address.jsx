@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { FaMapMarkerAlt, FaPlus, FaTimes, FaPencilAlt, FaTrashAlt, FaChevronDown, FaExclamationTriangle } from "react-icons/fa";
 import OrderService from "../../../services/OrderService";
 import PhilippineAddressService from "../../../services/PhilippineAddressService";
@@ -443,7 +444,7 @@ const Address = ({ onAddressSelect }) => {
       )}
 
       {/* Address Selection Modal */}
-      {showAddressModal && (
+      {showAddressModal && ReactDOM.createPortal(
         <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
           <div className="bg-white rounded-lg w-full max-w-md flex flex-col max-h-[80vh]">
             {/* Fixed Header */}
@@ -962,7 +963,8 @@ const Address = ({ onAddressSelect }) => {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

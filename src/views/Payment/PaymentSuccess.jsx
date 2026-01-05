@@ -5,15 +5,12 @@ import { toast } from 'sonner';
 import PayMongoService from '../../services/PayMongoEdgeFunctionService';
 import OrderService from '../../services/OrderService';
 import { supabase } from '../../lib/supabase';
-import { useScrollAnimation } from '../../hooks/useScrollAnimation';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isVerifying, setIsVerifying] = useState(true);
   const [paymentVerified, setPaymentVerified] = useState(false);
-  
-  const containerAnim = useScrollAnimation({ threshold: 0.1 });
   
   const orderId = searchParams.get('order_id');
   const sourceId = searchParams.get('source_id');
@@ -162,12 +159,7 @@ const PaymentSuccess = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div 
-        ref={containerAnim.ref}
-        className={`bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center transition-all duration-700 ${
-          containerAnim.isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-        }`}
-      >
+      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
         <div className="mb-6">
           <div className="bg-green-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
             <FaCheckCircle className="text-green-500 text-5xl" />

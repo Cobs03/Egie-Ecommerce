@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../../../lib/supabase";
 import { toast } from "sonner";
+import { FaCube } from "react-icons/fa";
 import BundleService from "../../../../services/BundleService";
 import { useCart } from "../../../../context/CartContext";
 
@@ -11,6 +12,7 @@ import Description from "./DetailsComponents/Description";
 import Reviews from "./DetailsComponents/Reviews";
 import Warranty from "./DetailsComponents/Warranty";
 import Bundles from "./DetailsComponents/Bundles";
+import ProductModal from "../ProductModal/ProductModal";
 
 const BundleDetails = () => {
   const { bundleId } = useParams();
@@ -19,6 +21,8 @@ const BundleDetails = () => {
   const [bundleProducts, setBundleProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showProductModal, setShowProductModal] = useState(false);
   const { loadCart } = useCart();
 
   useEffect(() => {
@@ -81,6 +85,124 @@ const BundleDetails = () => {
     }
   };
 
+  const handleProductClick = async (bundleProduct) => {
+    try {
+      console.log('🔍 Bundle product clicked:', bundleProduct);
+      
+      // Check if we have a product_code to search for
+      if (!bundleProduct.product_code) {
+        console.error('❌ No product_code in bundle product:', bundleProduct);
+        toast.error('Product code not found');
+        return;
+      }
+
+      // Search for product using product_code (SKU)
+      const { data: fullProduct, error: productError } = await supabase
+        .from('products')
+        .select(`
+          *,
+          brands(id, name, slug, logo_url)
+        `)
+        .eq('sku', bundleProduct.product_code)
+        .single();
+
+      if (productError) {
+        console.error('Error fetching product:', productError);
+        toast.error('Product not found in store');
+        return;
+      }
+
+      if (fullProduct) {
+        console.log('✅ Product loaded:', fullProduct);
+        setSelectedProduct(fullProduct);
+        setShowProductModal(true);
+      }
+    } catch (error) {
+      console.error('Error opening product:', error);
+      toast.error('Failed to open product');
+    }
+  };
+
+  const handleViewIn3D = async () => {
+    try {
+      toast.loading('Loading 3D Builder...');
+      console.log('🎨 Preparing bundle for 3D view...');
+
+      // Fetch full product details for all bundle products
+      const componentPromises = bundleProducts.map(async (bundleProduct) => {
+        if (!bundleProduct.product_code) return null;
+
+        const { data: product, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('sku', bundleProduct.product_code)
+          .single();
+
+        if (error || !product) {
+          console.warn(`⚠️ Could not find product: ${bundleProduct.product_name}`);
+          return null;
+        }
+
+        return product;
+      });
+
+      const products = await Promise.all(componentPromises);
+      const validProducts = products.filter(p => p !== null);
+
+      if (validProducts.length === 0) {
+        toast.dismiss();
+        toast.error('No products found for 3D view');
+        return;
+      }
+
+      // Create components object for SystemBuild
+      const componentsMap = {};
+      validProducts.forEach(product => {
+        // Determine component type from category or name
+        const category = product.category?.toLowerCase() || product.name?.toLowerCase() || '';
+        
+        let componentType = null;
+        if (category.includes('processor') || category.includes('cpu')) componentType = 'Processor';
+        else if (category.includes('motherboard')) componentType = 'Motherboard';
+        else if (category.includes('gpu') || category.includes('graphics')) componentType = 'GPU';
+        else if (category.includes('ram') || category.includes('memory')) componentType = 'RAM';
+        else if (category.includes('ssd')) componentType = 'SSD';
+        else if (category.includes('hdd') || category.includes('hard')) componentType = 'HDD';
+        else if (category.includes('psu') || category.includes('power')) componentType = 'PSU';
+        else if (category.includes('case') || category.includes('casing')) componentType = 'Case';
+        else if (category.includes('cooling') || category.includes('cooler')) componentType = 'Cooling';
+        else if (category.includes('monitor')) componentType = 'Monitor';
+        else if (category.includes('keyboard')) componentType = 'Keyboard';
+        else if (category.includes('mouse')) componentType = 'Mouse';
+        else if (category.includes('headset') || category.includes('headphone')) componentType = 'Headset';
+        else if (category.includes('speaker')) componentType = 'Speaker';
+        else if (category.includes('webcam')) componentType = 'Webcam';
+
+        if (componentType) {
+          componentsMap[componentType] = product;
+        }
+      });
+
+      console.log('✅ Loaded components for 3D:', Object.keys(componentsMap));
+      toast.dismiss();
+      toast.success(`Loaded ${Object.keys(componentsMap).length} components into 3D Builder`);
+
+      // Navigate to buildpc with bundle components
+      navigate('/buildpc', {
+        state: {
+          loadBundle: {
+            components: componentsMap,
+            bundleName: bundle.bundle_name
+          }
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error loading bundle in 3D:', error);
+      toast.dismiss();
+      toast.error('Failed to load 3D view');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -131,7 +253,9 @@ const BundleDetails = () => {
   return (
     <div className="mt-10">
       {/* Top Details Section */}
-      <TopDetailsBundle product={bundleData} onAddToCart={handleAddToCart} />
+      <div className="max-w-8xl mx-auto px-4">
+        <TopDetailsBundle product={bundleData} onAddToCart={handleAddToCart} />
+      </div>
 
       <div className="flex flex-col lg:flex-row max-w-7xl mx-auto px-4 py-4 sm:py-6 md:py-8 w-full gap-4 sm:gap-6 md:gap-10">
         {/* Details Left - 75% width on desktop */}
@@ -141,7 +265,7 @@ const BundleDetails = () => {
 
           {/* Bundle Products Section */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
                   Included Products
@@ -150,7 +274,16 @@ const BundleDetails = () => {
                   {bundleProducts.length} components in this bundle
                 </p>
               </div>
-              <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleViewIn3D}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 active:scale-95 shadow-md hover:shadow-lg"
+                >
+                  <FaCube className="text-lg" />
+                  <span className="hidden sm:inline font-semibold">View in 3D Builder</span>
+                  <span className="sm:hidden font-semibold">3D View</span>
+                </button>
+                <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full">
                 <svg
                   className="w-5 h-5 text-green-600"
                   fill="currentColor"
@@ -165,6 +298,7 @@ const BundleDetails = () => {
                 <span className="text-sm font-semibold text-green-700">
                   All Verified
                 </span>
+                </div>
               </div>
             </div>
 
@@ -172,7 +306,8 @@ const BundleDetails = () => {
               {bundleProducts.map((product, index) => (
                 <div
                   key={index}
-                  className="group border border-gray-200 rounded-xl p-3 sm:p-4 hover:shadow-lg hover:border-green-500 transition-all duration-300 bg-white"
+                  onClick={() => handleProductClick(product)}
+                  className="group border border-gray-200 rounded-xl p-3 sm:p-4 hover:shadow-lg hover:border-green-500 transition-all duration-300 bg-white cursor-pointer"
                 >
                   <div className="relative mb-4 bg-gray-50 rounded-lg overflow-hidden aspect-square">
                     <img
@@ -261,6 +396,17 @@ const BundleDetails = () => {
           <Bundles />
         </div>
       </div>
+
+      {/* Product Modal */}
+      {showProductModal && selectedProduct && (
+        <ProductModal
+          product={selectedProduct}
+          onClose={() => {
+            setShowProductModal(false);
+            setSelectedProduct(null);
+          }}
+        />
+      )}
     </div>
   );
 };

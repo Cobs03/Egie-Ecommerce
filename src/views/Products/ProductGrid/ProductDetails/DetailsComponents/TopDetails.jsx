@@ -140,7 +140,7 @@ const ProductDetails = ({ product }) => {
   );
 
   return (
-    <div ref={ref} className={`container mx-auto py-10 px-10 text-white transition-all duration-1000 ${
+    <div ref={ref} className={`py-8 text-white transition-all duration-1000 ${
       isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
     }`}>
       <div className="flex flex-col lg:flex-row gap-8 mt-2 bg-white py-8 shadow-md rounded-2xl">

@@ -200,12 +200,8 @@ const Purchases = () => {
     return (
       <div className="w-full py-6 flex justify-center items-center min-h-[400px]">
         <div className="flex flex-col items-center gap-4">
-          <img
-            src={settings?.logoUrl || "/EGIE LOGO.png"}
-            alt={settings?.brandName || "Loading"}
-            className="w-20 h-15 object-contain"
-          />
-          <div className="w-24 h-24 border-8 border-gray-200 border-t-green-500 rounded-full animate-spin" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+          <div className="text-xl text-gray-600">Loading orders...</div>
         </div>
       </div>
     );

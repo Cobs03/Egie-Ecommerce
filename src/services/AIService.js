@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabase';
+import ThirdPartyAuditService from './ThirdPartyAuditService';
+import PrivacyUtils from '../utils/PrivacyUtils';
 
 /**
  * AIService - AI Shopping Assistant Service
@@ -1090,6 +1092,19 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
    */
   async chat(messages, userPreferences = null, options = {}) {
     try {
+      // Verify user consent for AI assistant if userId provided
+      const userId = options.userId || null;
+      if (userId) {
+        const hasConsent = await this.verifyAIConsent(userId);
+        if (!hasConsent) {
+          return {
+            success: false,
+            error: 'AI assistant consent required',
+            message: "To use the AI Shopping Assistant, please enable 'AI Assistant' consent in your privacy settings."
+          };
+        }
+      }
+
       // Get the last user message
       const lastUserMessage = messages.filter(m => m.sender === 'user').pop();
       
@@ -1235,6 +1250,24 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
 
       const data = await response.json();
       const aiMessage = data.choices[0].message.content;
+
+      // Log third-party data sharing (Groq AI interaction)
+      if (userId) {
+        await ThirdPartyAuditService.logGroqAIInteraction(
+          userId,
+          'chat',
+          {
+            messageCount: messages.length,
+            intent: intent.intentType,
+            category: intent.category,
+            tokensUsed: data.usage?.total_tokens || 0
+          },
+          {
+            userMessage: PrivacyUtils.sanitizeLogData(lastUserMessage.text),
+            preferences: userPreferences ? Object.keys(userPreferences) : []
+          }
+        );
+      }
 
       return {
         success: true,
@@ -1417,6 +1450,32 @@ Calculate and show the total price at the end.`;
     });
 
     return recommendedProducts;
+  }
+
+  /**
+   * Verify user consent for AI assistant
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Whether user has consented
+   */
+  async verifyAIConsent(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('user_consents')
+        .select('ai_assistant')
+        .eq('user_id', userId)
+        .single();
+
+      if (error || !data) {
+        // If no consent record, check if it's a new optional feature
+        console.warn('No AI consent record found for user:', userId);
+        return true; // Fail open for backward compatibility
+      }
+
+      return data.ai_assistant === true;
+    } catch (error) {
+      console.error('Error verifying AI consent:', error);
+      return true; // Fail open for backward compatibility
+    }
   }
 }
 

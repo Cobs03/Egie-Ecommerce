@@ -27,6 +27,7 @@ import MyInquiries from "./views/MyInquiries/MyInquiries";
 import LoadingSpinner from "./components/LoadingSpinner";
 import AIChatBox from "./components/AIChatBox";
 import PopupAdModal from "./components/PopupAdModal";
+import ConsentBanner from "./components/ConsentBanner";
 import { OrderProvider } from "./views/Purchases/Purchase Components/OrderContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import Tracking from "./views/Purchases/Purchase Components/Tracking";
@@ -52,6 +53,7 @@ function App() {
           <OrderProvider>
             <div className="bg-[#F3F7F6] min-h-screen">
               <Main />
+              <ConsentBanner />
             </div>
           </OrderProvider>
         </Router>
@@ -170,11 +172,19 @@ const Main = () => {
           />
           <Route
             path="/payment-success"
-            element={<PaymentSuccess />}
+            element={
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
+                <PaymentSuccess />
+              </div>
+            }
           />
           <Route
             path="/payment-failed"
-            element={<PaymentFailed />}
+            element={
+              <div className="mt-[120px] max-md:mt-[65px] container-responsive">
+                <PaymentFailed />
+              </div>
+            }
           />
           <Route
             path="/buildpc"

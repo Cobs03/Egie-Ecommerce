@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { ShoppingCart } from "lucide-react";
 import ReviewService from "../../../services/ReviewService";
 import StarRating from "../../../components/StarRating";
+import { SectionLoader } from "../../../components/ui/LoadingIndicator";
 
 import {
   Pagination,
@@ -166,9 +167,7 @@ const ProductGrid = ({ selectedCategory, filters }) => {
   if (loading) {
     return (
       <div className="flex flex-col w-full">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-        </div>
+        <SectionLoader message="Loading products..." />
       </div>
     );
   }

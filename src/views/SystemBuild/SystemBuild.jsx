@@ -15,6 +15,7 @@ import CartService from "@/services/CartService";
 import BuildService from "@/services/BuildService";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
+import { Spinner } from "@/components/ui/LoadingIndicator";
 
 const SystemBuild = () => {
   const location = useLocation();
@@ -70,7 +71,7 @@ const SystemBuild = () => {
   useEffect(() => {
     const loadDraft = async () => {
       // Don't load draft if coming from MyBuilds or already loaded
-      if (location.state?.loadBuild || hasLoadedDraft.current) {
+      if (location.state?.loadBuild || location.state?.clearDraft || hasLoadedDraft.current) {
         return;
       }
 
@@ -135,6 +136,39 @@ const SystemBuild = () => {
       toast.success(`Loaded "${loadBuild.build_name}"`, {
         description: 'You can now edit or add to cart'
       });
+      
+      // Clear the state to prevent reloading on refresh
+      window.history.replaceState({}, document.title);
+    } else if (location.state?.loadBundle) {
+      // Load bundle components from BundleDetails
+      const { loadBundle } = location.state;
+      console.log('📦 Loading bundle:', loadBundle.bundleName);
+      console.log('📦 Components:', loadBundle.components);
+      
+      // Set the bundle components
+      setSelectedProducts(loadBundle.components);
+      
+      // Clear build tracking (this is a new build from bundle template)
+      setLoadedBuildId(null);
+      setLoadedBuildName(null);
+      setBuildName('');
+      setIsPublic(false);
+      
+      // Show success message
+      toast.success(`Loaded bundle: "${loadBundle.bundleName}"`, {
+        description: `${Object.keys(loadBundle.components).length} components loaded`
+      });
+      
+      // Clear the state to prevent reloading on refresh
+      window.history.replaceState({}, document.title);
+    } else if (location.state?.clearDraft) {
+      // Clear everything when creating a new build
+      console.log('🆕 Starting fresh build - clearing all components');
+      setSelectedProducts({});
+      setLoadedBuildId(null);
+      setLoadedBuildName(null);
+      setBuildName('');
+      setIsPublic(false);
       
       // Clear the state to prevent reloading on refresh
       window.history.replaceState({}, document.title);
@@ -1046,7 +1080,7 @@ const SystemBuild = () => {
               >
                 {isSaving ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <Spinner size="sm" color="white" />
                     <span>{saveMode === 'update' ? 'Updating...' : 'Saving...'}</span>
                   </>
                 ) : (

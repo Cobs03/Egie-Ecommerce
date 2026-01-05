@@ -34,26 +34,7 @@ const TopDetailsBundle = ({ product }) => {
     "/images/bundle.png",
   ];
 
-  const mouseImages = [
-    "/images/products/mouse1.png",
-    "/images/products/mouse2.png",
-    "/images/products/mouse3.png",
-    "/images/products/mouse4.png",
-  ];
 
-  const keyboardImages = [
-    "/images/products/keyboard1.png",
-    "/images/products/keyboard2.png",
-    "/images/products/keyboard3.png",
-    "/images/products/keyboard4.png",
-  ];
-
-  const cpuImages = [
-    "/images/products/cpu1.png",
-    "/images/products/cpu2.png",
-    "/images/products/cpu3.png",
-    "/images/products/cpu4.png",
-  ];
 
   // Get current images based on selected filter
   const getCurrentImages = () => {
@@ -177,9 +158,12 @@ const TopDetailsBundle = ({ product }) => {
   const thumbnailBgColor = getThumbnailBackgroundColor();
 
   return (
-    <div ref={ref} className={`max-w-7xl mx-auto px-4 py-8 w-full lg:w-[90%] transition-all duration-1000 ${
-      isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-    }`}>
+    <div
+      ref={ref}
+      className={`max-w-7xl mx-auto px-4 py-8 w-full lg:w-[90%] transition-all duration-1000 ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+      }`}
+    >
       <div className="flex flex-col lg:flex-row gap-8 bg-white rounded-lg shadow-md p-6">
         {/* Image Slider */}
         <div className="w-full lg:w-1/2">
@@ -267,32 +251,6 @@ const TopDetailsBundle = ({ product }) => {
             </span>
           </div>
 
-          {/* Products in the Bundle */}
-          <div className="mb-6">
-            <h3 className="font-medium mb-3">Products in the Bundle</h3>
-            <div className="flex gap-2 flex-wrap">
-              {filterOptions.map((option) => (
-                <button
-                  key={option}
-                  onClick={() => setSelectedFilter(option)}
-                  className={`border px-4 py-2 rounded text-sm transition-all cursor-pointer active:scale-95 ${
-                    selectedFilter === option
-                      ? "border-green-500 bg-green-500 text-white"
-                      : "border-gray-300 text-gray-700 hover:border-green-500"
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
-              <button
-                onClick={handleViewSelectedProduct}
-                className="flex gap-1 border border-gray-300 px-4 py-2 rounded text-sm transition-all cursor-pointer hover:bg-gray-100 active:scale-95"
-              >
-                View Selected Product <FaArrowRight className="h-full" />
-              </button>
-            </div>
-          </div>
-
           {/* Quantity */}
           <div className="mb-6">
             <h3 className="font-medium mb-3">Quantity</h3>
@@ -338,7 +296,7 @@ const TopDetailsBundle = ({ product }) => {
 
             <Link
               to="/cart"
-              className="flex-1 bg-green-600 text-white font-medium py-3 rounded hover:bg-green-700 transition-all text-center cursor-pointer active:scale-95 active:shadow-inner"
+              className="flex-1 bg-blue-500 text-white font-medium py-3 rounded hover:bg-green-700 transition-all text-center cursor-pointer active:scale-95 active:shadow-inner"
             >
               Buy Now
             </Link>

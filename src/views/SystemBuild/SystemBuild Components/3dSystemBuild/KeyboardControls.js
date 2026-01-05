@@ -67,11 +67,11 @@ export const setupKeyboardControls = (camera, controls, mini) => {
         console.log('🔄 Camera reset (R)');
         break;
       
-      // Space to toggle auto-rotate
-      case ' ':
+      // G to toggle auto-rotate
+      case 'g':
         event.preventDefault();
         controls.autoRotate = !controls.autoRotate;
-        console.log('🔁 Auto-rotate toggled (Space):', controls.autoRotate);
+        console.log('🔁 Auto-rotate toggled (G):', controls.autoRotate);
         break;
     }
     controls.update();
