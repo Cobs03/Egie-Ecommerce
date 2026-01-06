@@ -10,6 +10,7 @@ import CompatibilityService from "../services/CompatibilityService";
 import ChatHistoryService from "../services/ChatHistoryService";
 import BundleService from "../services/BundleService";
 import { useCart } from "../context/CartContext";
+import { useWebsiteSettings } from "../hooks/useWebsiteSettings";
 import { supabase } from "../lib/supabase";
 import Fuse from "fuse.js"; // Fuzzy search for typo-tolerant product matching
 
@@ -460,13 +461,17 @@ const formatCurrency = (value) => {
 };
 
 const AIChatBox = () => {
+  const { settings } = useWebsiteSettings();
+  const aiName = settings?.aiName || 'AI Assistant';
+  const aiLogoUrl = settings?.aiLogoUrl || '/Logo/Ai.png';
+  
   const [isOpen, setIsOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false); // For exit animation
   const [isExpanded, setIsExpanded] = useState(false); // For fullscreen mode
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: "Hi! I'm your AI shopping assistant 🤖\n\nI can help you with:\n✅ Find products & compare prices\n✅ Check stock & warranties\n✅ Answer shipping & return questions\n✅ Track your orders\n✅ Build PC configurations\n\nWhat would you like help with today?",
+      text: `Hi! I'm your AI shopping assistant 🤖\n\nI can help you with:\n✅ Find products & compare prices\n✅ Check stock & warranties\n✅ Answer shipping & return questions\n✅ Track your orders\n✅ Build PC configurations\n\nWhat would you like help with today?`,
       sender: "ai",
       timestamp: new Date(),
       showQuickActions: true // 🆕 Flag to show quick action buttons
@@ -4255,8 +4260,8 @@ Rules:
                   aria-label="AI Chatbox"
                 >
                   <img
-                    src="/Logo/Ai.png"
-                    alt="AI Assistant"
+                    src={aiLogoUrl}
+                    alt={aiName}
                     className="w-10 h-10 [@media(min-width:761px)]:w-12 [@media(min-width:761px)]:h-12 rounded-full object-cover animate-spin-smooth"
                   />
                 </button>
@@ -4277,11 +4282,15 @@ Rules:
           {/* Header */}
           <div className="bg-green-500 text-white p-3 md:p-4 rounded-t-lg flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center animate-spin-slow">
-                <Bot size={18} className="text-[#39FC1D]" />
+              <div className="w-8 h-8 bg-white rounded-full overflow-hidden flex items-center justify-center">
+                <img 
+                  src={aiLogoUrl} 
+                  alt={aiName}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
-                <h3 className="font-semibold text-base">AI Assistant</h3>
+                <h3 className="font-semibold text-base">{aiName}</h3>
                 <p className="text-xs opacity-90">Online</p>
               </div>
             </div>

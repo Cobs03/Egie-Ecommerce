@@ -45,6 +45,8 @@ export const useWebsiteSettings = () => {
           footerText: data.footer_text || 'All rights reserved.',
           termsAndConditions: data.terms_and_conditions || null,
           privacyPolicy: data.privacy_policy || null,
+          aiName: data.ai_name || 'AI Assistant',
+          aiLogoUrl: data.ai_logo_url || '/Logo/Ai.png',
         });
         return; // Success - exit here
       }
