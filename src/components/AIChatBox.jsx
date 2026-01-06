@@ -461,7 +461,7 @@ const formatCurrency = (value) => {
 };
 
 const AIChatBox = () => {
-  const { settings } = useWebsiteSettings();
+  const { settings, loading: settingsLoading } = useWebsiteSettings();
   const aiName = settings?.aiName || 'AI Assistant';
   const aiLogoUrl = settings?.aiLogoUrl || '/Logo/Ai.png';
   
@@ -471,7 +471,7 @@ const AIChatBox = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: `Hi! I'm your AI shopping assistant 🤖\n\nI can help you with:\n✅ Find products & compare prices\n✅ Check stock & warranties\n✅ Answer shipping & return questions\n✅ Track your orders\n✅ Build PC configurations\n\nWhat would you like help with today?`,
+      text: `Hi! I'm ${aiName}, your shopping assistant! 👋\n\nI'm here to help you with:\n✅ Finding and comparing products\n✅ Checking stock availability & warranties\n✅ Answering shipping & return questions\n✅ Tracking your orders\n✅ Building custom PC configurations\n\nHow may I assist you today?`,
       sender: "ai",
       timestamp: new Date(),
       showQuickActions: true // 🆕 Flag to show quick action buttons
@@ -509,6 +509,12 @@ const AIChatBox = () => {
   const fileInputRef = useRef(null);
   const recognitionRef = useRef(null);
 
+  // ===== API OPTIMIZATION FEATURES ===== 🚀
+  const [responseCache, setResponseCache] = useState(new Map()); // Cache AI responses
+  const [rateLimitedUntil, setRateLimitedUntil] = useState(null); // Track rate limit timeout
+  const debounceTimerRef = useRef(null); // Debounce timer for API calls
+  const retryCountRef = useRef(0); // Track retry attempts
+
   // Rotating help messages for speech bubble
   const helpMessages = [
     "Need some help? 💬",
@@ -523,6 +529,25 @@ const AIChatBox = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { loadCart, addToCart } = useCart(); // Get cart functions from CartContext
+
+  // Update initial welcome message when AI name loads from settings
+  useEffect(() => {
+    if (aiName && aiName !== 'AI Assistant') {
+      setMessages(prevMessages => {
+        // Only update the first message if it's still the default
+        if (prevMessages.length === 1 && prevMessages[0].id === 1) {
+          return [{
+            id: 1,
+            text: `Hi! I'm ${aiName}, your shopping assistant! 👋\n\nI'm here to help you with:\n✅ Finding and comparing products\n✅ Checking stock availability & warranties\n✅ Answering shipping & return questions\n✅ Tracking your orders\n✅ Building custom PC configurations\n\nHow may I assist you today?`,
+            sender: "ai",
+            timestamp: new Date(),
+            showQuickActions: true
+          }];
+        }
+        return prevMessages;
+      });
+    }
+  }, [aiName]);
 
   // Hide chatbox on sign-in/sign-up pages
   const isAuthPage = location.pathname === '/signin' || location.pathname === '/signup' || 
@@ -1619,7 +1644,7 @@ IMPORTANT:
       // Show bundle options
       const bundleOptionsMsg = {
         id: Date.now(),
-        text: `🎁 **Pre-Configured PC Bundles**\n\nI have ${bundles.length} complete build package${bundles.length > 1 ? 's' : ''} ready for you! Each bundle includes all compatible components.\n\nClick "View Bundle" to see the details:`,
+        text: `🎁 **Pre-Configured PC Bundles**\n\nGreat choice! I found ${bundles.length} expertly curated PC bundle${bundles.length > 1 ? 's' : ''} for you. Each bundle contains carefully selected, compatible components that work perfectly together - saving you time and ensuring optimal performance!\n\n✨ **Why choose a bundle?**\n• ✅ Guaranteed compatibility\n• 💰 Better value than buying separately\n• ⚡ Ready to order immediately\n• 🛡️ All components tested together\n\nTake a look at these options:`,
         sender: "ai",
         timestamp: new Date(),
       };
@@ -1635,7 +1660,7 @@ IMPORTANT:
 
         const bundleMsg = {
           id: Date.now() + index + 1,
-          text: `📦 **${bundleName}**\n${bundleDesc}\n\n💰 Total Price: ₱${parseFloat(bundlePrice).toLocaleString()}\n📊 ${productCount} Products Included`,
+          text: `📦 **${bundleName}**\n${bundleDesc}\n\n💰 **Bundle Price:** ₱${parseFloat(bundlePrice).toLocaleString()}\n📦 **Includes:** ${productCount} carefully selected component${productCount > 1 ? 's' : ''}\n\n🎯 Click "View Details" to see what's included or "Add Entire Bundle" to add everything to your cart!`,
           sender: "ai",
           timestamp: new Date(),
           bundleId: bundle.id,
@@ -1689,7 +1714,7 @@ IMPORTANT:
 
       const bundleDetailsMsg = {
         id: Date.now(),
-        text: `📦 **${bundleName}** Bundle Details\n\n${bundleDesc}\n\n**Included Products:**\n${productsList}\n\n💰 **Total Price:** ₱${parseFloat(bundlePrice).toLocaleString()}`,
+        text: `📦 **${bundleName}** - Complete Bundle Breakdown\n\n${bundleDesc}\n\n**🔧 What's Included in This Bundle:**\n${productsList}\n\n💰 **Total Bundle Price:** ₱${parseFloat(bundlePrice).toLocaleString()}\n\n✨ **Why This Bundle?**\nAll components are handpicked and tested for compatibility. You're getting everything you need in one convenient package!\n\n👉 You can add individual items to your cart or grab the entire bundle at once!`,
         sender: "ai",
         timestamp: new Date(),
         products: bundle.products || [],
@@ -3114,9 +3139,34 @@ Your response:`;
           ? `at least ₱${minBudget.toLocaleString()}`
           : 'your budget';
     
+    // Check if we're in PC building context
+    const isPCBuildContext = context.buildingPC || /build.*pc|gaming\s*pc|custom\s*pc/i.test(userInput);
+    
+    let responseText = '';
+    if (isPCBuildContext && maxBudget) {
+      // Detailed PC build response
+      responseText = `Great! With a budget of ${budgetLabel}, I can help you build a solid gaming PC. 
+
+For a gaming PC in this price range, you'll need these essential components:
+
+🖥️ PROCESSOR (CPU): The brain of your PC - handles all calculations and processes
+💾 GRAPHICS CARD (GPU): Powers your games - most important for gaming performance
+🔧 MOTHERBOARD: Connects all components together
+💿 MEMORY (RAM): Temporary storage for running programs - 8GB minimum, 16GB recommended
+💾 STORAGE (SSD/HDD): Where you store games and files - SSD is much faster
+⚡ POWER SUPPLY (PSU): Provides power to all components
+📦 CASE: Houses everything and keeps it cool
+❄️ COOLING: Keeps your components from overheating
+
+Let me show you available components from our store that fit your budget:`;
+    } else {
+      // Regular budget response
+      responseText = `Perfect! Here are ${filteredProducts.length} option${filteredProducts.length > 1 ? 's' : ''} ${budgetLabel}:`;
+    }
+    
     const budgetMsg = {
       id: Date.now(),
-      text: `Perfect! Here are ${filteredProducts.length} option${filteredProducts.length > 1 ? 's' : ''} ${budgetLabel}:`,
+      text: responseText,
       sender: 'ai',
       timestamp: new Date(),
       products: filteredProducts.slice(0, 10),
@@ -3945,6 +3995,19 @@ Rules:
   const handleSendMessage = async () => {
     if (!inputMessage.trim() && !uploadedImage) return;
 
+    // ===== CHECK RATE LIMIT =====
+    if (rateLimitedUntil && new Date() < rateLimitedUntil) {
+      const waitSeconds = Math.ceil((rateLimitedUntil - new Date()) / 1000);
+      const rateLimitMsg = {
+        id: Date.now(),
+        text: `⏳ I'm currently experiencing high demand. Please wait ${waitSeconds} seconds before trying again. Thank you for your patience!`,
+        sender: "ai",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, rateLimitMsg]);
+      return;
+    }
+
     // If there's an uploaded image, handle image search with optional message
     if (uploadedImage) {
       const userMessage = {
@@ -4033,66 +4096,152 @@ Rules:
     // ===== NO COMMAND OR SEARCH DETECTED - CALL AI (FALLBACK) =====
     setIsTyping(true);
 
-    // Call real AI service
-    try {
-      const response = await AIService.chat(
-        updatedMessages,
-        userPreferences // Pass questionnaire data if available
-      );
-
-      // Extract products mentioned in AI response
-      const products = await AIService.fetchProducts();
-      const mentioned = AIService.extractRecommendedProducts(response.message, products);
-
-      // Debug: Log product extraction
-      console.log('🤖 AI Response:', response.message.substring(0, 200) + '...');
-      if (mentioned.length > 0) {
-        console.log('📋 All extracted products:', mentioned.map(p => p.name));
-        setRecommendedProducts(mentioned.slice(0, 5)); // Show top 5 products
-      } else {
-      }
-
-      // Detect if this is a general category question (show "View More") vs personalized recommendation (no "View More")
-      const isGeneralQuestion = !userPreferences && /what|show|available|list|tell me about/i.test(inputMessage);
-
-      // Detect category from user message for "View More" link
-      let categoryForViewMore = null;
-      if (isGeneralQuestion) {
-        const lowerMessage = inputMessage.toLowerCase();
-        if (lowerMessage.includes('ram') || lowerMessage.includes('memory')) categoryForViewMore = 'ram';
-        else if (lowerMessage.includes('processor') || lowerMessage.includes('cpu')) categoryForViewMore = 'processor';
-        else if (lowerMessage.includes('gpu') || lowerMessage.includes('graphics card')) categoryForViewMore = 'gpu';
-        else if (lowerMessage.includes('motherboard')) categoryForViewMore = 'motherboard';
-        else if (lowerMessage.includes('storage') || lowerMessage.includes('ssd') || lowerMessage.includes('hdd')) categoryForViewMore = 'storage';
-        else if (lowerMessage.includes('case') || lowerMessage.includes('casing')) categoryForViewMore = 'case';
-        else if (lowerMessage.includes('power supply') || lowerMessage.includes('psu')) categoryForViewMore = 'power-supply';
-        else if (lowerMessage.includes('cooling') || lowerMessage.includes('cooler')) categoryForViewMore = 'cooling';
-      }
-
+    // ===== CHECK CACHE FIRST =====
+    const cacheKey = userInput.trim().toLowerCase();
+    const cached = responseCache.get(cacheKey);
+    
+    if (cached && (Date.now() - cached.timestamp < 300000)) { // Cache valid for 5 minutes
+      console.log('💾 Using cached response');
       const aiResponse = {
         id: messages.length + 2,
-        text: response.message,
+        text: cached.text,
         sender: "ai",
         timestamp: new Date(),
-        products: mentioned.length > 0 ? mentioned.slice(0, 5) : null, // Show up to 5 products
-        isGeneralQuestion, // Flag to show "View More" button
-        categoryForViewMore, // Category to navigate to
+        products: cached.products,
+        isGeneralQuestion: cached.isGeneralQuestion,
+        categoryForViewMore: cached.categoryForViewMore,
       };
-
       setMessages((prev) => [...prev, aiResponse]);
-      saveMessageToHistory(aiResponse); // Save to database
-    } catch (error) {
-      const errorResponse = {
-        id: messages.length + 2,
-        text: "I apologize, but I'm experiencing technical difficulties. Please try again or contact our support team.",
-        sender: "ai",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorResponse]);
-      saveMessageToHistory(errorResponse); // Save error to database
-    } finally {
+      saveMessageToHistory(aiResponse);
       setIsTyping(false);
+      return;
     }
+
+    // Call real AI service with retry logic
+    let retryAttempts = 0;
+    const maxRetries = 2;
+    
+    while (retryAttempts <= maxRetries) {
+      try {
+        const response = await AIService.chat(
+          updatedMessages,
+          userPreferences // Pass questionnaire data if available
+        );
+
+        // Extract products mentioned in AI response
+        const products = await AIService.fetchProducts();
+        const mentioned = AIService.extractRecommendedProducts(response.message, products);
+
+        // Debug: Log product extraction
+        console.log('🤖 AI Response:', response.message.substring(0, 200) + '...');
+        if (mentioned.length > 0) {
+          console.log('📋 All extracted products:', mentioned.map(p => p.name));
+          setRecommendedProducts(mentioned.slice(0, 5)); // Show top 5 products
+        }
+
+        // Detect if this is a general category question (show "View More") vs personalized recommendation (no "View More")
+        const isGeneralQuestion = !userPreferences && /what|show|available|list|tell me about/i.test(inputMessage);
+
+        // Detect category from user message for "View More" link
+        let categoryForViewMore = null;
+        if (isGeneralQuestion) {
+          const lowerMessage = inputMessage.toLowerCase();
+          if (lowerMessage.includes('ram') || lowerMessage.includes('memory')) categoryForViewMore = 'ram';
+          else if (lowerMessage.includes('processor') || lowerMessage.includes('cpu')) categoryForViewMore = 'processor';
+          else if (lowerMessage.includes('gpu') || lowerMessage.includes('graphics card')) categoryForViewMore = 'gpu';
+          else if (lowerMessage.includes('motherboard')) categoryForViewMore = 'motherboard';
+          else if (lowerMessage.includes('storage') || lowerMessage.includes('ssd') || lowerMessage.includes('hdd')) categoryForViewMore = 'storage';
+          else if (lowerMessage.includes('case') || lowerMessage.includes('casing')) categoryForViewMore = 'case';
+          else if (lowerMessage.includes('power supply') || lowerMessage.includes('psu')) categoryForViewMore = 'power-supply';
+          else if (lowerMessage.includes('cooling') || lowerMessage.includes('cooler')) categoryForViewMore = 'cooling';
+        }
+
+        // ===== CACHE THE RESPONSE =====
+        setResponseCache(prev => {
+          const newCache = new Map(prev);
+          newCache.set(cacheKey, {
+            text: response.message,
+            products: mentioned.length > 0 ? mentioned.slice(0, 5) : null,
+            isGeneralQuestion,
+            categoryForViewMore,
+            timestamp: Date.now()
+          });
+          // Limit cache size to 50 entries
+          if (newCache.size > 50) {
+            const firstKey = newCache.keys().next().value;
+            newCache.delete(firstKey);
+          }
+          return newCache;
+        });
+
+        const aiResponse = {
+          id: messages.length + 2,
+          text: response.message,
+          sender: "ai",
+          timestamp: new Date(),
+          products: mentioned.length > 0 ? mentioned.slice(0, 5) : null, // Show up to 5 products
+          isGeneralQuestion, // Flag to show "View More" button
+          categoryForViewMore, // Category to navigate to
+        };
+
+        setMessages((prev) => [...prev, aiResponse]);
+        saveMessageToHistory(aiResponse); // Save to database
+        retryCountRef.current = 0; // Reset retry count on success
+        break; // Exit retry loop on success
+        
+      } catch (error) {
+        console.error('AI Error:', error);
+        
+        // Detect rate limit error (429)
+        if (error.message && error.message.includes('429')) {
+          console.warn('⏳ Rate limited by Groq API');
+          
+          // Set rate limit timeout (60 seconds)
+          const limitUntil = new Date(Date.now() + 60000);
+          setRateLimitedUntil(limitUntil);
+          
+          const rateLimitError = {
+            id: messages.length + 2,
+            text: `⏳ I'm experiencing high demand right now. Please wait about 60 seconds and try again.\n\nIn the meantime, you can:\n• Browse our products directly\n• Check out our PC bundles\n• View compatible components\n\nThank you for your patience! 😊`,
+            sender: "ai",
+            timestamp: new Date(),
+          };
+          
+          setMessages((prev) => [...prev, rateLimitError]);
+          saveMessageToHistory(rateLimitError);
+          break; // Don't retry on rate limit
+        }
+        
+        // Retry logic for other errors
+        retryAttempts++;
+        if (retryAttempts <= maxRetries) {
+          console.log(`🔄 Retrying... Attempt ${retryAttempts}/${maxRetries}`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryAttempts)); // Exponential backoff
+          continue;
+        }
+        
+        // Max retries reached - show error
+        let errorMessage = "I apologize, but I'm experiencing technical difficulties. Please try again or contact our support team for assistance.";
+        
+        if (error.message && error.message.includes('timeout')) {
+          errorMessage = "The request took too long to process. Please try again with a simpler question.";
+        } else if (error.message && error.message.includes('network')) {
+          errorMessage = "I'm having trouble connecting. Please check your internet connection and try again.";
+        }
+        
+        const errorResponse = {
+          id: messages.length + 2,
+          text: errorMessage,
+          sender: "ai",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorResponse]);
+        saveMessageToHistory(errorResponse);
+        break; // Exit retry loop
+      }
+    }
+    
+    setIsTyping(false);
   };
 
   const handleKeyDown = (e) => {
@@ -4210,6 +4359,11 @@ Rules:
     return null;
   }
 
+  // Don't render until settings are loaded to prevent showing fallback logo
+  if (settingsLoading) {
+    return null;
+  }
+
   return (
     <>
       <style>{`
@@ -4225,22 +4379,9 @@ Rules:
           }
         }
         
-        @keyframes spin-continuous {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        
         .animate-spin-smooth {
           animation: shake-bottom 2s ease-in-out infinite;
           transform-origin: bottom center;
-        }
-        
-        .animate-spin-continuous {
-          animation: spin-continuous 3s linear infinite;
         }
       `}</style>
       
@@ -4299,7 +4440,7 @@ Rules:
                 <img 
                   src={aiLogoUrl} 
                   alt={aiName}
-                  className="w-full h-full object-cover animate-spin-continuous"
+                  className="w-full h-full object-cover"
                 />
               </div>
               <div>
@@ -4414,32 +4555,32 @@ Rules:
                 {message.showQuickActions && message.sender === "ai" && (
                   <div className="mt-3 flex flex-wrap gap-2 justify-start px-2">
                     <button
-                      onClick={() => handleQuickQuestion("What's your return policy?")}
-                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium py-2 px-3 rounded-lg border border-blue-200 transition-colors flex items-center gap-1"
-                    >
-                      <span>📦</span>
-                      <span>Return Policy</span>
-                    </button>
-                    <button
-                      onClick={() => handleQuickQuestion("How long does shipping take?")}
-                      className="bg-green-50 hover:bg-green-100 text-green-700 text-xs font-medium py-2 px-3 rounded-lg border border-green-200 transition-colors flex items-center gap-1"
-                    >
-                      <span>🚚</span>
-                      <span>Shipping</span>
-                    </button>
-                    <button
-                      onClick={() => handleQuickQuestion("Show me gaming laptops")}
-                      className="bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-medium py-2 px-3 rounded-lg border border-purple-200 transition-colors flex items-center gap-1"
-                    >
-                      <span>💻</span>
-                      <span>Gaming Laptops</span>
-                    </button>
-                    <button
                       onClick={() => handleQuickQuestion("Track my order")}
                       className="bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-medium py-2 px-3 rounded-lg border border-orange-200 transition-colors flex items-center gap-1"
                     >
                       <span>📍</span>
                       <span>Track Order</span>
+                    </button>
+                    <button
+                      onClick={() => handleQuickQuestion("What's your return policy?")}
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium py-2 px-3 rounded-lg border border-blue-200 transition-colors flex items-center gap-1"
+                    >
+                      <span>📦</span>
+                      <span>Return/Refund</span>
+                    </button>
+                    <button
+                      onClick={() => handleQuickQuestion("Help me build a PC")}
+                      className="bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-medium py-2 px-3 rounded-lg border border-purple-200 transition-colors flex items-center gap-1"
+                    >
+                      <span>💻</span>
+                      <span>Build a PC</span>
+                    </button>
+                    <button
+                      onClick={() => handleQuickQuestion("Show me special deals and promotions")}
+                      className="bg-green-50 hover:bg-green-100 text-green-700 text-xs font-medium py-2 px-3 rounded-lg border border-green-200 transition-colors flex items-center gap-1"
+                    >
+                      <span>🎁</span>
+                      <span>View Deals</span>
                     </button>
                   </div>
                 )}
