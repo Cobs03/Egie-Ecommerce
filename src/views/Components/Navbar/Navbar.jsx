@@ -46,7 +46,7 @@ const Navbar = ({ isAuth }) => {
   const { settings } = useWebsiteSettings();
   
   // Profile state for avatar
-  const [userAvatar, setUserAvatar] = useState("https://randomuser.me/api/portraits/men/32.jpg");
+  const [userAvatar, setUserAvatar] = useState(null);
   const [userFullName, setUserFullName] = useState("");
 
   // Scroll hide/show state

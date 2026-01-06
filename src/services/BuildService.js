@@ -221,6 +221,12 @@ class BuildService {
    */
   async likeBuild(buildId) {
     try {
+      // TODO: Create build_likes table in database first
+      // See: ECOMMERCE_SOFTWARE/Egie-Ecommerce/database/CREATE_BUILD_LIKES_TABLE.sql
+      console.warn('build_likes table not yet created - like functionality disabled');
+      return;
+      
+      /* Commented out until build_likes table is created
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -237,6 +243,7 @@ class BuildService {
         ]);
 
       if (error) throw error;
+      */
 
     } catch (error) {
       throw error;
@@ -250,6 +257,11 @@ class BuildService {
    */
   async unlikeBuild(buildId) {
     try {
+      // TODO: Create build_likes table in database first
+      console.warn('build_likes table not yet created - unlike functionality disabled');
+      return;
+      
+      /* Commented out until build_likes table is created
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -263,6 +275,7 @@ class BuildService {
         .eq('user_id', user.id);
 
       if (error) throw error;
+      */
 
     } catch (error) {
       throw error;
@@ -276,6 +289,11 @@ class BuildService {
    */
   async hasLiked(buildId) {
     try {
+      // TODO: Create build_likes table in database first
+      // Returning false until table is created
+      return false;
+      
+      /* Commented out until build_likes table is created
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -292,6 +310,7 @@ class BuildService {
       if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "not found"
 
       return !!data;
+      */
     } catch (error) {
       return false;
     }
