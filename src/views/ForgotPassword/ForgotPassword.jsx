@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { useScrollAnimation } from '@/hooks/useScrollAnimation';
+import { useWebsiteSettings } from '../../hooks/useWebsiteSettings';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const { settings } = useWebsiteSettings();
+
+  // Scroll animations
+  const formAnim = useScrollAnimation({ threshold: 0.1 });
+  const imageAnim = useScrollAnimation({ threshold: 0.1 });
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
@@ -46,12 +53,19 @@ const ForgotPassword = () => {
   return (
     <div className="flex flex-col md:flex-row h-screen text-[#F3F7F6]">
       {/* Left Side with Form */}
-      <div className="w-full md:w-1/2 bg-black p-4 md:p-10 shadow-lg flex flex-col justify-center h-full overflow-y-auto">
+      <div 
+        ref={formAnim.ref}
+        className={`w-full md:w-1/2 bg-black p-4 md:p-10 shadow-lg flex flex-col justify-center h-full overflow-y-auto transition-all duration-700 ${
+          formAnim.isVisible
+            ? "opacity-100 translate-x-0"
+            : "opacity-0 -translate-x-8"
+        }`}
+      >
         <div className="flex items-center mb-3 justify-center">
           <img
             className="w-24 h-16 md:w-28 md:h-20 object-contain"
-            src="https://i.ibb.co/Cpx2BBt5"
-            alt="Logo"
+            src={settings?.logoUrl || "https://i.ibb.co/Cpx2BBt5"}
+            alt={settings?.brandName || "Logo"}
           />
         </div>
 
@@ -125,10 +139,17 @@ const ForgotPassword = () => {
       </div>
 
       {/* Right Side with Illustration - Only visible on desktop */}
-      <div className="hidden md:flex md:w-1/2 bg-gradient-to-r from-blue-200 to-purple-200 items-center justify-center">
+      <div 
+        ref={imageAnim.ref}
+        className={`hidden md:flex md:w-1/2 bg-gradient-to-r from-blue-200 to-purple-200 items-center justify-center transition-all duration-700 ${
+          imageAnim.isVisible
+            ? "opacity-100 translate-x-0"
+            : "opacity-0 translate-x-8"
+        }`}
+      >
         <img
           className="w-full h-full object-cover"
-          src="https://i.ibb.co/yF04zrC9"
+          src={settings?.authBackgroundUrl || "https://i.ibb.co/yF04zrC9"}
           alt="Computer Illustration"
         />
       </div>

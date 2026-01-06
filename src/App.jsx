@@ -66,9 +66,12 @@ function App() {
 const Main = () => {
   const location = useLocation();
 
-  // Detect if current route is sign-in/sign-up page
+  // Detect if current route is sign-in/sign-up page or password reset pages
   const isAuthPage =
-    location.pathname === "/auth" || location.pathname === "/signin";
+    location.pathname === "/auth" || 
+    location.pathname === "/signin" || 
+    location.pathname === "/forgot-password" || 
+    location.pathname === "/reset-password";
 
   return (
     <>
@@ -301,7 +304,7 @@ const Main = () => {
         </Routes>
       </main>
       <Footer isAuth={isAuthPage} />
-      <AIChatBox />
+      {!isAuthPage && <AIChatBox />}
       <PopupAdModal page={location.pathname === "/" ? "home" : location.pathname.includes("/products") ? "products" : "all"} />
       <Toaster richColors position="bottom-right" />
     </>
