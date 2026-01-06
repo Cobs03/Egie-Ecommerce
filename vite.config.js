@@ -16,15 +16,23 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
+            // Keep three.js separate
             if (id.includes('three')) {
               return 'three';
             }
+            // Keep supabase separate
             if (id.includes('@supabase')) {
               return 'supabase';
             }
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor';
+            // Keep react core together
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'react-core';
             }
+            // Keep UI libraries separate
+            if (id.includes('@radix-ui')) {
+              return 'ui-radix';
+            }
+            // Everything else
             return 'vendor';
           }
         }
