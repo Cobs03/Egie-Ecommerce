@@ -1,6 +1,14 @@
 import * as THREE from 'three';
 
 export const setupKeyboardControls = (camera, controls, mini) => {
+  // Check if device is mobile (screen width < 768px)
+  const isMobile = window.innerWidth < 768;
+  
+  if (isMobile) {
+    console.log('📱 Mobile device detected - keyboard controls disabled');
+    return null; // Return null so cleanup knows there's nothing to remove
+  }
+
   console.log('⌨️ Setting up keyboard controls...');
 
   const handleKeyboard = (event) => {

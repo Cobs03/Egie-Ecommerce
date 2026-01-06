@@ -261,7 +261,7 @@ const SystemBuilder3D = ({ selectedProducts, mini = false }) => {
       )}
 
       {/* Model Creator Info Panel - Top Left */}
-      {!isLoading && !mini && (
+      {!isLoading && !mini && window.innerWidth >= 768 && (
         <div
           style={{
             position: "absolute",
@@ -463,7 +463,7 @@ const SystemBuilder3D = ({ selectedProducts, mini = false }) => {
       )}
 
       {/* Controls Instructions Panel - Right Side */}
-      {!isLoading && !mini && (
+      {!isLoading && !mini && window.innerWidth >= 768 && (
         <div
           style={{
             position: "absolute",

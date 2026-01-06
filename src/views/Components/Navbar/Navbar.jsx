@@ -602,19 +602,37 @@ const Navbar = ({ isAuth }) => {
                   </div>
                 ) : (
                   <>
-                    {/* Sign In/Sign Up Buttons (keep as fallback) */}
-                    <Link
-                      to="/signin"
-                      className="px-6 py-2 border-2 border-green-400 text-white rounded-full hover:bg-green-400 hover:text-black transition font-semibold"
+                    {/* Sign In/Sign Up Buttons - Hidden on mobile, visible on desktop */}
+                    <div className="hidden md:flex items-center gap-4">
+                      <Link
+                        to="/signin"
+                        className="px-6 py-2 border-2 border-green-400 text-white rounded-full hover:bg-green-400 hover:text-black transition font-semibold"
+                      >
+                        Sign In
+                      </Link>
+                      <Link
+                        to="/auth"
+                        className="px-6 py-2 border-2 border-green-400 text-white rounded-full hover:bg-green-400 hover:text-black transition font-semibold"
+                      >
+                        Sign Up
+                      </Link>
+                    </div>
+                    {/* Hamburger Menu Button - Visible only on mobile for non-authenticated users */}
+                    <button
+                      className="flex md:hidden items-center justify-center w-10 h-10 rounded-full bg-white text-black border border-gray-300 hover:bg-gray-100 focus:outline-none"
+                      aria-label="Menu"
+                      onClick={() => setShowMobileMenu((prev) => !prev)}
                     >
-                      Sign In
-                    </Link>
-                    <Link
-                      to="/auth"
-                      className="px-6 py-2 border-2 border-green-400 text-white rounded-full hover:bg-green-400 hover:text-black transition font-semibold"
-                    >
-                      Sign Up
-                    </Link>
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                    </button>
                   </>
                 )}
               </div>

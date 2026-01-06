@@ -1,10 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import React from "react";
 import { useScrollAnimation } from "../../../hooks/useScrollAnimation";
 
 const Brands = () => {
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(true);
-  const scrollContainerRef = useRef(null);
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 });
 
   const logoData = [
@@ -17,102 +14,73 @@ const Brands = () => {
     { src: "https://i.ibb.co/jvtXfML0/image-33-6.png", alt: "Gigabyte" },
   ];
 
-  const checkScrollPosition = () => {
-    if (scrollContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } =
-        scrollContainerRef.current;
-      setShowLeftArrow(scrollLeft > 0);
-      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 1);
-    }
-  };
-
-  const scrollLeft = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -200, behavior: "smooth" });
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 200, behavior: "smooth" });
-    }
-  };
-
-  useEffect(() => {
-    checkScrollPosition();
-    const scrollContainer = scrollContainerRef.current;
-    if (scrollContainer) {
-      scrollContainer.addEventListener("scroll", checkScrollPosition);
-      return () =>
-        scrollContainer.removeEventListener("scroll", checkScrollPosition);
-    }
-  }, []);
-
   return (
     <div 
       ref={ref}
-      className={`w-full bg-white p-5 relative transition-all duration-1000 ${
+      className={`w-full bg-white py-8 overflow-hidden relative transition-all duration-1000 ${
         isVisible 
           ? 'opacity-100 translate-y-0' 
           : 'opacity-0 translate-y-10'
       }`}
     >
-      {/* Left Arrow */}
-      {showLeftArrow && (
-        <button
-          onClick={scrollLeft}
-          className="cursor-pointer absolute left-2 top-1/2 transform -translate-y-1/2 z-10 bg-green-500 border border-gray-700 rounded-full p-2 shadow-md hover:bg-gray-500 transition-all duration-200 hover:scale-110"
-          aria-label="Scroll left"
-        >
-          <svg
-            className="w-5 h-5 text-gray-100"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-      )}
+      <style>{`
+        @keyframes scroll {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(calc(-100% / 3));
+          }
+        }
+        
+        .animate-scroll {
+          animation: scroll 20s linear infinite;
+        }
+        
+        .animate-scroll:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
 
-      {/* Right Arrow */}
-      {showRightArrow && (
-        <button
-          onClick={scrollRight}
-          className="cursor-pointer absolute right-2 top-1/2 transform -translate-y-1/2 z-10 bg-green-500 border border-gray-700 rounded-full p-2 shadow-md hover:bg-gray-500 transition-all duration-200 hover:scale-110"
-          aria-label="Scroll right"
-        >
-          <svg
-            className="w-5 h-5 text-gray-100"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
-      )}
-
-      {/* Container with horizontal scroll for smaller screens */}
-      <div className="flex justify-center items-center">
-        <div
-          ref={scrollContainerRef}
-          className="flex items-center md:space-x-8 overflow-x-auto scrollbar-hide max-w-full px-4"
-        >
+      <div className="flex items-center relative">
+        {/* Left gradient fade */}
+        <div className="absolute left-0 top-0 bottom-0 w-32 md:w-48 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
+        
+        {/* Right gradient fade */}
+        <div className="absolute right-0 top-0 bottom-0 w-32 md:w-48 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
+        
+        <div className="flex animate-scroll">
+          {/* First set of logos */}
           {logoData.map((logo, index) => (
             <div
-              key={index}
-              className="flex-shrink-0 w-[150px] h-[40px] md:w-[200px] md:h-[50px] mx-2 md:mx-4"
+              key={`first-${index}`}
+              className="flex-shrink-0 w-[150px] h-[40px] md:w-[200px] md:h-[50px] mx-4 md:mx-8"
+            >
+              <img
+                src={logo.src}
+                alt={logo.alt}
+                className="w-full h-full object-contain opacity-70 transition-opacity duration-300 hover:opacity-100"
+              />
+            </div>
+          ))}
+          {/* Second set for seamless loop */}
+          {logoData.map((logo, index) => (
+            <div
+              key={`second-${index}`}
+              className="flex-shrink-0 w-[150px] h-[40px] md:w-[200px] md:h-[50px] mx-4 md:mx-8"
+            >
+              <img
+                src={logo.src}
+                alt={logo.alt}
+                className="w-full h-full object-contain opacity-70 transition-opacity duration-300 hover:opacity-100"
+              />
+            </div>
+          ))}
+          {/* Third set for extra smooth transition */}
+          {logoData.map((logo, index) => (
+            <div
+              key={`third-${index}`}
+              className="flex-shrink-0 w-[150px] h-[40px] md:w-[200px] md:h-[50px] mx-4 md:mx-8"
             >
               <img
                 src={logo.src}
