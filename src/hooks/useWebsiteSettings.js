@@ -29,6 +29,7 @@ export const useWebsiteSettings = () => {
         setSettings({
           brandName: data.brand_name || 'EGIE E-Commerce',
           logoUrl: data.logo_url || '',
+          authBackgroundUrl: data.auth_background_url || '',
           primaryColor: data.primary_color || '#22c55e',
           secondaryColor: data.secondary_color || '#2176ae',
           accentColor: data.accent_color || '#ffe14d',
@@ -55,6 +56,7 @@ export const useWebsiteSettings = () => {
       setSettings({
         brandName: 'EGIE Gameshop',
         logoUrl: '',
+        authBackgroundUrl: '',
         primaryColor: '#22c55e',
         secondaryColor: '#2176ae',
         accentColor: '#ffe14d',

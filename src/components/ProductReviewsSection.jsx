@@ -68,12 +68,14 @@ const ProductReviewsSection = ({ product }) => {
 
       // Load reviews
       const { data: reviewsData, error: reviewsError } = await ReviewService.getProductReviews(product.id, 50, 0);
-      console.log('Reviews data:', reviewsData, 'Error:', reviewsError);
+      console.log('📝 Reviews data:', reviewsData, 'Error:', reviewsError);
+      console.log('📝 Number of reviews:', reviewsData?.length);
       setReviews(reviewsData || []);
 
       // Check if current user has reviewed
       if (user) {
         const { data: userReviewData } = await ReviewService.hasUserReviewed(product.id);
+        console.log('📝 User review check:', userReviewData);
         setUserReview(userReviewData.hasReviewed ? userReviewData.review : null);
       } else {
         setUserReview(null);
@@ -151,6 +153,10 @@ const ProductReviewsSection = ({ product }) => {
   const startIndex = (currentPage - 1) * reviewsPerPage;
   const endIndex = startIndex + reviewsPerPage;
   const currentReviews = reviews.slice(startIndex, endIndex);
+
+  console.log('📊 Total reviews in state:', reviews.length);
+  console.log('📊 Current page reviews:', currentReviews.length);
+  console.log('📊 Reviews array:', reviews);
 
   // Generate page numbers for pagination
   const getPageNumbers = () => {
@@ -237,29 +243,52 @@ const ProductReviewsSection = ({ product }) => {
         {userReview ? (
           <div className="space-y-3">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-semibold text-blue-800 mb-1">Your Review</p>
-                  <StarRating rating={userReview.rating} size={16} />
-                  {userReview.title && (
-                    <p className="font-medium mt-2">{userReview.title}</p>
+              <div className="flex items-start gap-3">
+                {/* User Avatar */}
+                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {userReview.profiles?.avatar_url ? (
+                    <img 
+                      src={userReview.profiles.avatar_url} 
+                      alt="Your avatar" 
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <span className="text-gray-600 font-semibold">
+                      {user?.email?.charAt(0).toUpperCase() || 'U'}
+                    </span>
                   )}
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleEditReview}
-                    className="text-blue-600 hover:text-blue-700 p-2 hover:bg-blue-100 rounded transition-all active:scale-95"
-                    title="Edit your review"
-                  >
-                    <FaEdit size={16} />
-                  </button>
-                  <button
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="text-red-600 hover:text-red-700 p-2 hover:bg-red-100 rounded transition-all active:scale-95"
-                    title="Delete your review"
-                  >
-                    <FaTrash size={16} />
-                  </button>
+                
+                <div className="flex-1">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-blue-800 mb-1">
+                        {userReview.profiles 
+                          ? `${userReview.profiles.first_name || ''} ${userReview.profiles.last_name || ''}`.trim() || 'Your Review'
+                          : 'Your Review'}
+                      </p>
+                      <StarRating rating={userReview.rating} size={16} />
+                      {userReview.title && (
+                        <p className="font-medium mt-2">{userReview.title}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleEditReview}
+                        className="text-blue-600 hover:text-blue-700 p-2 hover:bg-blue-100 rounded transition-all active:scale-95"
+                        title="Edit your review"
+                      >
+                        <FaEdit size={16} />
+                      </button>
+                      <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="text-red-600 hover:text-red-700 p-2 hover:bg-red-100 rounded transition-all active:scale-95"
+                        title="Delete your review"
+                      >
+                        <FaTrash size={16} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -302,42 +331,34 @@ const ProductReviewsSection = ({ product }) => {
         <>
           <div className="space-y-4">
             {currentReviews.map((review) => {
-            // Get user initials for avatar
-            const userName = review.user_name || review.user_email?.split('@')[0] || 'Anonymous';
-            const initials = userName
-              .split(' ')
-              .map(n => n[0])
-              .join('')
-              .toUpperCase()
-              .substring(0, 2);
-            
-            // Generate a color based on user_id
-            const colors = [
-              'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 
-              'bg-indigo-500', 'bg-red-500', 'bg-yellow-500', 'bg-teal-500'
-            ];
-            const colorIndex = review.user_id ? parseInt(review.user_id.substring(0, 8), 16) % colors.length : 0;
-            const avatarColor = colors[colorIndex];
+            // Get user profile data
+            const profile = review.profiles;
+            const userName = profile 
+              ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Anonymous'
+              : review.user_name || 'Anonymous';
+            const avatarUrl = profile?.avatar_url;
 
             return (
               <div 
                 key={review.id} 
                 className={`border rounded-lg p-4 ${
                   review.user_id === user?.id ? 'bg-blue-50 border-blue-200' : 'bg-white'
-                }`}
+                } hover:shadow-md transition-shadow`}
               >
-                <div className="flex gap-4">
-                  {/* User Avatar - Left Side */}
-                  <div className="flex-shrink-0">
-                    <div 
-                      className={`w-12 h-12 rounded-full ${avatarColor} flex items-center justify-center text-white font-bold text-lg shadow-md`}
-                    >
-                      {initials}
-                    </div>
+                <div className="flex items-start gap-3">
+                  {/* User Avatar */}
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-gray-600 font-semibold">
+                        {userName.charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Review Content - Right Side */}
-                  <div className="flex-1 min-w-0">
+                  {/* Review Content */}
+                  <div className="flex-1">
                     {/* User Info Header */}
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">

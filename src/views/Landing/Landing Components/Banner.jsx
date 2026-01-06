@@ -79,7 +79,7 @@ const LandingBanner = () => {
         <SwiperSlide>
           <div className="relative">  
             <img
-              src="https://i.ibb.co/nT6ymQq/Find-the.png"
+              src="https://i.ibb.co/nT6ymQq/1.png"
               className="w-full h-full object-cover"
               alt="Find-the"
             />

@@ -13,6 +13,7 @@ import Reviews from "./DetailsComponents/Reviews";
 import Warranty from "./DetailsComponents/Warranty";
 import Bundles from "./DetailsComponents/Bundles";
 import ProductModal from "../ProductModal/ProductModal";
+import BundleReviewsSection from "../../../../components/BundleReviewsSection";
 
 const BundleDetails = () => {
   const { bundleId } = useParams();
@@ -385,7 +386,8 @@ const BundleDetails = () => {
             </div>
           </div>
 
-          <Reviews product={bundleData} />
+          {/* Bundle Reviews Section */}
+          <BundleReviewsSection bundle={bundle} />
         </div>
 
         {/* Details Right - 25% width on desktop */}

@@ -307,6 +307,38 @@ class CartService {
   }
 
   /**
+   * Remove multiple items from cart (used for checkout)
+   * @param {Array<string>} cart_item_ids - Array of cart item IDs to remove
+   * @returns {Object} { data, error }
+   */
+  async removeMultipleItems(cart_item_ids) {
+    try {
+      if (!cart_item_ids || cart_item_ids.length === 0) {
+        return { data: null, error: 'No items to remove' };
+      }
+
+      console.log('Removing multiple cart items:', cart_item_ids);
+      
+      const { data, error } = await supabase
+        .from('cart_items')
+        .delete()
+        .in('id', cart_item_ids)
+        .select();
+
+      if (error) {
+        console.error('Error deleting multiple cart items:', error);
+        return { data: null, error: error.message };
+      }
+      
+      console.log('Successfully deleted cart items:', data);
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error in removeMultipleItems:', error);
+      return { data: null, error: error.message };
+    }
+  }
+
+  /**
    * Get cart item count for current user
    * @returns {Object} { data: { count }, error }
    */

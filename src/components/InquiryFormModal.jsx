@@ -4,7 +4,7 @@ import InquiryService from '../services/InquiryService';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 
-const InquiryFormModal = ({ product, onClose, onSuccess }) => {
+const InquiryFormModal = ({ product, onClose, onSuccess, isBundle = false, bundleId = null }) => {
   const { user } = useAuth();
   const [subject, setSubject] = useState('');
   const [question, setQuestion] = useState('');
@@ -26,11 +26,21 @@ const InquiryFormModal = ({ product, onClose, onSuccess }) => {
     setSubmitting(true);
     
     try {
-      const { data, error } = await InquiryService.createInquiry({
-        product_id: product.id,
+      const inquiryData = {
         subject: subject.trim(),
         question: question.trim()
-      });
+      };
+      
+      // If it's a bundle, add bundle_id, otherwise add product_id
+      if (isBundle) {
+        inquiryData.bundle_id = bundleId || product.id;
+        inquiryData.product_id = null;
+      } else {
+        inquiryData.product_id = product.id;
+        inquiryData.bundle_id = null;
+      }
+
+      const { data, error } = await InquiryService.createInquiry(inquiryData);
 
       if (!error && data) {
         toast.success('Question submitted successfully!', {

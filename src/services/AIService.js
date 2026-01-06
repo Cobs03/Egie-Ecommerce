@@ -75,6 +75,252 @@ class AIService {
   }
 
   /**
+   * Fetch store information (FAQs, policies, contact info) from database
+   * @param {string|null} category - Optional category filter ('shipping', 'returns', 'payment', etc.)
+   * @returns {Promise<Array>} Array of store information
+   */
+  async fetchStoreInformation(category = null) {
+    try {
+      let query = supabase
+        .from('store_information')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+      
+      if (category) {
+        query = query.eq('category', category);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching store information:', error);
+        return [];
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error in fetchStoreInformation:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Fetch website settings (dynamic store info)
+   * @returns {Promise<Object>} Website settings with contact info, address, hours, etc.
+   */
+  async fetchWebsiteSettings() {
+    try {
+      const { data, error } = await supabase
+        .from('website_settings')
+        .select('*')
+        .eq('id', 1)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching website settings:', error);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error in fetchWebsiteSettings:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Search store information based on user query
+   * @param {string} userQuery - User's question or search term
+   * @returns {Promise<Array>} Relevant store information
+   */
+  async searchStoreInfo(userQuery) {
+    try {
+      const storeInfo = await this.fetchStoreInformation();
+      const websiteSettings = await this.fetchWebsiteSettings();
+      const lowerQuery = userQuery.toLowerCase();
+      
+      // Find relevant FAQs based on keywords
+      let relevant = storeInfo.filter(info => {
+        const questionMatch = info.question.toLowerCase().includes(lowerQuery);
+        const answerMatch = info.answer.toLowerCase().includes(lowerQuery);
+        const keywordMatch = info.keywords?.some(kw => 
+          lowerQuery.includes(kw.toLowerCase()) || kw.toLowerCase().includes(lowerQuery)
+        );
+        
+        return questionMatch || answerMatch || keywordMatch;
+      });
+      
+      // Replace placeholders with actual website settings
+      if (websiteSettings) {
+        relevant = relevant.map(info => ({
+          ...info,
+          answer: this.replaceDynamicPlaceholders(info.answer, websiteSettings)
+        }));
+      }
+      
+      // If we found matches, return them, otherwise return top 5 general FAQs
+      return relevant.length > 0 ? relevant : storeInfo.slice(0, 5);
+    } catch (error) {
+      console.error('Error searching store info:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Replace dynamic placeholders in answers with actual website settings
+   * @param {string} answer - The FAQ answer text
+   * @param {Object} settings - Website settings object
+   * @returns {string} Answer with replaced values
+   */
+  replaceDynamicPlaceholders(answer, settings) {
+    if (!settings) return answer;
+    
+    // Replace common placeholders with actual data
+    return answer
+      .replace(/Block 21 Lot 23 Caypombo, Sta\. Maria, Bulacan/gi, settings.contact_address || 'our location')
+      .replace(/\+639151855519/g, settings.contact_phone || 'our phone number')
+      .replace(/egiegameshop2025@gmail\.com/g, settings.contact_email || 'our email')
+      .replace(/Mon-Sunday: 8:00 AM - 5:00 PM/gi, settings.showroom_hours || 'our business hours')
+      .replace(/8:00 AM to 5:00 PM/gi, settings.showroom_hours || 'our business hours');
+  }
+
+  /**
+   * Detect if user is asking a store policy/FAQ question
+   * @param {string} userMessage - User's message
+   * @returns {boolean} True if it's likely a policy/FAQ question
+   */
+  isStoreInfoQuery(userMessage) {
+    const lowerMsg = userMessage.toLowerCase();
+    
+    // Keywords that indicate store policy questions
+    const storeInfoKeywords = [
+      'return', 'refund', 'exchange', 'policy',
+      'shipping', 'delivery', 'how long', 'when will',
+      'payment', 'pay', 'gcash', 'cod', 'cash on delivery',
+      'warranty', 'guarantee', 'defect', 'broke', 'broken', 'stopped working',
+      'not working', 'malfunction', 'replace', 'replacement', 'repair',
+      'store', 'location', 'address', 'where are you', 'visit',
+      'contact', 'support', 'email', 'phone', 'hours', 'number',
+      'open', 'close', 'operating', 'working hours',
+      'track', 'order status', 'where is my order',
+      'cancel', 'change order',
+      'facebook', 'instagram', 'social media',
+      'phone number', 'contact number', 'mobile', 'landline',
+      'damaged', 'faulty', 'doa', 'dead on arrival'
+    ];
+    
+    return storeInfoKeywords.some(keyword => lowerMsg.includes(keyword));
+  }
+
+  /**
+   * Get customer order information (for order tracking)
+   * @param {string} orderNumber - Order number to look up
+   * @returns {Promise<Object>} Order data or error
+   */
+  async getCustomerOrder(orderNumber) {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        return { 
+          data: null, 
+          error: 'Please sign in to view your orders' 
+        };
+      }
+
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          shipping_addresses (
+            recipient_name,
+            phone_number,
+            street_address,
+            city,
+            province
+          ),
+          order_items (
+            quantity,
+            price_at_purchase,
+            products (
+              name,
+              image_url
+            )
+          )
+        `)
+        .eq('order_number', orderNumber)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) {
+        return { 
+          data: null, 
+          error: 'Order not found. Please check your order number.' 
+        };
+      }
+      
+      return { data, error: null };
+    } catch (error) {
+      return { 
+        data: null, 
+        error: error.message 
+      };
+    }
+  }
+
+  /**
+   * Format order status for customer in a friendly way
+   * @param {Object} order - Order object from database
+   * @returns {string} Formatted order status message
+   */
+  formatOrderStatus(order) {
+    const statusMessages = {
+      'pending': 'Your order is pending confirmation. We\'ll update you soon!',
+      'confirmed': 'Order confirmed! We\'re preparing your items for shipment.',
+      'processing': 'Your order is being packed and will ship soon.',
+      'ready_for_pickup': 'Great news! Your order is ready for pickup at our store.',
+      'shipped': 'Your order is on the way! Expected delivery in 3-7 days.',
+      'delivered': 'Your order has been delivered. Hope you love it!',
+      'cancelled': 'This order was cancelled.',
+      'completed': 'Order completed. Thank you for shopping with us!'
+    };
+    
+    const deliveryETA = {
+      'pending': '1-2 business days to confirm',
+      'confirmed': '1-3 business days to ship',
+      'processing': '1-2 business days',
+      'ready_for_pickup': 'Available now during store hours',
+      'shipped': '3-7 business days',
+      'delivered': 'Already delivered',
+      'cancelled': 'N/A',
+      'completed': 'Completed'
+    };
+    
+    const paymentStatusMsg = {
+      'pending': 'Payment Pending',
+      'paid': 'Payment Confirmed ✓',
+      'failed': 'Payment Failed - Please contact support',
+      'refunded': 'Payment Refunded'
+    };
+    
+    return `📦 **Order #${order.order_number}**
+
+**Status:** ${statusMessages[order.status] || order.status}
+**Expected:** ${deliveryETA[order.status]}
+**Payment:** ${paymentStatusMsg[order.payment_status] || order.payment_status}
+**Total:** ₱${order.total_amount.toLocaleString()}
+**Delivery:** ${order.delivery_type === 'local_delivery' ? 'Home Delivery' : 'Store Pickup'}
+**Order Date:** ${new Date(order.created_at).toLocaleDateString()}
+
+${order.delivery_type === 'local_delivery' && order.shipping_addresses ? 
+  `**Delivering to:** ${order.shipping_addresses.street_address}, ${order.shipping_addresses.city}` : 
+  ''}
+
+Need help with this order? Contact support at support@egiegameshop.com with your order number.`;
+  }
+
+  /**
    * AI-powered intent detection - understands natural language without hardcoded keywords
    * @param {string} userMessage - User's natural language query
    * @returns {Promise<Object>} Intent object with type, category, budget, etc.
@@ -634,10 +880,11 @@ Consider:
    * @param {Array} products - Relevant products based on intent
    * @param {Object} userPreferences - User's questionnaire answers
    * @param {Object} intent - Detected user intent
+   * @param {Array} storeInfo - Store policies and FAQs (optional)
    * @returns {string} System prompt
    */
-  buildIntelligentSystemPrompt(products, userPreferences = null, intent = null) {
-    let systemPrompt = `You are a professional AI shopping assistant for Egie GameShop, a computer hardware store in the Philippines. You're trained on how e-commerce AI shopping assistants work.
+  buildIntelligentSystemPrompt(products, userPreferences = null, intent = null, storeInfo = []) {
+    let systemPrompt = `You are a professional AI shopping assistant for Egie GameShop, a computer hardware store in the Philippines. You're trained on how e-commerce AI shopping assistants work and have full knowledge of our store policies.
 
 🎯 DETECTED USER INTENT:
 ${intent ? `
@@ -771,6 +1018,37 @@ ${products.slice(0, 30).map(p => `
 ${products.length > 30 ? `... and ${products.length - 30} more products available\n` : ''}
 `;
 
+    // Add store information if available
+    if (storeInfo && storeInfo.length > 0) {
+      systemPrompt += `\n\n📋 STORE POLICIES & INFORMATION (Use this to answer customer questions):
+
+${storeInfo.map(info => `
+**${info.question}**
+${info.answer}
+`).join('\n')}
+
+🔔 IMPORTANT RULES FOR ANSWERING STORE POLICY QUESTIONS:
+1. When customer asks about shipping, returns, payment, warranty, or store info - use the exact information above
+2. Be specific and accurate - quote the actual policies
+3. Don't say "we have a return policy" - say "We offer a 30-day return policy on all products..."
+4. If asked about something not listed above, say "Let me connect you with customer support for that specific question"
+5. For order tracking questions, ask for the order number and guide them to check their "My Orders" page
+6. Always be helpful and proactive - if they ask about returns, also mention warranty if relevant
+7. **CRITICAL**: If customer mentions product is BROKEN/STOPPED WORKING/FAULTY → Explain WARRANTY CLAIM process, NOT product search!
+
+CUSTOMER SERVICE SCENARIOS:
+- "How long is shipping?" → Quote the exact timeframes from policies above
+- "Where are you located?" → Provide full address and store hours
+- "Can I return this?" → Explain the 30-day policy with conditions
+- "Track my order" → Ask for order number and suggest checking My Orders page
+- "Is this in stock?" → Check the product stock_quantity in the products list
+- "What payment methods?" → List all accepted methods from policies above
+- "My GPU stopped working" → Explain WARRANTY CLAIM process (contact with order number, photos, assessment, 7-14 days turnaround)
+- "Product is broken/defective/not working" → Explain WARRANTY CLAIM process, don't search for products
+- "Can I get a replacement?" → Explain WARRANTY CLAIM process with steps
+`;
+    }
+
     if (userPreferences) {
       systemPrompt += `\n📋 CUSTOMER PROFILE (from questionnaire):
 - Purpose: ${userPreferences.pcPurpose?.join(', ') || 'General use'}
@@ -838,8 +1116,78 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
         };
       }
 
+      const userMessageText = lastUserMessage.text;
+
+      // 🆕 Step 0: Check if this is a store policy/FAQ question
+      const isStoreQuery = this.isStoreInfoQuery(userMessageText);
+      let storeInfo = [];
+      
+      if (isStoreQuery) {
+        console.log('📋 Detected store policy question - fetching FAQ data...');
+        storeInfo = await this.searchStoreInfo(userMessageText);
+        console.log(`✅ Found ${storeInfo.length} relevant store information items`);
+        
+        // Check if it's a warranty/broken product question
+        const isWarrantyQuestion = /(broke|broken|stopped|not working|malfunction|replace|replacement|repair|damaged|faulty|doa|defect)/i.test(userMessageText);
+        if (isWarrantyQuestion && storeInfo.length > 0) {
+          // Find warranty-related FAQ
+          const warrantyFAQ = storeInfo.find(info => 
+            info.category === 'warranty' || 
+            /warranty|claim|defect|repair|replace/i.test(info.question)
+          );
+          
+          if (warrantyFAQ) {
+            console.log('🛡️ Returning warranty claim information directly');
+            return {
+              success: true,
+              message: warrantyFAQ.answer,
+              intent: { intentType: 'warranty_claim' },
+              matchedProducts: [],
+              isWarrantyClaim: true
+            };
+          }
+        }
+        
+        // Check if it's an order tracking question
+        const isOrderTracking = /order|track|status|where.*my/i.test(userMessageText);
+        if (isOrderTracking) {
+          // Check if order number is mentioned
+          const orderNumberMatch = userMessageText.match(/\b\d{8,}\b/);
+          if (orderNumberMatch) {
+            console.log('🔍 Order number detected, looking up order...');
+            const orderResult = await this.getCustomerOrder(orderNumberMatch[0]);
+            
+            if (orderResult.data) {
+              // Return formatted order status directly
+              return {
+                success: true,
+                message: this.formatOrderStatus(orderResult.data),
+                intent: { intentType: 'order_tracking', orderNumber: orderNumberMatch[0] },
+                matchedProducts: [],
+                isOrderStatus: true
+              };
+            } else {
+              return {
+                success: true,
+                message: orderResult.error || "I couldn't find that order. Please check your order number and make sure you're signed in. You can view all your orders on the 'My Orders' page.",
+                intent: { intentType: 'order_tracking' },
+                matchedProducts: []
+              };
+            }
+          } else {
+            // Ask for order number
+            return {
+              success: true,
+              message: "I'd be happy to help you track your order! Could you please provide your order number? You can find it in your order confirmation email or on the 'My Orders' page.",
+              intent: { intentType: 'order_tracking' },
+              matchedProducts: []
+            };
+          }
+        }
+      }
+
       // Step 1: Detect intent using AI (understand what user wants)
-      const intent = await this.detectIntent(lastUserMessage.text);
+      const intent = await this.detectIntent(userMessageText);
       console.log('💡 Understanding:', intent);
 
       // Step 2: Fetch relevant products based on intent
@@ -862,11 +1210,12 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
         relevantProducts = allProducts.slice(0, 10); // Show sample
       }
 
-      // Step 3: Build enhanced system prompt with intent awareness
+      // Step 3: Build enhanced system prompt with intent awareness AND store info
       const systemPrompt = this.buildIntelligentSystemPrompt(
         relevantProducts.length > 0 ? relevantProducts : allProducts, 
         userPreferences,
-        intent
+        intent,
+        storeInfo // 🆕 Pass store information to system prompt
       );
 
       // Step 4: Prepare conversation with context

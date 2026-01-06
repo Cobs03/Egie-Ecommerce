@@ -11,13 +11,11 @@ import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const Payment = ({ selectedAddress, onShowGCashModal }) => {
   const navigate = useNavigate();
-  const { deliveryType, orderNotes, cartItems, clearCart, appliedVoucher, loadCart } = useCart();
+  const { deliveryType, orderNotes, cartItems, clearSelectedItems, appliedVoucher, loadCart, checkoutItems } = useCart();
   
   // Scroll animations
   const containerAnim = useScrollAnimation({ threshold: 0.1 });
   const paymentOptionsAnim = useScrollAnimation({ threshold: 0.1 });
-  const cardFormAnim = useScrollAnimation({ threshold: 0.1 });
-  const placeOrderAnim = useScrollAnimation({ threshold: 0.1 });
   
   // Payment state
   const [selectedPayment, setSelectedPayment] = useState(null);
@@ -124,12 +122,16 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
       }
 
       // For COD and Card, proceed with regular order creation
+      // Extract cart_item_ids from checkoutItems
+      const cart_item_ids = checkoutItems.map(item => item.id);
+      
       const orderData = {
         delivery_type: deliveryType,
         shipping_address_id: deliveryType === 'local_delivery' ? selectedAddress?.id : null,
         customer_notes: orderNotes || null,
         payment_method: selectedPayment === 'card' ? 'credit_card' : selectedPayment,
-        voucher: appliedVoucher
+        voucher: appliedVoucher,
+        cart_item_ids: cart_item_ids // Pass selected cart item IDs
       };
 
       const { data, error: orderError } = await OrderService.createOrder(orderData);
@@ -142,7 +144,9 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
         return;
       }
 
-      await clearCart(false);
+      // Cart items are automatically removed by the database function
+      // Reload cart to get updated state
+      await loadCart();
 
       navigate("/thankyou", { 
         state: { 
@@ -177,12 +181,16 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
       console.log('Billing info:', billingInfo);
       
       // First, create the order
+      // Extract cart_item_ids from checkoutItems
+      const cart_item_ids = checkoutItems.map(item => item.id);
+      
       const orderData = {
         delivery_type: deliveryType,
         shipping_address_id: deliveryType === 'local_delivery' ? selectedAddress?.id : null,
         customer_notes: orderNotes || null,
         payment_method: 'gcash',
-        voucher: appliedVoucher
+        voucher: appliedVoucher,
+        cart_item_ids: cart_item_ids // Pass selected cart item IDs
       };
 
       console.log('Creating order with data:', orderData);
@@ -272,8 +280,9 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
         console.log('Order updated with PayMongo source ID');
       }
 
-      // Clear cart before redirect
-      await clearCart(false);
+      // Cart items are automatically removed by the database function
+      // Reload cart to get updated state
+      await loadCart();
 
       // Redirect to GCash payment page
       console.log('Redirecting to GCash payment page...');
@@ -292,49 +301,28 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
 
   // Handle Card payment through PayMongo
   const handleCardPayment = async () => {
-    setLoading(true);
-    
     try {
       console.log('💳 Starting card payment process...');
+      console.log('Checkout Items:', checkoutItems);
+      console.log('Delivery Type:', deliveryType);
+      console.log('Applied Voucher:', appliedVoucher);
       
       // Parse expiry date (MM/YY)
       const [expMonth, expYear] = cardDetails.expiryDate.split('/');
       
       // Convert 2-digit year to 4-digit year (YY -> YYYY)
-      // If year is less than current year's last 2 digits, assume next century
       const currentYear = new Date().getFullYear();
-      const currentYearShort = currentYear % 100; // e.g., 2025 -> 25
+      const currentYearShort = currentYear % 100;
       let fullYear;
       
       if (parseInt(expYear) < currentYearShort) {
-        // Year is in the past, must be next century (e.g., 22 in 2025 -> 2122)
         fullYear = `21${expYear}`;
       } else {
-        // Year is current or future (e.g., 26 in 2025 -> 2026)
         fullYear = `20${expYear}`;
       }
       
       console.log('Parsed expiry:', { expMonth, expYear, fullYear });
       
-      // First, create the order
-      const orderData = {
-        delivery_type: deliveryType,
-        shipping_address_id: deliveryType === 'local_delivery' ? selectedAddress?.id : null,
-        customer_notes: orderNotes || null,
-        payment_method: 'credit_card',
-        voucher: appliedVoucher
-      };
-
-      console.log('Creating order with data:', orderData);
-      const { data: orderResponse, error: orderError } = await OrderService.createOrder(orderData);
-
-      if (orderError) {
-        console.error('Order creation failed:', orderError);
-        throw new Error(orderError);
-      }
-
-      console.log('✅ Order created:', orderResponse.order_number);
-
       // Get user information for billing
       const { data: { user } } = await supabase.auth.getUser();
       const { data: profile } = await supabase
@@ -343,12 +331,9 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
         .eq('id', user.id)
         .single();
 
-      // Process card payment via Edge Function (secure)
-      const returnUrl = `${window.location.origin}/payment-success?order_id=${orderResponse.order_number}`;
-      
       // Clean card data before sending
-      const cleanCardNumber = cardDetails.cardNumber.replace(/\s/g, ''); // Remove spaces
-      const cleanCvv = cardDetails.cvv.substring(0, 3); // Limit to 3 digits for most cards
+      const cleanCardNumber = cardDetails.cardNumber.replace(/\s/g, '');
+      const cleanCvv = cardDetails.cvv.substring(0, 3);
       
       console.log('Sending card data:', { 
         number: cleanCardNumber.substring(0, 4) + '****',
@@ -356,6 +341,42 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
         exp_year: fullYear,
         cvc_length: cleanCvv.length
       });
+
+      // Calculate subtotal from checkout items
+      const subtotal = checkoutItems.reduce((sum, item) => {
+        const price = item.price_at_add || item.price || 0;
+        const quantity = item.quantity || 0;
+        console.log('Item:', item.product_name, 'Price:', price, 'Qty:', quantity);
+        return sum + (price * quantity);
+      }, 0);
+      
+      // Calculate shipping fee based on delivery type
+      const shippingFee = deliveryType === 'store_pickup' ? 0 : 100;
+      
+      // Apply voucher discount if any
+      const voucherDiscount = appliedVoucher ? appliedVoucher.discountAmount : 0;
+      
+      // Calculate final total
+      const totalAmount = subtotal + shippingFee - voucherDiscount;
+      
+      // PayMongo requires amount in centavos (multiply by 100) and minimum 100 centavos (₱1.00)
+      const amountInCentavos = Math.round(totalAmount * 100);
+      
+      // Validate minimum amount
+      if (amountInCentavos < 100) {
+        throw new Error('Order total must be at least ₱1.00 for card payment');
+      }
+      
+      console.log('Payment Breakdown:', {
+        subtotal: `₱${subtotal.toFixed(2)}`,
+        shipping: `₱${shippingFee.toFixed(2)}`,
+        discount: `₱${voucherDiscount.toFixed(2)}`,
+        total: `₱${totalAmount.toFixed(2)}`,
+        centavos: amountInCentavos
+      });
+      
+      // Process card payment FIRST via Edge Function
+      const returnUrl = `${window.location.origin}/payment-success`;
       
       const paymentResult = await PayMongoEdgeFunctionService.processCardPayment(
         {
@@ -381,56 +402,40 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
             country: 'PH'
           }
         },
-        orderResponse.total,
-        `Order ${orderResponse.order_number}`,
+        amountInCentavos,
+        'Order Payment',
         {
-          order_id: orderResponse.order_id,
-          order_number: orderResponse.order_number
+          order_type: 'ecommerce',
+          customer_id: user.id,
+          delivery_type: deliveryType
         },
-        returnUrl
+        returnUrl,
+        user.id
       );
 
       if (!paymentResult.success) {
-        // Payment failed - delete the order to restore cart
-        console.error('❌ Payment failed, rolling back order...');
-        await supabase.from('orders').delete().eq('id', orderResponse.order_id);
-        await supabase.from('payments').delete().eq('order_id', orderResponse.order_id);
-        
-        // Reload cart to restore items
-        await loadCart();
-        
+        console.error('❌ Payment failed:', paymentResult.error);
         throw new Error(paymentResult.error || 'Failed to process card payment');
       }
 
       console.log('✅ Payment processed:', paymentResult.paymentIntent.id);
 
-      // Determine payment status based on result
-      const paymentStatus = paymentResult.paymentIntent.status === 'succeeded' ? 'paid' : 'pending';
-      
-      // Update PAYMENTS table (not orders table) - this is what triggers stock deduction
-      const { data: paymentData, error: paymentError } = await supabase
-        .from('payments')
-        .update({ 
-          payment_status: paymentStatus,
-          paymongo_payment_intent_id: paymentResult.paymentIntent.id
-        })
-        .eq('order_id', orderResponse.order_id)
-        .select()
-        .single();
-      
-      if (paymentError) {
-        console.error('Failed to update payment status:', paymentError);
-      } else {
-        console.log(`✅ Payment status updated to: ${paymentStatus}`, paymentData);
-      }
-
       // Check if 3DS authentication is required
       if (paymentResult.requires3DS && paymentResult.redirectUrl) {
         console.log('🔐 Redirecting to 3D Secure authentication...');
-        toast.info('Redirecting to card authentication...');
         
-        // Clear cart before redirect
-        await clearCart(false);
+        // Store payment intent and order details in session storage for after redirect
+        sessionStorage.setItem('pending_card_payment', JSON.stringify({
+          paymentIntentId: paymentResult.paymentIntent.id,
+          deliveryType,
+          shippingAddressId: deliveryType === 'local_delivery' ? selectedAddress?.id : null,
+          customerNotes: orderNotes || null,
+          appliedVoucher,
+          cartItemIds: checkoutItems.map(item => item.id),
+          amount: totalAmount
+        }));
+        
+        toast.info('Redirecting to card authentication...');
         
         setTimeout(() => {
           window.location.href = paymentResult.redirectUrl;
@@ -438,35 +443,73 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
         return;
       }
 
-      // Payment succeeded without 3DS
+      // Payment succeeded without 3DS - now create the order
       if (paymentResult.paymentIntent.status === 'succeeded') {
-        console.log('🎉 Payment successful!');
+        console.log('🎉 Payment successful! Creating order...');
         
-        // Clear cart only after confirming success
-        await clearCart(false);
+        const cart_item_ids = checkoutItems.map(item => item.id);
         
-        // Navigate to success page
-        navigate("/thankyou", { 
-          state: { 
-            orderId: orderResponse.order_id,
-            orderNumber: orderResponse.order_number,
-            transactionId: orderResponse.transaction_id,
-            total: orderResponse.total,
-            paymentMethod: 'card'
-          } 
-        });
+        const orderData = {
+          delivery_type: deliveryType,
+          shipping_address_id: deliveryType === 'local_delivery' ? selectedAddress?.id : null,
+          customer_notes: orderNotes || null,
+          payment_method: 'credit_card',
+          voucher: appliedVoucher,
+          cart_item_ids: cart_item_ids,
+          paymongo_payment_intent_id: paymentResult.paymentIntent.id
+        };
+
+        const { data: orderResponse, error: orderError } = await OrderService.createOrder(orderData);
+
+        if (orderError) {
+          console.error('Order creation failed:', orderError);
+          toast.error('Payment succeeded but order creation failed. Please contact support.');
+          setLoading(false);
+          return;
+        }
+
+        console.log('✅ Order created:', orderResponse.order_number);
+        
+        // Update payment record with order info (non-blocking)
+        const { error: paymentUpdateError } = await supabase
+          .from('payments')
+          .update({ 
+            payment_status: 'paid',
+            paymongo_payment_intent_id: paymentResult.paymentIntent.id
+          })
+          .eq('order_id', orderResponse.order_id);
+        
+        if (paymentUpdateError) {
+          console.warn('Failed to update payment record (non-critical):', paymentUpdateError);
+        } else {
+          console.log('✅ Payment record updated');
+        }
+        
+        // Reload cart to reflect removed items
+        await loadCart();
         
         toast.success('Payment successful!');
+        
+        // Small delay to ensure state updates, then navigate
+        setTimeout(() => {
+          navigate("/thankyou", { 
+            state: { 
+              orderId: orderResponse.order_id,
+              orderNumber: orderResponse.order_number,
+              transactionId: orderResponse.transaction_id,
+              total: orderResponse.total,
+              paymentMethod: 'card'
+            } 
+          });
+        }, 500);
       } else {
-        // Payment is still pending - don't clear cart yet
-        console.log('⏳ Payment pending, not clearing cart');
+        console.log('⏳ Payment status:', paymentResult.paymentIntent.status);
         setLoading(false);
         toast.warning('Payment is being processed. Please check your order status.');
       }
 
     } catch (error) {
       console.error('❌ Card payment error:', error);
-      // Don't clear cart on error - user might want to retry
       toast.error(error.message || 'Failed to process card payment');
       setLoading(false);
     }
@@ -549,14 +592,7 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
 
       {/* Show card form if selected */}
       {selectedPayment === "card" && (
-        <div
-          ref={cardFormAnim.ref}
-          className={`space-y-3 mb-4 transition-all duration-700 ${
-            cardFormAnim.isVisible
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-4"
-          }`}
-        >
+        <div className="space-y-3 mb-4">
           <input
             type="text"
             placeholder="Card Number (e.g., 4343 4343 4343 4345)"
@@ -569,7 +605,7 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
                 setCardDetails({ ...cardDetails, cardNumber: formatted });
               }
             }}
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-500"
+            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
           />
           <div className="flex space-x-2">
             <input
@@ -583,7 +619,7 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
                 }
                 setCardDetails({ ...cardDetails, expiryDate: value });
               }}
-              className="w-1/2 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-500"
+              className="w-1/2 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
               maxLength="5"
             />
             <input
@@ -596,7 +632,7 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
                   setCardDetails({ ...cardDetails, cvv: value });
                 }
               }}
-              className="w-1/2 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-500"
+              className="w-1/2 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
               maxLength="4"
             />
           </div>
@@ -605,7 +641,7 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
             placeholder="Name on Card (e.g., JUAN DELA CRUZ)"
             value={cardDetails.cardName}
             onChange={(e) => setCardDetails({ ...cardDetails, cardName: e.target.value.toUpperCase() })}
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase text-gray-500"
+            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase text-gray-900 placeholder:text-gray-400"
           />
           <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800">
             🔒 Your card details are encrypted and processed securely through PayMongo
