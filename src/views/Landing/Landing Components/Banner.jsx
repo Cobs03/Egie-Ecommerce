@@ -79,7 +79,7 @@ const LandingBanner = () => {
         <SwiperSlide>
           <div className="relative">  
             <img
-              src="https://i.ibb.co/nT6ymQq"
+              src="https://i.ibb.co/nT6ymQq/1.png"
               className="w-full h-full object-cover"
               alt="Find-the"
             />
@@ -101,7 +101,7 @@ const LandingBanner = () => {
         <SwiperSlide className="">
           <div className="">
             <img
-              src="https://i.ibb.co/99cmMKgC"
+              src="https://i.ibb.co/99cmMKgC/2.png"
               className="w-full h-full object-cover"
               alt="2"
             />
