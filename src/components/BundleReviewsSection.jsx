@@ -64,7 +64,6 @@ const BundleReviewsSection = ({ bundle }) => {
         setUserReview(null);
       }
     } catch (error) {
-      console.error('Error loading bundle reviews:', error);
     } finally {
       setLoading(false);
     }
@@ -104,7 +103,6 @@ const BundleReviewsSection = ({ bundle }) => {
         loadReviews();
       }
     } catch (error) {
-      console.error('Error deleting review:', error);
       toast.error('Something went wrong');
     }
   };

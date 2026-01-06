@@ -33,13 +33,11 @@ export class UserOrderService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching user orders:', error);
         return { data: null, error: error.message };
       }
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error in getUserOrders:', error);
       return { data: null, error: error.message };
     }
   }
@@ -77,13 +75,11 @@ export class UserOrderService {
         .single();
 
       if (error) {
-        console.error('Error fetching order:', error);
         return { data: null, error: error.message };
       }
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error in getOrderById:', error);
       return { data: null, error: error.message };
     }
   }
@@ -110,13 +106,11 @@ export class UserOrderService {
         .single();
 
       if (error) {
-        console.error('Error marking order received:', error);
         return { data: null, error: error.message };
       }
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error in markOrderReceived:', error);
       return { data: null, error: error.message };
     }
   }
@@ -157,7 +151,6 @@ export class UserOrderService {
         .single();
 
       if (error) {
-        console.error('Error cancelling order:', error);
         return { data: null, error: error.message };
       }
 
@@ -169,7 +162,6 @@ export class UserOrderService {
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error in cancelOrder:', error);
       return { data: null, error: error.message };
     }
   }

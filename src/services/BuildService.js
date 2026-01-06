@@ -48,10 +48,8 @@ class BuildService {
 
       if (error) throw error;
 
-      console.log('✅ Build saved successfully:', data);
       return data;
     } catch (error) {
-      console.error('❌ Error saving build:', error);
       throw error;
     }
   }
@@ -77,10 +75,8 @@ class BuildService {
 
       if (error) throw error;
 
-      console.log('✅ Loaded builds:', data?.length || 0);
       return data || [];
     } catch (error) {
-      console.error('❌ Error loading builds:', error);
       throw error;
     }
   }
@@ -102,7 +98,6 @@ class BuildService {
 
       return data;
     } catch (error) {
-      console.error('❌ Error loading build:', error);
       throw error;
     }
   }
@@ -130,10 +125,8 @@ class BuildService {
 
       if (error) throw error;
 
-      console.log('✅ Build updated successfully');
       return data;
     } catch (error) {
-      console.error('❌ Error updating build:', error);
       throw error;
     }
   }
@@ -152,9 +145,7 @@ class BuildService {
 
       if (error) throw error;
 
-      console.log('✅ Build deleted successfully');
     } catch (error) {
-      console.error('❌ Error deleting build:', error);
       throw error;
     }
   }
@@ -194,10 +185,8 @@ class BuildService {
 
       if (error) throw error;
 
-      console.log('✅ Loaded public builds:', data?.length || 0);
       return data || [];
     } catch (error) {
-      console.error('❌ Error loading public builds:', error);
       throw error;
     }
   }
@@ -219,10 +208,8 @@ class BuildService {
 
       if (error) throw error;
 
-      console.log('✅ Build visibility updated');
       return data;
     } catch (error) {
-      console.error('❌ Error updating build visibility:', error);
       throw error;
     }
   }
@@ -251,9 +238,7 @@ class BuildService {
 
       if (error) throw error;
 
-      console.log('✅ Build liked successfully');
     } catch (error) {
-      console.error('❌ Error liking build:', error);
       throw error;
     }
   }
@@ -279,9 +264,7 @@ class BuildService {
 
       if (error) throw error;
 
-      console.log('✅ Build unliked successfully');
     } catch (error) {
-      console.error('❌ Error unliking build:', error);
       throw error;
     }
   }
@@ -310,7 +293,6 @@ class BuildService {
 
       return !!data;
     } catch (error) {
-      console.error('❌ Error checking like status:', error);
       return false;
     }
   }
@@ -342,7 +324,6 @@ class BuildService {
         }
       }
     } catch (error) {
-      console.error('❌ Error incrementing views:', error);
       // Non-critical, don't throw
     }
   }
@@ -374,7 +355,6 @@ class BuildService {
         }
       }
     } catch (error) {
-      console.error('❌ Error incrementing purchases:', error);
       // Non-critical, don't throw
     }
   }
@@ -400,7 +380,6 @@ class BuildService {
         views: data.view_count || 0
       };
     } catch (error) {
-      console.error('❌ Error getting build stats:', error);
       return { likes: 0, purchases: 0, views: 0 };
     }
   }
@@ -416,7 +395,6 @@ class BuildService {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        console.log('⚠️ User not logged in, skipping draft save');
         return null;
       }
 
@@ -445,7 +423,6 @@ class BuildService {
 
         if (error) throw error;
         result = data;
-        console.log('💾 Draft updated:', existingDraft.id);
       } else {
         // Create new draft
         const { data, error } = await supabase
@@ -465,12 +442,10 @@ class BuildService {
 
         if (error) throw error;
         result = data;
-        console.log('💾 Draft created:', data.id);
       }
 
       return result;
     } catch (error) {
-      console.error('❌ Error saving draft:', error);
       // Don't throw error, just log it (auto-save should be silent)
       return null;
     }
@@ -500,12 +475,10 @@ class BuildService {
       }
 
       if (data) {
-        console.log('📦 Draft loaded:', data.id);
       }
 
       return data;
     } catch (error) {
-      console.error('❌ Error loading draft:', error);
       return null;
     }
   }
@@ -530,10 +503,8 @@ class BuildService {
 
       if (error) throw error;
 
-      console.log('🗑️ Draft deleted');
       return true;
     } catch (error) {
-      console.error('❌ Error deleting draft:', error);
       return false;
     }
   }
@@ -579,10 +550,8 @@ class BuildService {
 
       if (error) throw error;
 
-      console.log('✅ Draft converted to saved build:', data);
       return data;
     } catch (error) {
-      console.error('❌ Error converting draft:', error);
       throw error;
     }
   }

@@ -24,7 +24,6 @@ const Tracking = () => {
       const { data, error } = await UserOrderService.getOrderById(id);
       
       if (error || !data) {
-        console.error('Error loading order:', error);
         setOrder(null);
         setLoading(false);
         return;
@@ -32,7 +31,6 @@ const Tracking = () => {
 
       setOrder(data);
     } catch (error) {
-      console.error('Error in loadOrder:', error);
       setOrder(null);
     } finally {
       setLoading(false);

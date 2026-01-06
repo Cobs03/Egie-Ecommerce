@@ -59,7 +59,6 @@ const SystemBuild = () => {
         const products = await PCBuildService.fetchComponentProducts();
         setComponentProducts(products);
       } catch (error) {
-        console.error("Failed to load PC build products:", error);
       } finally {
         setIsLoadingProducts(false);
       }
@@ -81,10 +80,8 @@ const SystemBuild = () => {
         const draft = await BuildService.getDraft();
         if (draft && Object.keys(draft.components).length > 0) {
           setSelectedProducts(draft.components);
-          console.log('📦 Draft restored from database');
         }
       } catch (error) {
-        console.error('Failed to restore draft:', error);
       }
     };
 
@@ -110,7 +107,6 @@ const SystemBuild = () => {
       try {
         await BuildService.saveDraft(selectedProducts, totalPrice);
       } catch (error) {
-        console.error('Failed to auto-save draft:', error);
       }
     }, 2000); // Wait 2 seconds after last change before saving
 
@@ -121,8 +117,6 @@ const SystemBuild = () => {
   useEffect(() => {
     if (location.state?.loadBuild) {
       const { loadBuild } = location.state;
-      console.log('📦 Loading saved build:', loadBuild.build_name);
-      
       // Set the saved components
       setSelectedProducts(loadBuild.components);
       
@@ -142,9 +136,6 @@ const SystemBuild = () => {
     } else if (location.state?.loadBundle) {
       // Load bundle components from BundleDetails
       const { loadBundle } = location.state;
-      console.log('📦 Loading bundle:', loadBundle.bundleName);
-      console.log('📦 Components:', loadBundle.components);
-      
       // Set the bundle components
       setSelectedProducts(loadBundle.components);
       
@@ -163,7 +154,6 @@ const SystemBuild = () => {
       window.history.replaceState({}, document.title);
     } else if (location.state?.clearDraft) {
       // Clear everything when creating a new build
-      console.log('🆕 Starting fresh build - clearing all components');
       setSelectedProducts({});
       setLoadedBuildId(null);
       setLoadedBuildName(null);
@@ -192,7 +182,6 @@ const SystemBuild = () => {
   }, [selectedType, viewMode]);
 
   const handleAddProduct = (componentType, product) => {
-    console.log(`➕ Adding ${componentType}:`, product);
     setSelectedProducts(prev => ({
       ...prev,
       [componentType]: product
@@ -207,7 +196,6 @@ const SystemBuild = () => {
   const handleOpenDrawer = (componentType) => {
     // Only open drawer on mobile screens (below lg breakpoint - 1024px)
     if (window.innerWidth < 1024) {
-      console.log(`📂 Opening drawer for ${componentType}`);
       setDrawerComponentType(componentType);
       setSelectedType(componentType);
       setIsDrawerOpen(true);
@@ -228,7 +216,6 @@ const SystemBuild = () => {
 
   // Remove product handler
   const handleRemoveProduct = (componentType) => {
-    console.log(`➖ Removing ${componentType}`);
     setSelectedProducts(prev => {
       const updated = { ...prev };
       delete updated[componentType];
@@ -239,7 +226,6 @@ const SystemBuild = () => {
   // Clear all products
   const handleClearAll = () => {
     if (window.confirm('Are you sure you want to clear all selected components?')) {
-      console.log('🗑️ Clearing all components');
       setSelectedProducts({});
       setSelectedType(null);
     }
@@ -302,9 +288,7 @@ const SystemBuild = () => {
         if (loadedBuildId) {
           try {
             await BuildService.incrementPurchases(loadedBuildId);
-            console.log('✅ Incremented purchase count for build:', loadedBuildId);
           } catch (error) {
-            console.error('Failed to increment purchase count:', error);
             // Non-critical, don't show error to user
           }
         }
@@ -312,9 +296,7 @@ const SystemBuild = () => {
         // Delete draft since user is adding to cart
         try {
           await BuildService.deleteDraft();
-          console.log('🗑️ Draft cleared after adding to cart');
         } catch (error) {
-          console.error('Failed to delete draft:', error);
         }
         
         // Reload cart in background
@@ -483,7 +465,6 @@ const SystemBuild = () => {
   const toggleViewMode = () => {
     setViewMode(prev => {
       const newMode = prev === 'table' ? '3d' : 'table';
-      console.log('🔄 View mode toggled to:', newMode);
       return newMode;
     });
   };

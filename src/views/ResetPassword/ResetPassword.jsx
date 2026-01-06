@@ -88,7 +88,6 @@ const ResetPassword = () => {
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
-      console.error('Password update error:', err);
     } finally {
       setLoading(false);
     }

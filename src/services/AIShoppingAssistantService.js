@@ -117,13 +117,11 @@ Use only the data provided. If a requested item or information is missing, polit
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching products:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error in fetchProducts:', error);
       return [];
     }
   }
@@ -158,13 +156,11 @@ Use only the data provided. If a requested item or information is missing, polit
         .eq('is_active', true);
 
       if (error) {
-        console.error('Error fetching bundles:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error in fetchBundles:', error);
       return [];
     }
   }
@@ -185,13 +181,11 @@ Use only the data provided. If a requested item or information is missing, polit
         .order('discount_value', { ascending: false });
 
       if (error) {
-        console.error('Error fetching vouchers:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error in fetchVouchers:', error);
       return [];
     }
   }
@@ -231,13 +225,11 @@ Use only the data provided. If a requested item or information is missing, polit
         .eq('cart_id', cart.id);
 
       if (itemsError) {
-        console.error('Error fetching cart items:', itemsError);
         return [];
       }
 
       return items || [];
     } catch (error) {
-      console.error('Error in fetchUserCart:', error);
       return [];
     }
   }
@@ -275,13 +267,11 @@ Use only the data provided. If a requested item or information is missing, polit
         .limit(10);
 
       if (error) {
-        console.error('Error fetching orders:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error in fetchUserOrders:', error);
       return [];
     }
   }
@@ -420,7 +410,6 @@ Use only the data provided. If a requested item or information is missing, polit
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('AI API error:', errorData);
         throw new Error(errorData.error?.message || 'AI service unavailable');
       }
 
@@ -436,7 +425,6 @@ Use only the data provided. If a requested item or information is missing, polit
       };
 
     } catch (error) {
-      console.error('Error in AI chat:', error);
       return {
         success: false,
         error: error.message,
@@ -495,7 +483,6 @@ Use only the data provided. If a requested item or information is missing, polit
       };
 
     } catch (error) {
-      console.error('Error getting recommendations:', error);
       return {
         success: false,
         error: error.message,
@@ -558,7 +545,6 @@ Use only the data provided. If a requested item or information is missing, polit
       };
 
     } catch (error) {
-      console.error('Error comparing products:', error);
       return {
         success: false,
         error: error.message

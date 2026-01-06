@@ -25,7 +25,6 @@ export const AuthProvider = ({ children }) => {
       // Update last_login for existing session
       if (session?.user) {
         updateLastLogin(session.user.id).catch(err => {
-          console.error('Failed to update last login:', err);
         });
       }
     };
@@ -41,7 +40,6 @@ export const AuthProvider = ({ children }) => {
         // Update last_login on sign in
         if (event === 'SIGNED_IN' && session?.user) {
           updateLastLogin(session.user.id).catch(err => {
-            console.error('Failed to update last login:', err);
           });
         }
       }
@@ -58,7 +56,6 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (error) {
-        console.error('Error updating last login:', error);
         // Fallback: try direct update
         await supabase
           .from('profiles')
@@ -66,7 +63,6 @@ export const AuthProvider = ({ children }) => {
           .eq('id', userId);
       }
     } catch (error) {
-      console.error('Failed to update last login:', error);
     }
   };
 

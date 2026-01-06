@@ -40,7 +40,6 @@ const ConsentTab = ({ loading, setLoading }) => {
         setConsents(data.user_consents);
       }
     } catch (error) {
-      console.error('Error loading consents:', error);
     }
   };
 
@@ -79,14 +78,12 @@ const ConsentTab = ({ loading, setLoading }) => {
             user_agent: navigator.userAgent
           });
       } catch (auditError) {
-        console.log('Consent audit table not available:', auditError);
       }
 
       setMessage("Your consent preferences have been saved successfully!");
       setTimeout(() => setMessage(""), 5000);
 
     } catch (error) {
-      console.error('Error saving consents:', error);
       setError("Failed to save your preferences. Please try again.");
     } finally {
       setLoading(false);

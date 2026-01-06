@@ -53,13 +53,6 @@ const PrivacyRequestModal = ({ open, onClose }) => {
         });
 
       if (insertError) {
-        console.log('Privacy requests table not found, logging to console');
-        console.log('Privacy Request:', {
-          user_id: user.id,
-          email: user.email,
-          request_type: formData.requestType,
-          details: formData.details
-        });
       }
 
       setMessage("Your privacy request has been submitted successfully! We'll review it and respond within 30 days.");
@@ -74,7 +67,6 @@ const PrivacyRequestModal = ({ open, onClose }) => {
       }, 3000);
 
     } catch (error) {
-      console.error('Error submitting request:', error);
       setError("Failed to submit your request. Please try again or contact privacy@egie-ecommerce.com");
     } finally {
       setLoading(false);

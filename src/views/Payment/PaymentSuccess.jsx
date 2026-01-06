@@ -27,9 +27,6 @@ const PaymentSuccess = () => {
         return;
       }
 
-      console.log('🔍 Verifying payment for order:', orderId);
-      console.log('Source ID:', sourceId);
-
       // Get order details from database
       const { data: orders, error: orderError } = await supabase
         .from('orders')
@@ -47,17 +44,14 @@ const PaymentSuccess = () => {
         .single();
 
       if (orderError || !orders) {
-        console.error('Order not found:', orderError);
         toast.error('Order not found');
         navigate('/');
         return;
       }
 
-      console.log('📦 Order found:', orders);
       const payment = orders.payments[0];
 
       if (!payment) {
-        console.error('No payment record found for order');
         toast.error('Payment record not found');
         navigate('/');
         return;
@@ -65,7 +59,6 @@ const PaymentSuccess = () => {
 
       // Check if payment is already confirmed
       if (payment.payment_status === 'paid' || payment.payment_status === 'completed') {
-        console.log('✅ Payment already confirmed');
         setPaymentVerified(true);
         setIsVerifying(false);
         return;
@@ -73,22 +66,15 @@ const PaymentSuccess = () => {
 
       // If we have a source ID, verify it with PayMongo
       if (sourceId) {
-        console.log('🔍 Verifying PayMongo source:', sourceId);
         const sourceResult = await PayMongoService.getSource(sourceId);
         
-        console.log('PayMongo source result:', sourceResult);
-
         if (sourceResult.success && sourceResult.source.attributes.status === 'chargeable') {
-          console.log('✅ Source is chargeable, creating payment...');
-          
           // Create payment with PayMongo
           const paymentResult = await PayMongoService.createPayment(
             orders.total_amount,
             sourceId,
             `Order #${orderId}`
           );
-
-          console.log('PayMongo payment result:', paymentResult);
 
           if (paymentResult.success) {
             // ⭐ CRITICAL: Update payment status to 'paid'
@@ -104,29 +90,23 @@ const PaymentSuccess = () => {
               .eq('id', payment.id);
 
             if (updateError) {
-              console.error('❌ Failed to update payment status:', updateError);
               toast.error('Failed to confirm payment');
               return;
             }
 
-            console.log('✅ Payment status updated to paid - Stock will be deducted automatically');
             setPaymentVerified(true);
             toast.success('Payment confirmed successfully!');
           } else {
-            console.error('❌ PayMongo payment creation failed');
             toast.error('Payment verification failed');
           }
         } else {
-          console.warn('⚠️ Source is not chargeable:', sourceResult.source?.attributes?.status);
           toast.warning('Payment verification pending');
         }
       } else {
         // No source ID - might be COD or already processed
-        console.log('ℹ️ No source ID, order exists');
         setPaymentVerified(true);
       }
     } catch (error) {
-      console.error('❌ Payment verification error:', error);
       toast.error('Failed to verify payment: ' + error.message);
     } finally {
       setIsVerifying(false);

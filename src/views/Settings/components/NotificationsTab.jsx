@@ -22,7 +22,6 @@ const NotificationsTab = ({ user, notificationPreferences, setNotificationPrefer
 
       toast.success('Notification preferences saved successfully!');
     } catch (error) {
-      console.error('Error saving notification preferences:', error);
       toast.error('Failed to save notification preferences');
     } finally {
       setSavingNotifications(false);

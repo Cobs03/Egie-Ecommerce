@@ -14,13 +14,11 @@ export const checkIpBlacklist = async (ipAddress) => {
       .rpc('is_ip_blacklisted', { p_ip_address: ipAddress });
     
     if (error) {
-      console.error('Error checking IP blacklist:', error);
       return false;
     }
     
     return data === true;
   } catch (error) {
-    console.error('Error checking IP blacklist:', error);
     return false;
   }
 };
@@ -35,7 +33,6 @@ export const getUserIpAddress = async () => {
     const data = await response.json();
     return data.ip;
   } catch (error) {
-    console.error('Error getting IP:', error);
     return 'unknown';
   }
 };
@@ -62,10 +59,8 @@ export const logFailedLogin = async (email, failureReason = 'invalid_credentials
     });
     
     if (error) {
-      console.error('Error logging failed login:', error);
     }
   } catch (error) {
-    console.error('Error logging failed login:', error);
     throw error;
   }
 };
@@ -86,10 +81,8 @@ export const logSuccessfulLogin = async (userId, email) => {
     });
     
     if (error) {
-      console.error('Error logging successful login:', error);
     }
   } catch (error) {
-    console.error('Error logging successful login:', error);
   }
 };
 
@@ -157,7 +150,6 @@ export const getSecurityAlerts = async () => {
       suspiciousActivities: suspiciousActivities || []
     };
   } catch (error) {
-    console.error('Error getting security alerts:', error);
     return { newLocations: [], suspiciousActivities: [] };
   }
 };
@@ -172,23 +164,18 @@ export const checkSecurityAlertsOnLogin = async () => {
     if (alerts.newLocations.length > 0) {
       // Show notification about new location login
       const latestLogin = alerts.newLocations[0];
-      console.warn('New location login detected:', latestLogin);
-      
       // In production, show a user-facing notification
       // Example: showNotification('New location login detected. If this wasn\'t you, please secure your account.');
     }
     
     if (alerts.suspiciousActivities.length > 0) {
       // Show notification about suspicious activity
-      console.warn('Suspicious activity detected:', alerts.suspiciousActivities);
-      
       // In production, show a user-facing notification
       // Example: showNotification('Suspicious activity detected on your account. Please review your security settings.');
     }
     
     return alerts;
   } catch (error) {
-    console.error('Error checking security alerts:', error);
     return null;
   }
 };

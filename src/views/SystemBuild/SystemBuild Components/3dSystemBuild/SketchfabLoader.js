@@ -169,8 +169,6 @@ const buildSearchQuery = (productData, componentType) => {
     searchQuery = words.slice(0, 4).join(' ');
   }
   
-  console.log('🔍 Built search query: "' + searchQuery + '" from product: ' + productName);
-  
   return searchQuery;
 };
 
@@ -218,11 +216,8 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
   // Check search cache first
   const cacheKey = searchTerm.toLowerCase();
   if (searchCache.has(cacheKey)) {
-    console.log('📦 Using cached search results for: "' + searchTerm + '"');
     return searchCache.get(cacheKey);
   }
-
-  console.log('🔍 Searching Sketchfab for: "' + searchTerm + '"');
 
   try {
     const params = new URLSearchParams({
@@ -252,8 +247,6 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
     const downloadableModels = data.results?.filter(function(model) {
       return model.isDownloadable;
     }) || [];
-    
-    console.log('📥 ' + downloadableModels.length + ' are downloadable');
     
     // Score and sort models by name similarity to search term
     const searchTermLower = searchTerm.toLowerCase();
@@ -322,7 +315,6 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
     
     return sortedModels;
   } catch (error) {
-    console.error('❌ Sketchfab search failed:', error);
     return [];
   }
 };
@@ -331,8 +323,6 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
  * Get download URL for a Sketchfab model
  */
 export const getSketchfabDownloadUrl = async (modelUid) => {
-  console.log('📥 Getting download URL for model: ' + modelUid);
-
   try {
     const response = await fetch(
       'https://api.sketchfab.com/v3/models/' + modelUid + '/download',
@@ -354,18 +344,15 @@ export const getSketchfabDownloadUrl = async (modelUid) => {
     console.log('📋 Available formats:', Object.keys(data));
     
     if (data.gltf?.url) {
-      console.log('✅ Got GLTF download URL');
       return { url: data.gltf.url, format: 'gltf' };
     }
     
     if (data.glb?.url) {
-      console.log('✅ Got GLB download URL');
       return { url: data.glb.url, format: 'glb' };
     }
     
     throw new Error('No GLTF/GLB format available');
   } catch (error) {
-    console.error('❌ Failed to get download URL:', error.message);
     return null;
   }
 };
@@ -374,8 +361,6 @@ export const getSketchfabDownloadUrl = async (modelUid) => {
  * Download and extract ZIP file, then load GLTF
  */
 const loadGLTFFromZip = async (url, onProgress) => {
-  console.log('📥 Downloading ZIP file...');
-  
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to download: ' + response.status);
@@ -404,7 +389,6 @@ const loadGLTFFromZip = async (url, onProgress) => {
     offset += chunk.length;
   }
   
-  console.log('📦 Extracting ZIP file...');
   if (onProgress) onProgress(55);
   
   const zip = await JSZip.loadAsync(arrayBuffer.buffer);
@@ -421,7 +405,6 @@ const loadGLTFFromZip = async (url, onProgress) => {
     if (lowerName.endsWith('.gltf') || lowerName.endsWith('.glb')) {
       gltfFile = file;
       gltfFileName = fileName;
-      console.log('📄 Found model file: ' + fileName);
     }
     
     files[fileName] = file;
@@ -436,7 +419,6 @@ const loadGLTFFromZip = async (url, onProgress) => {
   const isGLB = gltfFileName.toLowerCase().endsWith('.glb');
   
   if (isGLB) {
-    console.log('📦 Loading GLB model...');
     const glbData = await gltfFile.async('arraybuffer');
     if (onProgress) onProgress(80);
     
@@ -445,18 +427,15 @@ const loadGLTFFromZip = async (url, onProgress) => {
         glbData,
         '',
         function(gltf) {
-          console.log('✅ GLB loaded successfully');
           if (onProgress) onProgress(100);
           resolve(gltf.scene);
         },
         function(error) {
-          console.error('❌ GLB parse error:', error);
           reject(error);
         }
       );
     });
   } else {
-    console.log('📦 Loading GLTF model with dependencies...');
     const gltfContent = await gltfFile.async('text');
     const gltfJson = JSON.parse(gltfContent);
     
@@ -510,7 +489,6 @@ const loadGLTFFromZip = async (url, onProgress) => {
         modifiedGltf,
         '',
         function(gltf) {
-          console.log('✅ GLTF loaded successfully');
           Object.values(blobUrls).forEach(function(url) {
             URL.revokeObjectURL(url);
           });
@@ -518,7 +496,6 @@ const loadGLTFFromZip = async (url, onProgress) => {
           resolve(gltf.scene);
         },
         function(error) {
-          console.error('❌ GLTF parse error:', error);
           Object.values(blobUrls).forEach(function(url) {
             URL.revokeObjectURL(url);
           });
@@ -533,10 +510,7 @@ const loadGLTFFromZip = async (url, onProgress) => {
  * Load a model from Sketchfab by UID
  */
 export const loadSketchfabModel = async (modelUid, onProgress) => {
-  console.log('🎮 Loading Sketchfab model: ' + modelUid);
-
   if (modelCache.has(modelUid)) {
-    console.log('📦 Using cached model');
     return modelCache.get(modelUid).clone();
   }
 
@@ -552,7 +526,6 @@ export const loadSketchfabModel = async (modelUid, onProgress) => {
     
     return model;
   } catch (error) {
-    console.error('❌ Failed to load Sketchfab model:', error);
     return null;
   }
 };
@@ -564,17 +537,12 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
   const config = COMPONENT_CONFIGS[componentType];
   
   if (!config) {
-    console.warn('⚠️ No config for: ' + componentType);
     return null;
   }
 
   if (!productData) {
-    console.warn('⚠️ No product data provided for: ' + componentType);
     return null;
   }
-
-  console.log('📦 Loading ' + componentType + ' from Sketchfab...');
-  console.log('📦 Product: ' + productData.productName);
 
   try {
     let model = null;
@@ -593,11 +561,9 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
     for (const query of allQueries) {
       if (model) break; // Already found a model
       
-      console.log('🔍 Searching for: "' + query + '"');
       const results = await searchSketchfabModels(query, { count: 8 });
       
       if (results.length === 0) {
-        console.log('⚠️ No results for: "' + query + '"');
         continue;
       }
       
@@ -645,7 +611,6 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
         console.log('🎯 Trying model: ' + result.name + ' (score: ' + result.relevanceScore + ')');
         model = await loadSketchfabModel(result.uid, onProgress);
         if (model) {
-          console.log('✅ Successfully loaded: ' + result.name);
           // Store model info including creator
           modelInfo = {
             name: result.name,
@@ -706,10 +671,8 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
       return { model: model, modelInfo: modelInfo };
     }
 
-    console.warn('⚠️ Could not load ' + componentType + ' from Sketchfab');
     return null;
   } catch (error) {
-    console.error('❌ Failed to load ' + componentType + ' from Sketchfab:', error);
     return null;
   }
 };
@@ -732,5 +695,4 @@ export const clearModelCache = () => {
   });
   modelCache.clear();
   searchCache.clear();
-  console.log('🧹 Model cache cleared');
 };

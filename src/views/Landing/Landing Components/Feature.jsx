@@ -27,7 +27,6 @@ const Feature = () => {
           .order('name');
 
         if (error) {
-          console.error('Error fetching categories:', error);
           // Fallback to default products if fetch fails
           setProducts(getDefaultProducts());
         } else {
@@ -40,7 +39,6 @@ const Feature = () => {
           setProducts(mappedProducts);
         }
       } catch (error) {
-        console.error('Error:', error);
         setProducts(getDefaultProducts());
       } finally {
         setLoading(false);

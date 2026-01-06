@@ -2,12 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 export const initializeControls = (camera, renderer) => {
-  console.log('🎮 Initializing OrbitControls...');
-  
   // OrbitControls needs the canvas DOM element, NOT the renderer
   const domElement = renderer.domElement;
-  console.log('📍 DOM Element:', domElement);
-
   const controls = new OrbitControls(camera, domElement);
   
   // Configure controls
@@ -25,14 +21,6 @@ export const initializeControls = (camera, renderer) => {
   controls.autoRotate = false;
   controls.autoRotateSpeed = 2.0;
 
-  console.log('✅ OrbitControls initialized:', {
-    enabled: controls.enabled,
-    enableRotate: controls.enableRotate,
-    enableZoom: controls.enableZoom,
-    enablePan: controls.enablePan,
-    domElement: 'attached'
-  });
-
   return controls;
 };
 
@@ -42,31 +30,23 @@ let controlsEndHandler = null;
 let controlsChangeHandler = null;
 
 export const attachControlsEventListeners = (controls) => {
-  console.log('🔗 Attaching controls event listeners...');
-
   controlsStartHandler = () => {
-    console.log('🎮 Controls interaction started');
   };
 
   controlsEndHandler = () => {
-    console.log('🎮 Controls interaction ended');
   };
 
   controlsChangeHandler = () => {
     // Uncomment for verbose logging
-    // console.log('🎮 Controls changed');
   };
 
   controls.addEventListener('start', controlsStartHandler);
   controls.addEventListener('end', controlsEndHandler);
   controls.addEventListener('change', controlsChangeHandler);
 
-  console.log('✅ Controls event listeners attached');
 };
 
 export const detachControlsEventListeners = (controls) => {
-  console.log('🔗 Detaching controls event listeners...');
-
   if (controls) {
     if (controlsStartHandler) {
       controls.removeEventListener('start', controlsStartHandler);
@@ -83,12 +63,9 @@ export const detachControlsEventListeners = (controls) => {
   controlsEndHandler = null;
   controlsChangeHandler = null;
 
-  console.log('✅ Controls event listeners detached');
 };
 
 export const resetControls = (controls, camera) => {
-  console.log('🔄 Resetting controls...');
-  
   if (controls && camera) {
     controls.reset();
     camera.position.set(5, 4, 5);
@@ -96,12 +73,9 @@ export const resetControls = (controls, camera) => {
     controls.update();
   }
   
-  console.log('✅ Controls reset');
 };
 
 export const focusOnObject = (controls, camera, object) => {
-  console.log('🎯 Focusing on object...');
-  
   if (controls && camera && object) {
     const box = new THREE.Box3().setFromObject(object);
     const center = box.getCenter(new THREE.Vector3());
@@ -115,5 +89,4 @@ export const focusOnObject = (controls, camera, object) => {
     controls.update();
   }
   
-  console.log('✅ Focused on object');
 };

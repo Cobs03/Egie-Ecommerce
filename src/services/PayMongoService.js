@@ -8,7 +8,6 @@ const PAYMONGO_PUBLIC_KEY = import.meta.env.VITE_PAYMONGO_PUBLIC_KEY;
 const PAYMONGO_API_URL = 'https://api.paymongo.com/v1';
 
 // Debug: Log keys on service initialization (will show in console)
-console.log('PayMongo Service Initialized');
 console.log('Secret Key loaded:', PAYMONGO_SECRET_KEY ? `${PAYMONGO_SECRET_KEY.substring(0, 15)}...` : 'NOT FOUND');
 console.log('Public Key loaded:', PAYMONGO_PUBLIC_KEY ? `${PAYMONGO_PUBLIC_KEY.substring(0, 15)}...` : 'NOT FOUND');
 
@@ -62,7 +61,6 @@ class PayMongoService {
         paymentIntent: data.data
       };
     } catch (error) {
-      console.error('PayMongo createPaymentIntent error:', error);
       return {
         success: false,
         error: error.message
@@ -123,7 +121,6 @@ class PayMongoService {
         paymentMethod: data.data
       };
     } catch (error) {
-      console.error('PayMongo createCardPaymentMethod error:', error);
       return {
         success: false,
         error: error.message
@@ -166,7 +163,6 @@ class PayMongoService {
         paymentMethod: data.data
       };
     } catch (error) {
-      console.error('PayMongo createPaymentMethod error:', error);
       return {
         success: false,
         error: error.message
@@ -214,7 +210,6 @@ class PayMongoService {
         paymentIntent: data.data
       };
     } catch (error) {
-      console.error('PayMongo attachPaymentIntent error:', error);
       return {
         success: false,
         error: error.message
@@ -251,7 +246,6 @@ class PayMongoService {
         paymentIntent: data.data
       };
     } catch (error) {
-      console.error('PayMongo getPaymentIntent error:', error);
       return {
         success: false,
         error: error.message
@@ -269,7 +263,6 @@ class PayMongoService {
   async createGCashSource(amount, billing, redirectUrl) {
     try {
       // Debug: Check what key is being used
-      console.log('Creating GCash source...');
       console.log('Using secret key:', PAYMONGO_SECRET_KEY ? `${PAYMONGO_SECRET_KEY.substring(0, 20)}...` : 'UNDEFINED');
       const authString = `${PAYMONGO_SECRET_KEY}:`;
       const encodedAuth = btoa(authString);
@@ -311,7 +304,6 @@ class PayMongoService {
         source: data.data
       };
     } catch (error) {
-      console.error('PayMongo createGCashSource error:', error);
       return {
         success: false,
         error: error.message
@@ -362,7 +354,6 @@ class PayMongoService {
         payment: data.data
       };
     } catch (error) {
-      console.error('PayMongo createPayment error:', error);
       return {
         success: false,
         error: error.message
@@ -396,7 +387,6 @@ class PayMongoService {
         source: data.data
       };
     } catch (error) {
-      console.error('PayMongo getSource error:', error);
       return {
         success: false,
         error: error.message

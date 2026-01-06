@@ -31,13 +31,11 @@ class ProductAnalyticsService {
         .select();
 
       if (error) {
-        console.error('Error tracking view:', sanitizeLogData(error));
         throw error;
       }
       
       return { success: true, data };
     } catch (error) {
-      console.error('Error tracking product view:', sanitizeLogData(error));
       return { success: false, error: error.message };
     }
   }

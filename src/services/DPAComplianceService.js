@@ -59,7 +59,6 @@ class DPAComplianceService {
     const service = this.complianceStatus[serviceName.toLowerCase()];
     
     if (!service) {
-      console.warn(`Unknown service: ${serviceName}`);
       return {
         compliant: false,
         blocking: false,
@@ -72,8 +71,6 @@ class DPAComplianceService {
       const message = `⚠️ WARNING: No Data Processing Agreement (DPA) executed with ${service.service}. ` +
         `Contact ${service.contactEmail} to execute DPA. ` +
         `Template available at: /legal/dpa-templates/DPA-${serviceName.toUpperCase()}.md`;
-      
-      console.warn(message);
       
       // Log compliance warning
       await this.logComplianceWarning(serviceName, message);
@@ -107,7 +104,6 @@ class DPAComplianceService {
       
       if (reviewDate < oneYearAgo) {
         const message = `⚠️ DPA with ${service.service} needs review (last reviewed: ${service.lastReviewed})`;
-        console.warn(message);
         await this.logComplianceWarning(serviceName, message);
       }
     }
@@ -138,7 +134,6 @@ class DPAComplianceService {
         created_at: new Date().toISOString()
       });
     } catch (error) {
-      console.error('Failed to log compliance warning:', error);
       // Don't throw - logging failure shouldn't block operations
     }
   }
@@ -160,11 +155,6 @@ class DPAComplianceService {
     service.lastReviewed = reviewDate || new Date().toISOString().split('T')[0];
 
     // In production, persist to database
-    console.log(`✅ DPA status updated for ${service.service}:`, {
-      executed,
-      lastReviewed: service.lastReviewed
-    });
-
     // Log the update
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -177,7 +167,6 @@ class DPAComplianceService {
         created_at: new Date().toISOString()
       });
     } catch (error) {
-      console.error('Failed to log DPA update:', error);
     }
 
     return {

@@ -20,7 +20,6 @@ const Bundles = () => {
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.error('Error fetching bundles:', error);
           setBundles([]);
         } else {
           // Transform bundle data to match component format
@@ -41,7 +40,6 @@ const Bundles = () => {
           setBundles(transformedBundles);
         }
       } catch (error) {
-        console.error('Error:', error);
         setBundles([]);
       } finally {
         setLoading(false);

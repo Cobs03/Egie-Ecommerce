@@ -39,8 +39,6 @@ const BundleModal = ({ bundle, onClose }) => {
   const fetchBundleDetails = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Fetching bundle details for:', bundle.id);
-
       // Get bundle details
       const { data: bundleInfo, error: bundleError} = await supabase
         .from('bundles')
@@ -61,10 +59,7 @@ const BundleModal = ({ bundle, onClose }) => {
 
       setBundleData(bundleInfo);
       setBundleProducts(products || []);
-      console.log('✅ Bundle loaded:', bundleInfo);
-      console.log('✅ Products:', products);
     } catch (error) {
-      console.error('❌ Error loading bundle:', error);
       toast.error('Failed to load bundle details');
     } finally {
       setLoading(false);
@@ -74,8 +69,6 @@ const BundleModal = ({ bundle, onClose }) => {
   const handleAddToCart = async () => {
     try {
       setAddingToCart(true);
-      console.log('🛒 Adding bundle to cart...');
-
       const result = await BundleService.addBundleToCart(bundle.id);
 
       if (result.success) {
@@ -86,7 +79,6 @@ const BundleModal = ({ bundle, onClose }) => {
         toast.error(result.error || 'Failed to add bundle to cart');
       }
     } catch (error) {
-      console.error('❌ Error:', error);
       toast.error('Failed to add bundle to cart');
     } finally {
       setAddingToCart(false);

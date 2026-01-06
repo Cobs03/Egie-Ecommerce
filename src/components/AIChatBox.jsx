@@ -533,7 +533,6 @@ const AIChatBox = () => {
       setCatalog((prev) => ({ ...prev, products }));
       return products;
     } catch (error) {
-      console.error('Error preloading products:', error);
       return catalog.products;
     } finally {
       productsLoadingRef.current = false;
@@ -550,7 +549,6 @@ const AIChatBox = () => {
       setCatalog((prev) => ({ ...prev, categories }));
       return categories;
     } catch (error) {
-      console.error('Error preloading categories:', error);
       return catalog.categories;
     } finally {
       categoriesLoadingRef.current = false;
@@ -815,7 +813,6 @@ const AIChatBox = () => {
           return results;
         }
       } catch (error) {
-        console.error('Error fetching related products for component definition:', error);
       }
     }
     return [];
@@ -870,7 +867,6 @@ const AIChatBox = () => {
           });
           return true;
         } catch (error) {
-          console.error('Error handling comparison question:', error);
           return false;
         } finally {
           setIsTyping(false);
@@ -919,7 +915,6 @@ const AIChatBox = () => {
         });
         return true;
       } catch (error) {
-        console.error('Error handling component question:', error);
         return false;
       } finally {
         setIsTyping(false);
@@ -1096,7 +1091,6 @@ const AIChatBox = () => {
         }
       }
     } catch (error) {
-      console.error('Error loading history:', error);
     } finally {
       setIsTyping(false);
     }
@@ -1119,7 +1113,6 @@ const AIChatBox = () => {
         setHasLoadedHistory(false);
       }
     } catch (error) {
-      console.error('Error clearing history:', error);
     }
   };
 
@@ -1161,8 +1154,6 @@ const AIChatBox = () => {
         }
       }
       
-      console.log('🏷️ Detected category:', category);
-      
       // Find ALL products in same category, then sort by price
       const sameCategory = allProducts.filter(p => {
         let productCategory = '';
@@ -1192,15 +1183,11 @@ const AIChatBox = () => {
         return isMatch && p.stock_quantity > 0;
       }).sort((a, b) => a.price - b.price);
 
-      console.log(`💰 Found ${sameCategory.length} products in category "${category}"`);
-      
       // Get the 3-5 cheapest options that are NOT in current products
       const currentProductIds = new Set(currentProducts.map(p => p.id));
       const cheaper = sameCategory
         .filter(p => !currentProductIds.has(p.id)) // Exclude already shown products
         .slice(0, 5); // Show top 5 cheapest alternatives
-
-      console.log(`✅ Found ${cheaper.length} cheaper alternatives`);
 
       if (cheaper.length === 0) {
         const noOptionsText = selectedLanguage === 'tl'
@@ -1283,7 +1270,6 @@ IMPORTANT: Write naturally like a helpful salesperson. NO asterisks, NO markdown
       setMessages(prev => [...prev, aiResponse]);
       saveMessageToHistory(aiResponse);
     } catch (error) {
-      console.error('Error getting cheaper options:', error);
       const errorMsg = {
         id: Date.now(),
         text: "I had trouble finding cheaper alternatives. Please try asking me directly, like 'show me budget laptops' or 'affordable processors'.",
@@ -1342,8 +1328,6 @@ IMPORTANT: Write naturally like a helpful salesperson. NO asterisks, NO markdown
         categoryGroups[category].push(product);
       });
 
-      console.log('📊 Category groups:', categoryGroups);
-
       // Check if we have products from same category
       const categories = Object.keys(categoryGroups);
       const validCategories = categories.filter(cat => cat !== 'unknown' && categoryGroups[cat].length >= 2);
@@ -1376,7 +1360,6 @@ IMPORTANT: Write naturally like a helpful salesperson. NO asterisks, NO markdown
         }
       } else if (categoryGroups['unknown']?.length >= 2) {
         // All products are unknown, but user wants to compare them
-        console.log('⚠️ Multiple unknown products, allowing comparison anyway');
         productsToCompare = categoryGroups['unknown'];
         
         const mixedMsg = {
@@ -1398,8 +1381,6 @@ IMPORTANT: Write naturally like a helpful salesperson. NO asterisks, NO markdown
         setIsTyping(false);
         return;
       }
-
-      console.log(`🔍 Comparing ${productsToCompare.length} products`);
 
       // Generate AI comparison
       const category = validCategories.length > 0 ? validCategories[0] : 'product';
@@ -1456,7 +1437,6 @@ IMPORTANT RULES:
       setMessages(prev => [...prev, aiResponse]);
       saveMessageToHistory(aiResponse);
     } catch (error) {
-      console.error('Error comparing products:', error);
       const errorMsg = {
         id: Date.now(),
         text: "I had trouble comparing those products. Please try asking me directly, like 'compare these laptops' or 'what's the difference between product A and B'?",
@@ -1552,7 +1532,6 @@ IMPORTANT:
       setMessages(prev => [...prev, aiMessage]);
       saveMessageToHistory(aiMessage);
     } catch (error) {
-      console.error('Error finding compatible parts:', error);
       const errorMsg = {
         id: Date.now(),
         text: "I had trouble finding compatible parts. Please try asking me directly, like 'what works well with this processor?' or 'what components are compatible with this motherboard?'",
@@ -1605,7 +1584,6 @@ IMPORTANT:
 
       setMessages(prev => [...prev, aiResponse]);
     } catch (error) {
-      console.error('Error checking compatibility:', error);
     } finally {
       setIsTyping(false);
     }
@@ -1616,18 +1594,12 @@ IMPORTANT:
     setIsTyping(true);
 
     try {
-      console.log('🔍 handleShowBundles: Fetching bundles...');
       const { data: bundles, error } = await BundleService.fetchBundles();
 
-      console.log('📦 Bundle fetch result:', { bundles, error });
-      console.log('📊 Bundles count:', bundles?.length);
-
       if (error) {
-        console.error('❌ Bundle fetch error:', error);
       }
 
       if (error || !bundles || bundles.length === 0) {
-        console.log('⚠️ No bundles available');
         const noBundlesMsg = {
           id: Date.now(),
           text: "I apologize, but we don't have any complete bundles available at the moment. However, I can help you build a custom PC! Just let me know your budget and requirements.",
@@ -1638,8 +1610,6 @@ IMPORTANT:
         setIsTyping(false);
         return;
       }
-
-      console.log('✅ Showing', bundles.length, 'bundles');
 
       // Show bundle options
       const bundleOptionsMsg = {
@@ -1652,8 +1622,6 @@ IMPORTANT:
 
       // Add individual bundle cards
       bundles.forEach((bundle, index) => {
-        console.log(`📦 Adding bundle ${index + 1}:`, bundle.bundle_name, bundle);
-
         // Extract values with fallbacks for different column names
         const bundleName = bundle.bundle_name || bundle.name || 'Unnamed Bundle';
         const bundlePrice = bundle.official_price || bundle.total_price || 0;
@@ -1673,7 +1641,6 @@ IMPORTANT:
       });
 
     } catch (error) {
-      console.error('❌ Error in handleShowBundles:', error);
       const errorMsg = {
         id: Date.now(),
         text: "Sorry, I encountered an error while fetching bundle options. Please try again.",
@@ -1729,7 +1696,6 @@ IMPORTANT:
       saveMessageToHistory(bundleDetailsMsg);
 
     } catch (error) {
-      console.error('Error fetching bundle details:', error);
       const errorMsg = {
         id: Date.now(),
         text: "Sorry, I encountered an error while loading bundle details. Please try again.",
@@ -1772,7 +1738,6 @@ IMPORTANT:
       }
 
     } catch (error) {
-      console.error('Error adding bundle to cart:', error);
       const errorMsg = {
         id: Date.now(),
         text: "Sorry, I encountered an error while adding the bundle to your cart. Please try again.",
@@ -1793,7 +1758,6 @@ IMPORTANT:
         await ChatHistoryService.saveMessage(data.user.id, message);
       }
     } catch (error) {
-      console.error('Error saving message to history:', error);
     }
   };
 
@@ -1840,7 +1804,6 @@ IMPORTANT:
     };
 
     recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
       setIsRecording(false);
       // Remove the recording message
       setMessages(prev => prev.filter(msg => !msg.isRecording));
@@ -1905,7 +1868,6 @@ IMPORTANT:
         console.log(`📸 Image prepared for vision (${sizeKb} KB approx)`);
         setUploadedImage(optimizedDataUrl);
       } catch (processingError) {
-        console.error('❌ Image optimization failed:', processingError);
         const optimizationMsg = {
           id: Date.now(),
           text: 'I had trouble processing that image. Please try a different file or reduce its resolution.',
@@ -1933,10 +1895,8 @@ IMPORTANT:
           const optimized = await optimizeImageForVision(imageData, { maxDimension: 960, quality: 0.78 });
           if (optimized) {
             preparedImage = optimized;
-            console.log('📦 Re-optimized image before vision call');
           }
         } catch (resizeError) {
-          console.warn('⚠️ Unable to re-optimize image before vision call:', resizeError);
         }
       }
 
@@ -2112,7 +2072,6 @@ IMPORTANT:
             } else if (keywords.includes('speaker') || keywords.includes('audio')) {
               detectedType = 'speaker';
             }
-            console.log('🔍 Refined peripheral type to:', detectedType);
           }
           
           // Expand search terms based on product type
@@ -2151,8 +2110,6 @@ IMPORTANT:
             searchKeywords.push(...specificKeywords);
           }
           
-          console.log('🔍 Searching for alternatives with keywords:', searchKeywords);
-          
           alternatives = allProducts.filter(product => {
             const productName = (product.name || product.title || '').toLowerCase();
             const categoryName = (product.category_id || product.category || '').toLowerCase();
@@ -2185,23 +2142,19 @@ IMPORTANT:
             );
             
             if (matches) {
-              console.log('✅ Match found:', product.name || product.title);
             }
             
             return matches;
           });
           
-          console.log(`📦 Found ${alternatives.length} category matches`);
         }
 
         // If no category matches, try brand matches
         if (alternatives.length === 0 && visionData.brand && visionData.brand !== 'Unknown') {
-          console.log('🔍 Trying brand match:', visionData.brand);
           alternatives = allProducts.filter(product => {
             const brandName = (product.brands?.name || product.brand_name || product.brand || '').toLowerCase();
             return brandName.includes(visionData.brand.toLowerCase());
           });
-          console.log(`📦 Found ${alternatives.length} brand matches`);
         }
 
         // If still no matches, show a message that we don't have this category
@@ -2256,7 +2209,6 @@ IMPORTANT:
 
       setUploadedImage(null);
     } catch (error) {
-      console.error('Image search error:', error);
       setIsTyping(false);
       
       const errorMsg = {
@@ -2272,7 +2224,6 @@ IMPORTANT:
         try {
           await processImageSearchFallback(imageData, descriptionFallback);
         } catch (fallbackError) {
-          console.error('Keyword fallback error:', fallbackError);
         }
       }
 
@@ -2343,7 +2294,6 @@ IMPORTANT:
 
       setUploadedImage(null);
     } catch (error) {
-      console.error('Fallback search error:', error);
       throw error;
     }
   };
@@ -2468,8 +2418,6 @@ IMPORTANT:
    */
   const analyzeIntentWithAI = async (userInput, availableProducts) => {
     try {
-      console.log('🤖 Using AI to analyze intent...');
-      
       const productList = availableProducts.map((p, idx) => 
         `${idx + 1}. ${p.name || p.title} (₱${p.price})`
       ).join('\n');
@@ -2534,10 +2482,8 @@ Examples:
       const data = await response.json();
       const intent = JSON.parse(data.choices[0].message.content);
       
-      console.log('🎯 AI Intent Analysis:', intent);
       return intent;
     } catch (error) {
-      console.error('❌ AI intent analysis failed:', error);
       return { isCommand: false, action: 'none', confidence: 0 };
     }
   };
@@ -2581,11 +2527,8 @@ Examples:
       updateContext(contextUpdates);
     }
 
-    console.log('🔍 Checking if this is a product search query...');
-
     const definitionCue = /(what\s+is|define|definition|meaning|explain|difference\s+between|differentiate|clarify)/i.test(userInput);
     if (intent.action === 'definition' || definitionCue) {
-      console.log('ℹ️ Detected definition/spec question, skipping product search.');
       return false;
     }
 
@@ -2601,7 +2544,6 @@ Examples:
     ];
 
     if (commandPhrases.some((pattern) => pattern.test(input))) {
-      console.log('⚠️ This looks like a command, not a product search. Skipping.');
       return false;
     }
 
@@ -2615,7 +2557,6 @@ Examples:
     ];
 
     if (conversationalPhrases.some((pattern) => pattern.test(input))) {
-      console.log('⚠️ This is conversational, not a product search. Skipping.');
       return false;
     }
 
@@ -2632,7 +2573,6 @@ Examples:
       const match = input.match(pattern);
       if (match && match[1]) {
         searchTerm = match[1].trim();
-        console.log('✅ Product search pattern matched! Term:', searchTerm);
         break;
       }
     }
@@ -2657,7 +2597,6 @@ Examples:
 
       if (hasSearchTerm && words.length <= 3) {
         searchTerm = input;
-        console.log('✅ Simple product query detected:', searchTerm);
       }
     }
 
@@ -2678,25 +2617,18 @@ Examples:
     }
 
     if (!searchTerm && !intent.category && !intent.brandPreferences.length) {
-      console.log('⚠️ Not a product search query, letting AI handle it');
       return false;
     }
 
     // Use new intelligent intent detection instead of keyword normalization
-    console.log('🧠 Using intelligent AI search...');
-
     setIsTyping(true);
 
     try {
       // Use AI to detect intent and search intelligently
       const detectedIntent = await AIService.detectIntent(input);
-      console.log('🎯 AI Detected Intent:', detectedIntent);
-
       // Search products using intelligent matching
       let foundProducts = await AIService.searchProductsByIntent(detectedIntent);
       
-      console.log('✅ Intelligent search found:', foundProducts.length, 'products');
-
       // Apply additional filters if needed
       if (intent.brandPreferences && intent.brandPreferences.length > 0) {
         const brandFiltered = foundProducts.filter((product) => 
@@ -2766,7 +2698,6 @@ Your response:`;
           
           setMessages((prev) => [...prev, noResultsMsg]);
         } catch (error) {
-          console.error('❌ Error generating no results response:', error);
           // Fallback to simple message
           const noResultsMsg = {
             id: Date.now(),
@@ -2811,8 +2742,6 @@ Your response:`;
                                firstProduct.name.toLowerCase().includes(requestedCategory);
         
         if (!categoryMatches) {
-          console.warn(`⚠️ Category mismatch: User asked for "${requestedCategory}" but got "${productCategory}"`);
-          
           // Generate apology and correct search
           const apologyMsg = {
             id: Date.now(),
@@ -3012,7 +2941,6 @@ Your response (${languageName}):`;
         responseText = `${aiIntro}\n\n${productLines}\n\n${aiClosing}`;
         
       } catch (error) {
-        console.error('❌ Error generating AI intro:', error);
         // Fallback to simple response
         const fallbackText = selectedLanguage === 'tl' 
           ? `Nakita ko ${summaryProducts.length} ${displayLabel.toLowerCase()} para sa'yo. Sabihin mo lang kung gusto mo ng mas maraming detalye!`
@@ -3046,7 +2974,6 @@ Your response (${languageName}):`;
       setIsTyping(false);
       return true;
     } catch (error) {
-      console.error('❌ Error in product search:', error);
       setIsTyping(false);
       return false;
     }
@@ -3077,11 +3004,7 @@ Your response (${languageName}):`;
       return false; // Not a budget request
     }
     
-    console.log('💰 AI-detected budget intent:', budgetIntent);
-    
     const allProducts = lastAIMessage.products;
-    console.log('📦 Filtering', allProducts.length, 'products by budget');
-    
     const { minBudget, maxBudget } = budgetIntent;
     
     // Filter products by budget
@@ -3102,8 +3025,6 @@ Your response (${languageName}):`;
       
       return true;
     });
-    
-    console.log('✅ Filtered to', filteredProducts.length, 'products within budget');
     
     if (filteredProducts.length === 0) {
       const budgetLabel = minBudget && maxBudget 
@@ -3162,7 +3083,6 @@ Your response:`;
         setMessages(prev => [...prev, noBudgetMatchMsg]);
         setRecommendedProducts(closestProducts);
       } catch (error) {
-        console.error('❌ Error generating no budget match response:', error);
         // Fallback
         const noBudgetMatchMsg = {
           id: Date.now(),
@@ -3278,18 +3198,14 @@ Rules:
       });
 
       if (!response.ok) {
-        console.error('Budget detection API error:', response.status);
         return null;
       }
 
       const data = await response.json();
       const result = JSON.parse(data.choices[0].message.content);
       
-      console.log('🤖 AI Budget Detection Result:', result);
-      
       return result;
     } catch (error) {
-      console.error('Error detecting budget intent:', error);
       return null;
     }
   };
@@ -3303,17 +3219,12 @@ Rules:
   const detectAndExecuteCommand = async (userInput, currentMessages) => {
     const input = userInput.toLowerCase().trim();
     
-    console.log('🔍 COMMAND DETECTION START');
-    console.log('📝 User input:', userInput);
-    console.log('📝 Lowercase input:', input);
-    
     // Get the last AI message with products
     const lastAIMessage = [...currentMessages]
       .reverse()
       .find(msg => msg.sender === 'ai' && msg.products && msg.products.length > 0);
     
     if (!lastAIMessage || !lastAIMessage.products) {
-      console.log('⚠️ No products in recent messages to act on');
       console.log('📋 Available messages:', currentMessages.map(m => ({ 
         sender: m.sender, 
         hasProducts: !!m.products,
@@ -3362,8 +3273,6 @@ Rules:
     const isLastAdded = lastAddedPatterns.some(pattern => pattern.test(input));
 
     if (isViewCart || isLastAdded) {
-      console.log(isViewCart ? '🛒 VIEW CART COMMAND DETECTED!' : '🕐 LAST ADDED COMMAND DETECTED!');
-      
       // If user asks for last added item
       if (isLastAdded) {
         if (!lastAddedToCart) {
@@ -3423,7 +3332,6 @@ Rules:
         return true;
         
       } catch (error) {
-        console.error('❌ Error fetching cart:', error);
         const errorMsg = {
           id: Date.now(),
           text: `I encountered an error while fetching your cart. Please try again or refresh the page.`,
@@ -3473,8 +3381,6 @@ Rules:
     const isDetailsRequest = detailsPatterns.some(pattern => pattern.test(input));
 
     if (isDetailsRequest) {
-      console.log('📄 PRODUCT DETAILS COMMAND DETECTED!');
-      
       // Get the last shown products from context
       const { lastProducts } = conversationContext;
       
@@ -3496,16 +3402,12 @@ Rules:
       // Check for position keywords (first, second, last)
       if (/\b(first|1st|one)\b/i.test(lowerInput)) {
         productToShow = lastProducts[0];
-        console.log('📍 Selected: FIRST product');
       } else if (/\b(second|2nd|two)\b/i.test(lowerInput)) {
         productToShow = lastProducts[1] || lastProducts[0];
-        console.log('📍 Selected: SECOND product');
       } else if (/\b(third|3rd|three)\b/i.test(lowerInput)) {
         productToShow = lastProducts[2] || lastProducts[0];
-        console.log('📍 Selected: THIRD product');
       } else if (/\blast\b/i.test(lowerInput)) {
         productToShow = lastProducts[lastProducts.length - 1];
-        console.log('📍 Selected: LAST product');
       } else {
         // Try to match by product name or brand
         for (const product of lastProducts) {
@@ -3519,9 +3421,6 @@ Rules:
             .split(/\s+/)
             .filter(word => word.length > 2);
           
-          console.log('🔍 Searching for words:', significantWords);
-          console.log('🔍 In product:', productName);
-          
           // Check if any significant words match product name or brand
           const matchesProduct = significantWords.some(word => 
             productName.includes(word) || brandName.includes(word)
@@ -3529,7 +3428,6 @@ Rules:
           
           if (matchesProduct) {
             productToShow = product;
-            console.log('📍 Selected by name match:', product.name);
             break;
           }
         }
@@ -3540,15 +3438,6 @@ Rules:
           console.log('📍 Selected: DEFAULT (first product)');
         }
       }
-      
-      console.log(`📦 Showing details for: "${productToShow.name}"`);
-      console.log(`📦 Product data:`, {
-        id: productToShow.id,
-        name: productToShow.name,
-        selected_components: productToShow.selected_components,
-        specifications: productToShow.specifications,
-        description: productToShow.description
-      });
       
       // Extract specifications from database
       let specificationsText = '';
@@ -3623,9 +3512,6 @@ Rules:
         });
       }
       
-      console.log(`📋 Specifications found:`, hasSpecs ? 'Yes' : 'No');
-      console.log(`📋 Specifications text:`, specificationsText);
-
       // If no specifications found in database, show a helpful message
       if (!hasSpecs) {
         const noSpecsMsg = {
@@ -3681,27 +3567,19 @@ Rules:
 
     const isAddToCart = addToCartPatterns.some(pattern => {
       const matches = pattern.test(input);
-      console.log(`Testing pattern ${pattern}: ${matches}`);
       return matches;
     });
-
-    console.log('🛒 Is add to cart command?', isAddToCart);
 
     // Check if user is asking to "show all" or clarifying, not adding
     const isClarificationOrShowAll = /(show|display|list|I mean|clarify|all of|view all)\s+(all|the|these|those)?\s+\w+/i.test(input);
     
     if (isClarificationOrShowAll) {
-      console.log('⚠️ Detected clarification/show-all phrase, not add-to-cart');
       return false; // Let product search handle it
     }
 
     if (isAddToCart) {
-      console.log('✅ ADD TO CART COMMAND DETECTED!');
-      
       // ===== EXTRACT QUANTITY ===== 🔢
       const quantity = extractQuantity(input);
-      console.log(`🔢 Detected quantity: ${quantity}`);
-      
       // Detect which product (first, second, last, by name, or just "one")
       let productToAdd = null;
       let productIndex = -1;
@@ -3711,13 +3589,10 @@ Rules:
       const hasContextualRef = /the\s+(cheaper|cheapest|expensive|pricey|first|second|last|top)/i.test(input);
       
       if (hasContextualRef) {
-        console.log('🧠 CONTEXT-AWARE COMMAND DETECTED!');
         productToAdd = getContextualProduct(input);
         
         if (productToAdd) {
-          console.log(`✅ Matched product from context: "${productToAdd.name}"`);
         } else {
-          console.log('⚠️ Context reference but no products in memory');
           const contextErrorMsg = {
             id: Date.now(),
             text: `I don't have any products to reference. Could you search for a product first, or tell me what you're looking for?`,
@@ -3731,14 +3606,10 @@ Rules:
 
       // ===== TRY FUZZY MATCHING BY NAME ===== 🎯
       if (!productToAdd) {
-        console.log('🔍 Attempting fuzzy product matching...');
-        
         // Extract product name from input (remove command words)
         const productQuery = input
           .replace(/add|to|cart|my|the|this|that|it|one|please|can|you/gi, '')
           .trim();
-        
-        console.log(`  Search query: "${productQuery}"`);
         
         if (productQuery.length >= 3) {
           const fuzzyMatches = fuzzyMatchProduct(productQuery, products);
@@ -3747,25 +3618,20 @@ Rules:
             productToAdd = fuzzyMatches[0];
             console.log(`✅ FUZZY MATCH FOUND: "${productToAdd.name}" (${(fuzzyMatches[0].matchScore * 100).toFixed(1)}% confidence)`);
           } else {
-            console.log('⚠️ No fuzzy matches found');
           }
         }
       }
 
       // ===== FALLBACK: EXACT NAME MATCHING ===== 📝
       if (!productToAdd) {
-        console.log('🔍 Attempting exact name matching...');
         for (let i = 0; i < products.length; i++) {
           const productName = (products[i].name || products[i].title || '').toLowerCase();
           const productWords = productName.split(/\s+/);
-          
-          console.log(`  Checking product ${i}: "${productName}"`);
           
           const matches = productWords.filter(word => {
             if (word.length >= 3) {
               const found = input.includes(word.toLowerCase());
               if (found) {
-                console.log(`    ✅ Found word "${word}" in input!`);
               }
               return found;
             }
@@ -3775,7 +3641,6 @@ Rules:
           if (matches.length > 0) {
             productToAdd = products[i];
             productIndex = i;
-            console.log(`✅ MATCHED PRODUCT BY NAME: "${productName}"`);
             break;
           }
         }
@@ -3783,41 +3648,26 @@ Rules:
 
       // If no name match, use position keywords
       if (!productToAdd) {
-        console.log('⚠️ No name match found, trying position keywords...');
-        
         if (/first|1st/i.test(input)) {
           productToAdd = products[0];
           productIndex = 0;
-          console.log('✅ Matched by position: FIRST');
         } else if (/second|2nd/i.test(input)) {
           productToAdd = products[1];
           productIndex = 1;
-          console.log('✅ Matched by position: SECOND');
         } else if (/third|3rd/i.test(input)) {
           productToAdd = products[2];
           productIndex = 2;
-          console.log('✅ Matched by position: THIRD');
         } else if (/last/i.test(input)) {
           productToAdd = products[products.length - 1];
           productIndex = products.length - 1;
-          console.log('✅ Matched by position: LAST');
         } else {
           // Default to first product
           productToAdd = products[0];
           productIndex = 0;
-          console.log('⚠️ No position keyword, defaulting to FIRST product');
         }
       }
 
       if (productToAdd) {
-        console.log('📦 Product to add:', productToAdd);
-        console.log('📦 Product structure:', {
-          id: productToAdd.id,
-          name: productToAdd.name || productToAdd.title,
-          price: productToAdd.price,
-          variants: productToAdd.variants
-        });
-        
         // Get default variant
         const defaultVariant = productToAdd.variants?.[0] || {
           id: `${productToAdd.id}-default`,
@@ -3834,19 +3684,10 @@ Rules:
           quantity: quantity  // ✨ Use detected quantity instead of hardcoded 1
         };
 
-        console.log('🛒 Adding to cart:', cartItemData);
-        console.log('🛒 addToCart function exists?', typeof addToCart);
-        console.log('🛒 About to call addToCart...');
-
         // Add to cart using CartContext function
         try {
-          console.log('🛒 Inside try block, calling addToCart NOW...');
           const result = await addToCart(cartItemData);
-          console.log('🛒 addToCart completed! Result:', result);
-          
           if (!result || !result.success) {
-            console.error('❌ Failed to add to cart:', result?.error);
-            
             const errorMsg = {
               id: Date.now(),
               text: `Sorry, I couldn't add ${productToAdd.name || productToAdd.title} to your cart.\n\n${result?.error || 'Please try again or use the "Add to Cart" button on the product card.'}`,
@@ -3857,8 +3698,6 @@ Rules:
             setMessages(prev => [...prev, errorMsg]);
             return true;
           }
-
-          console.log('✅ Successfully added to cart');
 
           // Store last added item
           setLastAddedToCart({
@@ -3891,8 +3730,6 @@ Rules:
           return true;
           
         } catch (error) {
-          console.error('❌ Exception adding to cart:', error);
-          
           const errorMsg = {
             id: Date.now(),
             text: `❌ An error occurred while adding to cart. Please try using the "Add to Cart" button on the product card instead.`,
@@ -3936,15 +3773,9 @@ Rules:
     }
 
     // ===== AI-POWERED INTENT DETECTION (FALLBACK) =====
-    console.log('⚠️ No regex pattern matched. Using AI to analyze intent...');
-    
     const aiIntent = await analyzeIntentWithAI(userInput, products);
     
     if (aiIntent.isCommand && aiIntent.confidence > 0.7) {
-      console.log('🤖 AI detected command with high confidence!');
-      console.log('📋 Action:', aiIntent.action);
-      console.log('📦 Product reference:', aiIntent.productReference);
-      
       // Execute the detected action
       switch (aiIntent.action) {
         case 'add_to_cart': {
@@ -3976,8 +3807,6 @@ Rules:
           
           // Fallback to first product if nothing matched
           if (!productToAdd) productToAdd = products[0];
-          
-          console.log('🤖 AI selected product:', productToAdd.name || productToAdd.title);
           
           // Add to cart
           const defaultVariant = productToAdd.variants?.[0] || {
@@ -4018,13 +3847,11 @@ Rules:
             setMessages(prev => [...prev, responseMsg]);
             return true;
           } catch (error) {
-            console.error('❌ Error adding to cart:', error);
             return false;
           }
         }
         
         case 'compare': {
-          console.log('🤖 AI wants to compare products');
           const compareMsg = {
             id: Date.now(),
             text: `📊 Let me compare these products for you!`,
@@ -4038,7 +3865,6 @@ Rules:
         }
         
         case 'build_pc': {
-          console.log('🤖 AI wants to build a PC');
           const buildMsg = {
             id: Date.now(),
             text: `🔨 Let me build a complete PC for you based on ${products[0]?.name || 'this component'}!\n\nI'll find compatible parts and create a balanced build. Give me a moment...`,
@@ -4056,8 +3882,6 @@ Rules:
         }
         
         case 'view_cart': {
-          console.log('🤖 AI wants to view cart');
-          
           try {
             const result = await CartService.getCartItems();
             const cartItems = result.data || [];
@@ -4089,13 +3913,11 @@ Rules:
             return true;
             
           } catch (error) {
-            console.error('❌ Error fetching cart:', error);
             return false;
           }
         }
         
         default:
-          console.log('⚠️ Unknown action:', aiIntent.action);
           return false;
       }
     }
@@ -4157,7 +3979,6 @@ Rules:
     // ===== CHECK FOR SIMPLE ACKNOWLEDGMENTS (DON'T SHOW PRODUCTS AGAIN) =====
     const simpleAcknowledgments = /^(oh\s+)?(that'?s?\s+)?(really\s+)?(good|great|nice|cool|awesome|okay|ok|alright|thanks|thank you|fine|perfect)(\s+thanks?)?[!.]*$/i;
     if (simpleAcknowledgments.test(userInput.trim())) {
-      console.log('👍 Simple acknowledgment detected - responding without showing products again');
       const ackResponses = [
         "Great! Let me know if you need anything else or have any questions!",
         "Awesome! I'm here if you need more help or want to explore other options.",
@@ -4179,14 +4000,12 @@ Rules:
     // ===== DEFINITION & EDUCATIONAL QUESTIONS (HIGH PRIORITY) =====
     const definitionHandled = await handleComponentQuestion(userInput);
     if (definitionHandled) {
-      console.log('✅ Component explanation provided');
       return;
     }
 
     // ===== CHECK FOR BUDGET REFINEMENT (HIGH PRIORITY) =====
     const budgetRefined = await handleBudgetRefinement(userInput, updatedMessages);
     if (budgetRefined) {
-      console.log('✅ Budget refinement applied');
       return;
     }
 
@@ -4195,7 +4014,6 @@ Rules:
     
     if (commandExecuted) {
       // Command was executed, no need to call AI
-      console.log('✅ Command executed successfully');
       return;
     }
 
@@ -4204,7 +4022,6 @@ Rules:
     
     if (productSearchResult) {
       // Product search was handled, no need to call AI
-      console.log('✅ Product search handled successfully');
       return;
     }
 
@@ -4224,16 +4041,10 @@ Rules:
 
       // Debug: Log product extraction
       console.log('🤖 AI Response:', response.message.substring(0, 200) + '...');
-      console.log('📦 Total products available:', products.length);
-      console.log('✅ Products extracted:', mentioned.length);
       if (mentioned.length > 0) {
-        console.log('🔍 Product data structure:', mentioned[0]);
-        console.log('🔍 Variants:', mentioned[0]?.variants);
-        console.log('🔍 Selected Components:', mentioned[0]?.selected_components);
         console.log('📋 All extracted products:', mentioned.map(p => p.name));
         setRecommendedProducts(mentioned.slice(0, 5)); // Show top 5 products
       } else {
-        console.log('⚠️ No products extracted from AI response');
       }
 
       // Detect if this is a general category question (show "View More") vs personalized recommendation (no "View More")
@@ -4266,7 +4077,6 @@ Rules:
       setMessages((prev) => [...prev, aiResponse]);
       saveMessageToHistory(aiResponse); // Save to database
     } catch (error) {
-      console.error("Error getting AI response:", error);
       const errorResponse = {
         id: messages.length + 2,
         text: "I apologize, but I'm experiencing technical difficulties. Please try again or contact our support team.",
@@ -4310,8 +4120,6 @@ Rules:
   // Add to cart function
   const handleAddToCart = async (product) => {
     try {
-      console.log('Adding product to cart:', product);
-
       // Get selected variant for this product, or use first variant if available
       let selectedVariant = selectedVariants[product.id] || null;
 
@@ -4342,10 +4150,7 @@ Rules:
         quantity: 1
       });
 
-      console.log('Cart service result:', result);
-
       if (result.error) {
-        console.error('Error adding to cart:', result.error);
         // Show error message to user
         const errorMsg = {
           id: Date.now(),
@@ -4381,12 +4186,10 @@ Rules:
             };
             setMessages((prev) => [...prev, compatibilityMsg]);
           } catch (error) {
-            console.error('Error fetching compatible products:', error);
           }
         }, 1000);
       }
     } catch (error) {
-      console.error('Exception in handleAddToCart:', error);
       const errorMsg = {
         id: Date.now(),
         text: `Sorry, something went wrong: ${error.message}. Please try again or add the product manually.`,

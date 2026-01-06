@@ -82,7 +82,6 @@ const ContactForm = () => {
         toast.error(result.error || "Failed to send message. Please try again.");
       }
     } catch (error) {
-      console.error("Error submitting form:", error);
       toast.error("An unexpected error occurred. Please try again later.");
     } finally {
       setIsSubmitting(false);

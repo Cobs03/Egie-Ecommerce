@@ -20,7 +20,6 @@ export const useWebsiteSettings = () => {
         .single();
 
       if (error) {
-        console.warn('Could not fetch website settings, using defaults:', error);
         throw error;
       }
       
@@ -50,7 +49,6 @@ export const useWebsiteSettings = () => {
         return; // Success - exit here
       }
     } catch (err) {
-      console.error('Error fetching website settings:', err);
       setError(err.message);
       // Set defaults if fetch fails
       setSettings({

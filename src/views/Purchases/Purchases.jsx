@@ -20,13 +20,9 @@ const Purchases = () => {
   const loadOrders = async () => {
     setLoading(true);
     try {
-      console.log('🔄 Loading orders...');
       const { data, error } = await UserOrderService.getUserOrders();
       
-      console.log('📦 Orders response:', { data, error });
-      
       if (error) {
-        console.error('❌ Error loading orders:', error);
         toast.error('Failed to load orders', {
           description: error
         });
@@ -35,12 +31,8 @@ const Purchases = () => {
       }
 
       if (data && Array.isArray(data)) {
-        console.log(`✅ Found ${data.length} orders`);
-        
         // Transform database orders to match component format
         const transformedOrders = data.map(order => {
-          console.log('🔄 Transforming order:', order.order_number, 'Status:', order.status);
-          
           // Map status to purchase page statuses
           let displayStatus = order.status;
           let subStatus = '';
@@ -72,12 +64,6 @@ const Purchases = () => {
             // Get image URL using helper function
             const imageUrl = getImageUrl(item.product_image);
             
-            console.log('Processing purchase item:', {
-              product_name: item.product_name,
-              raw_image: item.product_image,
-              processed_url: imageUrl
-            });
-
             // Safely handle price (use unit_price from order_items table)
             const itemPrice = Number(item.unit_price) || 0;
             const itemQuantity = Number(item.quantity) || 1;
@@ -112,14 +98,11 @@ const Purchases = () => {
           };
         });
 
-        console.log('✅ Transformed orders:', transformedOrders);
         setOrders(transformedOrders);
       } else {
-        console.log('⚠️ No data or data is not an array:', data);
         setOrders([]);
       }
     } catch (error) {
-      console.error('💥 Error in loadOrders:', error);
       toast.error('Failed to load orders', {
         description: error.message
       });
@@ -133,7 +116,6 @@ const Purchases = () => {
     if (newStatus === "Cancelled") {
       const { error } = await UserOrderService.cancelOrder(orderId, reason);
       if (error) {
-        console.error('Failed to cancel order:', error);
         toast.error('Failed to cancel order', {
           description: error
         });
@@ -145,7 +127,6 @@ const Purchases = () => {
     } else if (newStatus === "Completed") {
       const { error } = await UserOrderService.markOrderReceived(orderId);
       if (error) {
-        console.error('Failed to mark order received:', error);
         toast.error('Failed to update order', {
           description: error
         });

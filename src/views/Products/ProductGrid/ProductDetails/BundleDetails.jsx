@@ -37,8 +37,6 @@ const BundleDetails = () => {
       setLoading(true);
       setError(null);
 
-      console.log('🔍 Fetching bundle details for:', bundleId);
-
       // Get bundle details
       const { data: bundleInfo, error: bundleError } = await supabase
         .from('bundles')
@@ -59,10 +57,7 @@ const BundleDetails = () => {
 
       setBundle(bundleInfo);
       setBundleProducts(products || []);
-      console.log('✅ Bundle loaded:', bundleInfo);
-      console.log('✅ Products:', products);
     } catch (err) {
-      console.error('❌ Error loading bundle:', err);
       setError(err.message || 'Failed to load bundle');
       toast.error('Failed to load bundle details');
     } finally {
@@ -81,18 +76,14 @@ const BundleDetails = () => {
         toast.error(result.error || 'Failed to add bundle to cart');
       }
     } catch (error) {
-      console.error('❌ Error:', error);
       toast.error('Failed to add bundle to cart');
     }
   };
 
   const handleProductClick = async (bundleProduct) => {
     try {
-      console.log('🔍 Bundle product clicked:', bundleProduct);
-      
       // Check if we have a product_code to search for
       if (!bundleProduct.product_code) {
-        console.error('❌ No product_code in bundle product:', bundleProduct);
         toast.error('Product code not found');
         return;
       }
@@ -108,18 +99,15 @@ const BundleDetails = () => {
         .single();
 
       if (productError) {
-        console.error('Error fetching product:', productError);
         toast.error('Product not found in store');
         return;
       }
 
       if (fullProduct) {
-        console.log('✅ Product loaded:', fullProduct);
         setSelectedProduct(fullProduct);
         setShowProductModal(true);
       }
     } catch (error) {
-      console.error('Error opening product:', error);
       toast.error('Failed to open product');
     }
   };
@@ -127,8 +115,6 @@ const BundleDetails = () => {
   const handleViewIn3D = async () => {
     try {
       toast.loading('Loading 3D Builder...');
-      console.log('🎨 Preparing bundle for 3D view...');
-
       // Fetch full product details for all bundle products
       const componentPromises = bundleProducts.map(async (bundleProduct) => {
         if (!bundleProduct.product_code) return null;
@@ -140,7 +126,6 @@ const BundleDetails = () => {
           .single();
 
         if (error || !product) {
-          console.warn(`⚠️ Could not find product: ${bundleProduct.product_name}`);
           return null;
         }
 
@@ -198,7 +183,6 @@ const BundleDetails = () => {
         }
       });
     } catch (error) {
-      console.error('❌ Error loading bundle in 3D:', error);
       toast.dismiss();
       toast.error('Failed to load 3D view');
     }

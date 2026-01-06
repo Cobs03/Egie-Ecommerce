@@ -45,7 +45,6 @@ const OrderDetails = () => {
       const { data, error } = await UserOrderService.getOrderById(id);
       
       if (error || !data) {
-        console.error('Error loading order:', error);
         setOrder(null);
         setLoading(false);
         return;
@@ -76,14 +75,7 @@ const OrderDetails = () => {
       }
 
       const products = (data.order_items || []).map(item => {
-        console.log('Processing order item:', {
-          product_name: item.product_name,
-          raw_image: item.product_image
-        });
-        
         const imageUrl = getImageUrl(item.product_image);
-        console.log('Processed image URL:', imageUrl);
-        
         const itemPrice = Number(item.unit_price) || 0;
         const itemQuantity = Number(item.quantity) || 1;
 
@@ -115,7 +107,6 @@ const OrderDetails = () => {
 
       setOrder(transformedOrder);
     } catch (error) {
-      console.error('Error in loadOrder:', error);
       setOrder(null);
     } finally {
       setLoading(false);
@@ -380,7 +371,6 @@ const OrderDetails = () => {
   const handleCancelOrder = async (reason) => {
     const { error } = await UserOrderService.cancelOrder(order.id, reason);
     if (error) {
-      console.error('Failed to cancel order:', error);
       alert('Failed to cancel order. Please try again.');
       return;
     }
@@ -392,7 +382,6 @@ const OrderDetails = () => {
   const handleOrderReceived = async () => {
     const { error } = await UserOrderService.markOrderReceived(order.id);
     if (error) {
-      console.error('Failed to mark order as received:', error);
       alert('Failed to update order. Please try again.');
       return;
     }

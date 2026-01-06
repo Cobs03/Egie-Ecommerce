@@ -43,13 +43,11 @@ class AIService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching products:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error in fetchProducts:', error);
       return [];
     }
   }
@@ -63,13 +61,11 @@ class AIService {
         .order('display_order', { ascending: true });
 
       if (error) {
-        console.error('Error fetching product categories:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error in fetchProductCategories:', error);
       return [];
     }
   }
@@ -94,13 +90,11 @@ class AIService {
       const { data, error } = await query;
       
       if (error) {
-        console.error('Error fetching store information:', error);
         return [];
       }
       
       return data || [];
     } catch (error) {
-      console.error('Error in fetchStoreInformation:', error);
       return [];
     }
   }
@@ -118,13 +112,11 @@ class AIService {
         .single();
       
       if (error) {
-        console.error('Error fetching website settings:', error);
         return null;
       }
       
       return data;
     } catch (error) {
-      console.error('Error in fetchWebsiteSettings:', error);
       return null;
     }
   }
@@ -162,7 +154,6 @@ class AIService {
       // If we found matches, return them, otherwise return top 5 general FAQs
       return relevant.length > 0 ? relevant : storeInfo.slice(0, 5);
     } catch (error) {
-      console.error('Error searching store info:', error);
       return [];
     }
   }
@@ -418,15 +409,12 @@ Be flexible with:
       
       try {
         const intent = JSON.parse(cleanedIntent);
-        console.log('🧠 Detected Intent:', intent);
         return intent;
       } catch (parseError) {
-        console.error('Failed to parse intent JSON:', cleanedIntent);
         // Fallback to basic intent with simple keyword extraction
         return this.createFallbackIntent(userMessage);
       }
     } catch (error) {
-      console.error('Error detecting intent:', error);
       // Fallback intent with simple keyword extraction
       return this.createFallbackIntent(userMessage);
     }
@@ -531,8 +519,6 @@ Be flexible with:
    */
   async searchProductsByIntent(intent) {
     try {
-      console.log('🔍 Smart search with intent:', intent);
-      
       const allProducts = await this.fetchProducts();
       
       if (allProducts.length === 0) {
@@ -553,7 +539,6 @@ Be flexible with:
         intent.features.length === 0;
 
       if (isSimpleCategorySearch || isBasicBudgetSearch) {
-        console.log('📋 Simple/basic search detected, using direct filter');
         return this.fallbackSearch(allProducts, intent);
       }
 
@@ -624,7 +609,6 @@ Consider:
       });
 
       if (!response.ok) {
-        console.warn('AI scoring failed, using fallback search');
         return this.fallbackSearch(allProducts, intent);
       }
 
@@ -641,14 +625,11 @@ Consider:
         // Sort by the order AI provided
         matchedProducts.sort((a, b) => matchedIds.indexOf(a.id) - matchedIds.indexOf(b.id));
         
-        console.log('✅ AI matched:', matchedProducts.length, 'products');
         return matchedProducts;
       } catch (parseError) {
-        console.warn('Failed to parse AI results, using fallback');
         return this.fallbackSearch(allProducts, intent);
       }
     } catch (error) {
-      console.error('Error in searchProductsByIntent:', error);
       return this.fallbackSearch(await this.fetchProducts(), intent);
     }
   }
@@ -660,8 +641,6 @@ Consider:
    * @returns {Array} Filtered products
    */
   fallbackSearch(products, intent) {
-    console.log('📋 Using fallback text search for:', intent.category || 'all');
-    
     let filtered = products;
 
     // Filter by category if specified
@@ -687,8 +666,6 @@ Consider:
       };
       
       categoryLower = pluralToSingular[categoryLower] || categoryLower;
-      console.log(`🔄 Normalized category: "${intent.category}" → "${categoryLower}"`);
-      
       // Category-specific matching
       filtered = filtered.filter(p => {
         const name = p.name.toLowerCase();
@@ -746,7 +723,6 @@ Consider:
         return searchText.includes(categoryLower);
       });
       
-      console.log(`✅ Category filter "${categoryLower}" found ${filtered.length} products`);
     }
 
     // Filter by keywords (only if different from category)
@@ -770,7 +746,6 @@ Consider:
           const searchText = `${p.name} ${p.description || ''} ${p.brands?.name || ''}`.toLowerCase();
           return keywordsToSearch.some(kw => searchText.includes(kw.toLowerCase()));
         });
-        console.log(`✅ After keyword filter: ${filtered.length} products`);
       }
     }
 
@@ -845,7 +820,6 @@ Consider:
       return a.price - b.price;
     });
 
-    console.log(`📦 Final results: ${filtered.length} products`);
     if (hasAffordableIntent) {
       console.log(`💡 Sorted by price (affordable intent detected)`);
     }
@@ -1123,10 +1097,7 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
       let storeInfo = [];
       
       if (isStoreQuery) {
-        console.log('📋 Detected store policy question - fetching FAQ data...');
         storeInfo = await this.searchStoreInfo(userMessageText);
-        console.log(`✅ Found ${storeInfo.length} relevant store information items`);
-        
         // Check if it's a warranty/broken product question
         const isWarrantyQuestion = /(broke|broken|stopped|not working|malfunction|replace|replacement|repair|damaged|faulty|doa|defect)/i.test(userMessageText);
         if (isWarrantyQuestion && storeInfo.length > 0) {
@@ -1137,7 +1108,6 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
           );
           
           if (warrantyFAQ) {
-            console.log('🛡️ Returning warranty claim information directly');
             return {
               success: true,
               message: warrantyFAQ.answer,
@@ -1154,7 +1124,6 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
           // Check if order number is mentioned
           const orderNumberMatch = userMessageText.match(/\b\d{8,}\b/);
           if (orderNumberMatch) {
-            console.log('🔍 Order number detected, looking up order...');
             const orderResult = await this.getCustomerOrder(orderNumberMatch[0]);
             
             if (orderResult.data) {
@@ -1188,8 +1157,6 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
 
       // Step 1: Detect intent using AI (understand what user wants)
       const intent = await this.detectIntent(userMessageText);
-      console.log('💡 Understanding:', intent);
-
       // Step 2: Fetch relevant products based on intent
       let relevantProducts = [];
       let allProducts = [];
@@ -1203,7 +1170,6 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
         relevantProducts = await this.searchProductsByIntent(intent);
         allProducts = await this.fetchProducts();
         
-        console.log('🎯 Found', relevantProducts.length, 'relevant products for intent');
       } else {
         // For general questions, still load products for context
         allProducts = await this.fetchProducts();
@@ -1244,7 +1210,6 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Groq API error:', errorData);
         throw new Error(errorData.error?.message || 'API request failed');
       }
 
@@ -1278,7 +1243,6 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
       };
 
     } catch (error) {
-      console.error('Error in AI chat:', error);
       return {
         success: false,
         error: error.message,
@@ -1367,7 +1331,6 @@ Calculate and show the total price at the end.`;
       };
 
     } catch (error) {
-      console.error('Error getting build recommendations:', error);
       return {
         success: false,
         error: error.message,
@@ -1443,12 +1406,6 @@ Calculate and show the total price at the end.`;
       }
     });
 
-    console.log('🔍 Product extraction:', {
-      totalAvailable: availableProducts.length,
-      extracted: recommendedProducts.length,
-      products: recommendedProducts.map(p => p.name)
-    });
-
     return recommendedProducts;
   }
 
@@ -1467,13 +1424,11 @@ Calculate and show the total price at the end.`;
 
       if (error || !data) {
         // If no consent record, check if it's a new optional feature
-        console.warn('No AI consent record found for user:', userId);
         return true; // Fail open for backward compatibility
       }
 
       return data.ai_assistant === true;
     } catch (error) {
-      console.error('Error verifying AI consent:', error);
       return true; // Fail open for backward compatibility
     }
   }

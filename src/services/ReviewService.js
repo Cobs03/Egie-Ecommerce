@@ -31,7 +31,6 @@ class ReviewService {
         .range(offset, offset + limit - 1);
 
       if (reviewsError) {
-        console.error('Error fetching reviews:', reviewsError);
         return { data: [], error: reviewsError.message };
       }
 
@@ -60,7 +59,6 @@ class ReviewService {
 
       return { data: reviews || [], error: null };
     } catch (error) {
-      console.error('Error in getProductReviews:', error);
       return { data: [], error: error.message };
     }
   }
@@ -134,7 +132,6 @@ class ReviewService {
         error: null
       };
     } catch (error) {
-      console.error('Error in getProductRatingSummary:', error);
       return { 
         data: { 
           average_rating: 0, 
@@ -191,7 +188,6 @@ class ReviewService {
         error: null
       };
     } catch (error) {
-      console.error('Error in hasUserReviewed:', error);
       return { data: { hasReviewed: false, review: null }, error: error.message };
     }
   }
@@ -244,7 +240,6 @@ class ReviewService {
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error in addReview:', error);
       return { data: null, error: error.message };
     }
   }
@@ -287,7 +282,6 @@ class ReviewService {
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error in updateReview:', error);
       return { data: null, error: error.message };
     }
   }
@@ -318,7 +312,6 @@ class ReviewService {
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error in deleteReview:', error);
       return { data: null, error: error.message };
     }
   }
@@ -343,7 +336,6 @@ class ReviewService {
 
       return { data: data || [], error: null };
     } catch (error) {
-      console.error('Error in getAllReviews:', error);
       return { data: [], error: error.message };
     }
   }

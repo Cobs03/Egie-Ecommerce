@@ -64,7 +64,6 @@ const GCashPayment = ({ amount, orderData, onSuccess, onCancel }) => {
       window.location.href = checkoutUrl;
 
     } catch (error) {
-      console.error('GCash payment error:', error);
       toast.error(error.message || 'Failed to process GCash payment');
       setIsProcessing(false);
     }

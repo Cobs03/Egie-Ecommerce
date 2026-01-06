@@ -101,7 +101,6 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
       
       // For GCash, show billing modal first
       if (selectedPayment === 'gcash') {
-        console.log('GCash payment selected, showing billing modal...');
         // Get user info to pre-fill the form
         const { data: { user } } = await supabase.auth.getUser();
         const { data: profile } = await supabase
@@ -163,7 +162,6 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
       });
 
     } catch (error) {
-      console.error('Error creating order:', error);
       toast.error('Failed to process order', {
         description: 'Please try again'
       });
@@ -177,9 +175,6 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
     setLoading(true);
     
     try {
-      console.log('Starting GCash payment process...');
-      console.log('Billing info:', billingInfo);
-      
       // First, create the order
       // Extract cart_item_ids from checkoutItems
       const cart_item_ids = checkoutItems.map(item => item.id);
@@ -193,15 +188,11 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
         cart_item_ids: cart_item_ids // Pass selected cart item IDs
       };
 
-      console.log('Creating order with data:', orderData);
       const { data: orderResponse, error: orderError } = await OrderService.createOrder(orderData);
 
       if (orderError) {
-        console.error('Order creation failed:', orderError);
         throw new Error(orderError);
       }
-
-      console.log('Order created successfully:', orderResponse);
 
       // Get user information and address for billing
       const { data: { user } } = await supabase.auth.getUser();
@@ -210,8 +201,6 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
         .select('*')
         .eq('id', user.id)
         .single();
-
-      console.log('User profile:', profile);
 
       // Use the billing info from the modal
       const billing = {
@@ -232,15 +221,11 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
         }
       };
 
-      console.log('Billing details:', billing);
-
       // Prepare redirect URLs with order ID
       const redirectUrl = {
         success: `${window.location.origin}/payment-success?order_id=${orderResponse.order_number}`,
         failed: `${window.location.origin}/payment-failed?order_id=${orderResponse.order_number}`
       };
-
-      console.log('Creating GCash source with amount:', orderResponse.total);
 
       // Create GCash payment source
       const sourceResult = await PayMongoEdgeFunctionService.createGCashSource(
@@ -249,21 +234,15 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
         redirectUrl
       );
 
-      console.log('PayMongo source result:', sourceResult);
-
       if (!sourceResult.success) {
-        console.error('Failed to create source:', sourceResult.error);
         throw new Error(sourceResult.error || 'Failed to create GCash payment');
       }
 
       const checkoutUrl = sourceResult.source.attributes.redirect.checkout_url;
       
       if (!checkoutUrl) {
-        console.error('No checkout URL in response');
         throw new Error('No checkout URL received from PayMongo');
       }
-
-      console.log('Checkout URL received:', checkoutUrl);
 
       // Store PayMongo source ID in order for verification later
       const { error: updateError } = await supabase
@@ -275,9 +254,7 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
         .eq('id', orderResponse.order_id);
 
       if (updateError) {
-        console.error('Failed to update order with source ID:', updateError);
       } else {
-        console.log('Order updated with PayMongo source ID');
       }
 
       // Cart items are automatically removed by the database function
@@ -285,7 +262,6 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
       await loadCart();
 
       // Redirect to GCash payment page
-      console.log('Redirecting to GCash payment page...');
       toast.info('Redirecting to GCash payment...');
       
       setTimeout(() => {
@@ -293,7 +269,6 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
       }, 500);
 
     } catch (error) {
-      console.error('GCash payment error:', error);
       toast.error(error.message || 'Failed to process GCash payment');
       setLoading(false);
     }
@@ -302,11 +277,6 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
   // Handle Card payment through PayMongo
   const handleCardPayment = async () => {
     try {
-      console.log('💳 Starting card payment process...');
-      console.log('Checkout Items:', checkoutItems);
-      console.log('Delivery Type:', deliveryType);
-      console.log('Applied Voucher:', appliedVoucher);
-      
       // Parse expiry date (MM/YY)
       const [expMonth, expYear] = cardDetails.expiryDate.split('/');
       
@@ -320,8 +290,6 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
       } else {
         fullYear = `20${expYear}`;
       }
-      
-      console.log('Parsed expiry:', { expMonth, expYear, fullYear });
       
       // Get user information for billing
       const { data: { user } } = await supabase.auth.getUser();
@@ -346,7 +314,6 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
       const subtotal = checkoutItems.reduce((sum, item) => {
         const price = item.price_at_add || item.price || 0;
         const quantity = item.quantity || 0;
-        console.log('Item:', item.product_name, 'Price:', price, 'Qty:', quantity);
         return sum + (price * quantity);
       }, 0);
       
@@ -414,16 +381,11 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
       );
 
       if (!paymentResult.success) {
-        console.error('❌ Payment failed:', paymentResult.error);
         throw new Error(paymentResult.error || 'Failed to process card payment');
       }
 
-      console.log('✅ Payment processed:', paymentResult.paymentIntent.id);
-
       // Check if 3DS authentication is required
       if (paymentResult.requires3DS && paymentResult.redirectUrl) {
-        console.log('🔐 Redirecting to 3D Secure authentication...');
-        
         // Store payment intent and order details in session storage for after redirect
         sessionStorage.setItem('pending_card_payment', JSON.stringify({
           paymentIntentId: paymentResult.paymentIntent.id,
@@ -445,8 +407,6 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
 
       // Payment succeeded without 3DS - now create the order
       if (paymentResult.paymentIntent.status === 'succeeded') {
-        console.log('🎉 Payment successful! Creating order...');
-        
         const cart_item_ids = checkoutItems.map(item => item.id);
         
         const orderData = {
@@ -462,14 +422,11 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
         const { data: orderResponse, error: orderError } = await OrderService.createOrder(orderData);
 
         if (orderError) {
-          console.error('Order creation failed:', orderError);
           toast.error('Payment succeeded but order creation failed. Please contact support.');
           setLoading(false);
           return;
         }
 
-        console.log('✅ Order created:', orderResponse.order_number);
-        
         // Update payment record with order info (non-blocking)
         const { error: paymentUpdateError } = await supabase
           .from('payments')
@@ -482,7 +439,6 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
         if (paymentUpdateError) {
           console.warn('Failed to update payment record (non-critical):', paymentUpdateError);
         } else {
-          console.log('✅ Payment record updated');
         }
         
         // Reload cart to reflect removed items
@@ -503,13 +459,11 @@ const Payment = ({ selectedAddress, onShowGCashModal }) => {
           });
         }, 500);
       } else {
-        console.log('⏳ Payment status:', paymentResult.paymentIntent.status);
         setLoading(false);
         toast.warning('Payment is being processed. Please check your order status.');
       }
 
     } catch (error) {
-      console.error('❌ Card payment error:', error);
       toast.error(error.message || 'Failed to process card payment');
       setLoading(false);
     }

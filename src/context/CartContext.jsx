@@ -69,7 +69,6 @@ export const CartProvider = ({ children }) => {
       const { data, error, totalItems, totalPrice } = await CartService.getCartItems();
       
       if (error) {
-        console.error('Error loading cart:', error);
         return;
       }
 
@@ -77,7 +76,6 @@ export const CartProvider = ({ children }) => {
       setCartCount(totalItems || 0);
       setCartTotal(totalPrice || 0);
     } catch (error) {
-      console.error('Error in loadCart:', error);
     } finally {
       setLoading(false);
     }
@@ -120,7 +118,6 @@ export const CartProvider = ({ children }) => {
 
       return { success: true, data };
     } catch (error) {
-      console.error('Error adding to cart:', error);
       toast.error('Failed to add to cart');
       return { success: false, error: error.message };
     } finally {
@@ -150,7 +147,6 @@ export const CartProvider = ({ children }) => {
 
       return { success: true, data };
     } catch (error) {
-      console.error('Error updating quantity:', error);
       toast.error('Failed to update quantity');
       return { success: false, error: error.message };
     } finally {
@@ -164,13 +160,11 @@ export const CartProvider = ({ children }) => {
   const removeFromCart = async (cart_item_id) => {
     if (!user) return { success: false, error: 'Not authenticated' };
 
-    console.log('CartContext: Removing item with ID:', cart_item_id);
     setLoading(true);
     try {
       const { data, error } = await CartService.removeFromCart(cart_item_id);
 
       if (error) {
-        console.error('CartContext: Error removing item:', error);
         toast.error('Failed to remove item', {
           description: error
         });
@@ -178,8 +172,6 @@ export const CartProvider = ({ children }) => {
         return { success: false, error };
       }
 
-      console.log('CartContext: Item removed successfully');
-      
       // Update state immediately without reloading (smoother UX)
       setCartItems(prevItems => {
         const newItems = prevItems.filter(item => item.id !== cart_item_id);
@@ -200,7 +192,6 @@ export const CartProvider = ({ children }) => {
 
       return { success: true, data };
     } catch (error) {
-      console.error('Error removing from cart:', error);
       toast.error('Failed to remove item');
       return { success: false, error: error.message };
     } finally {
@@ -242,7 +233,6 @@ export const CartProvider = ({ children }) => {
 
       return { success: true, data };
     } catch (error) {
-      console.error('Error clearing cart:', error);
       toast.error('Failed to clear cart');
       return { success: false, error: error.message };
     } finally {
@@ -300,7 +290,6 @@ export const CartProvider = ({ children }) => {
 
       return { success: true, data };
     } catch (error) {
-      console.error('Error clearing selected items:', error);
       toast.error('Failed to clear selected items');
       return { success: false, error: error.message };
     } finally {

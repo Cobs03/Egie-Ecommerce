@@ -130,7 +130,6 @@ const Navbar = ({ isAuth }) => {
       closeDropdown();
       navigate("/signin");
     } catch (error) {
-      console.error("Error signing out:", error);
     }
   };
 
@@ -153,7 +152,6 @@ const Navbar = ({ isAuth }) => {
           .single();
 
         if (error && error.code !== 'PGRST116') {
-          console.error('Error loading profile:', error);
           return;
         }
 
@@ -166,7 +164,6 @@ const Navbar = ({ isAuth }) => {
           }
         }
       } catch (error) {
-        console.error('Error loading profile:', error.message);
       }
     };
 
@@ -185,7 +182,6 @@ const Navbar = ({ isAuth }) => {
             filter: `id=eq.${user.id}`
           },
           (payload) => {
-            console.log('Profile changed:', payload);
             if (payload.new) {
               if (payload.new.avatar_url) {
                 setUserAvatar(payload.new.avatar_url);

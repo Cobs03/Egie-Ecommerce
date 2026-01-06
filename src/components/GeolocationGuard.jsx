@@ -43,7 +43,6 @@ export default function GeolocationGuard({ strict = false, children }) {
         setShowDialog(true);
       }
     } catch (error) {
-      console.error('Geolocation check error:', error);
       // On error, allow access
       setBlocked(false);
     } finally {

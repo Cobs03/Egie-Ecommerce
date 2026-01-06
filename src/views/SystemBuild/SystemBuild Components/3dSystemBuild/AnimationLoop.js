@@ -1,6 +1,4 @@
 export const startAnimationLoop = (renderer, scene, camera, controls, testCube) => {
-  console.log('🎬 Starting animation loop...');
-  
   let animationFrameId = null;
 
   const animate = () => {
@@ -20,16 +18,11 @@ export const startAnimationLoop = (renderer, scene, camera, controls, testCube) 
   };
 
   animate();
-  console.log('✅ Animation loop started');
-
   return animationFrameId;
 };
 
 export const stopAnimationLoop = (animationFrameId) => {
-  console.log('🛑 Stopping animation loop...');
-  
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
-    console.log('✅ Animation loop stopped');
   }
 };

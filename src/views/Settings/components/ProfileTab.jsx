@@ -44,7 +44,6 @@ const ProfileTab = ({ user, userData, setUserData, loading, setLoading }) => {
       setTimeout(() => setMessage(""), 3000);
 
     } catch (error) {
-      console.error('Error updating profile:', error);
       setError("Failed to update profile. Please try again.");
     } finally {
       setLoading(false);
@@ -117,7 +116,6 @@ const ProfileTab = ({ user, userData, setUserData, loading, setLoading }) => {
       setTimeout(() => setMessage(''), 3000);
 
     } catch (error) {
-      console.error('Error uploading image:', error);
       setError('Failed to upload image. Please try again.');
     } finally {
       setUploadingImage(false);

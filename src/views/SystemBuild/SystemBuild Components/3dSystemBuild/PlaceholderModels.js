@@ -164,8 +164,6 @@ export const createPlaceholderModel = (scene, componentType, productData) => {
   };
 
   scene.add(group);
-  console.log('🔲 Placeholder created for:', componentType);
-  
   return group;
 };
 

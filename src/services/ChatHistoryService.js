@@ -30,7 +30,6 @@ class ChatHistoryService {
       if (error) throw error;
       return { success: true, data };
     } catch (error) {
-      console.error('Error saving message:', error);
       return { success: false, error: error.message };
     }
   }
@@ -65,7 +64,6 @@ class ChatHistoryService {
 
       return { success: true, messages };
     } catch (error) {
-      console.error('Error loading history:', error);
       return { success: false, error: error.message, messages: [] };
     }
   }
@@ -85,7 +83,6 @@ class ChatHistoryService {
       if (error) throw error;
       return { success: true };
     } catch (error) {
-      console.error('Error clearing history:', error);
       return { success: false, error: error.message };
     }
   }
@@ -114,7 +111,6 @@ class ChatHistoryService {
 
       return { success: true, summary };
     } catch (error) {
-      console.error('Error getting summary:', error);
       return { success: false, error: error.message };
     }
   }
