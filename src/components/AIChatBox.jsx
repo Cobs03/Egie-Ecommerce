@@ -4286,7 +4286,7 @@ Rules:
                 <img 
                   src={aiLogoUrl} 
                   alt={aiName}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover animate-spin-smooth"
                 />
               </div>
               <div>
