@@ -103,24 +103,26 @@ const BuildComponents = ({
       <div className="flex flex-col lg:flex-row gap-6">
         <div 
           ref={tableAnim.ref}
-          className={`flex-1 border rounded shadow-sm bg-gray-50 p-4 transition-all duration-700 ${
+          className={`flex-1 border rounded shadow-sm bg-gray-50 p-2 sm:p-4 transition-all duration-700 ${
             tableAnim.isVisible 
               ? 'opacity-100 translate-x-0' 
               : 'opacity-0 -translate-x-8'
           }`}
         >
-          <table className="min-w-full text-sm border border-gray-300 mb-4">
-            <thead className="bg-blue-100 text-gray-700 text-left">
-              <tr>
-                <th className="p-2 border">Components</th>
-                <th className="p-2 border">Product</th>
-                <th className="p-2 border text-center">Quantity</th>
-                <th className="p-2 border">Price</th>
-                <th className="p-2 border">Total</th>
-                <th className="p-2 border text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody>
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="min-w-full text-sm border border-gray-300 mb-4">
+              <thead className="bg-blue-100 text-gray-700 text-left">
+                <tr>
+                  <th className="p-2 border">Components</th>
+                  <th className="p-2 border">Product</th>
+                  <th className="p-2 border text-center">Quantity</th>
+                  <th className="p-2 border">Price</th>
+                  <th className="p-2 border">Total</th>
+                  <th className="p-2 border text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
               {COMPONENT_TYPES.map((type) => {
                 const selectedProduct = selectedProducts[type];
                 const price = selectedProduct?.price || 0;
@@ -238,6 +240,134 @@ const BuildComponents = ({
               })}
             </tbody>
           </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3 mb-4">
+            {COMPONENT_TYPES.map((type) => {
+              const selectedProduct = selectedProducts[type];
+              const price = selectedProduct?.price || 0;
+              const quantity = quantities[type] || 0;
+              const total = price * quantity;
+
+              if (!selectedProduct) {
+                return (
+                  <div key={type} className="bg-white border border-gray-300 rounded-lg p-3 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-gray-700 text-sm">{type}</h3>
+                    </div>
+                    <button
+                      onClick={() => onOpenDrawer ? onOpenDrawer(type) : setSelectedType(type)}
+                      className="bg-transparent border-2 border-dashed border-green-500 text-green-600 px-4 py-2 rounded-lg hover:bg-green-50 font-semibold transition-all duration-200 active:scale-95 w-full text-sm"
+                    >
+                      + Add {type}
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={type} className="bg-white border border-gray-300 rounded-lg p-3 shadow-sm">
+                  {/* Header with Component Type and Delete */}
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-gray-700 text-sm">{type}</h3>
+                    <button
+                      onClick={() => handleDelete(type)}
+                      className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-all duration-200 active:scale-90"
+                      title="Remove component"
+                    >
+                      <FaTrash size={10} />
+                    </button>
+                  </div>
+
+                  {/* Product Name and Details Button */}
+                  <div className="mb-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-gray-800 flex-1">
+                        {selectedProduct.name}
+                      </span>
+                      <button
+                        onClick={() => setSelectedProductForDetails(selectedProduct)}
+                        className="text-blue-500 hover:text-blue-700 transition-colors text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded flex-shrink-0"
+                        title="View Details"
+                      >
+                        Details
+                      </button>
+                    </div>
+
+                    {/* Variant Selector */}
+                    {((selectedProduct.variants && selectedProduct.variants.length > 0) ||
+                      (selectedProduct.selected_components && selectedProduct.selected_components.length > 0)) && (
+                      <select
+                        value={selectedVariants?.[type] || ''}
+                        onChange={(e) => {
+                          console.log(`🔧 Variant selected for ${type}:`, e.target.value);
+                          setSelectedVariants(prev => ({ ...prev, [type]: e.target.value }));
+                        }}
+                        className="w-full mt-2 text-xs border border-gray-300 rounded px-2 py-1.5 bg-white"
+                      >
+                        <option value="">Select Variant</option>
+                        {selectedProduct.variants && selectedProduct.variants.length > 0 ? (
+                          selectedProduct.variants.map((variant, idx) => {
+                            const variantLabel = variant.sku || variant.name || variant;
+                            const variantPrice = variant.price || selectedProduct.price;
+                            return (
+                              <option key={idx} value={variantLabel}>
+                                {variantLabel} - ₱{variantPrice?.toLocaleString()}
+                              </option>
+                            );
+                          })
+                        ) : (
+                          selectedProduct.selected_components?.map((component, idx) => {
+                            const componentName = typeof component === 'object' && component !== null ? component.name : component;
+                            return (
+                              <option key={idx} value={componentName}>
+                                {componentName}
+                              </option>
+                            );
+                          })
+                        )}
+                      </select>
+                    )}
+                  </div>
+
+                  {/* Price, Quantity, Total */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-600">Price:</span>
+                      <span className="font-semibold">₱{price.toFixed(2)}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-600">Quantity:</span>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleDecrease(type)}
+                          className="bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-all duration-200 active:scale-90"
+                        >
+                          <FaMinus size={10} />
+                        </button>
+                        <span className="w-8 text-center font-semibold text-sm">
+                          {quantity}
+                        </span>
+                        <button
+                          onClick={() => handleIncrease(type)}
+                          className="bg-green-500 text-white p-1.5 rounded-full hover:bg-green-600 transition-all duration-200 active:scale-90"
+                        >
+                          <FaPlus size={10} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center text-sm pt-2 border-t border-gray-200">
+                      <span className="text-gray-600 font-medium">Total:</span>
+                      <span className="font-bold text-gray-900">₱{total.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
           <div 
             ref={summaryAnim.ref}

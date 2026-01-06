@@ -479,87 +479,95 @@ const SystemBuild = () => {
       {/* Header */}
       <div
         ref={headerAnim.ref}
-        className={`bg-white border-b border-gray-300 px-3 sm:px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 flex-shrink-0 transition-all duration-700 ${
+        className={`bg-white border-b border-gray-300 px-3 sm:px-4 md:px-6 py-3 md:py-4 flex flex-col gap-3 flex-shrink-0 transition-all duration-700 ${
           headerAnim.isVisible
             ? "opacity-100 translate-y-0"
             : "opacity-0 -translate-y-4"
         }`}
       >
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 font-['Bruno_Ace_SC']">
+        {/* Top Row: Title and Total Price */}
+        <div className="flex items-center justify-between gap-3 w-full">
+          <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-800 font-['Bruno_Ace_SC'] flex-shrink-0">
             System Builder
           </h1>
-        </div>
-
-        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+          
           {/* Total Price Display */}
-          <div className="text-left sm:text-right flex-1 sm:flex-initial">
+          <div className="text-right flex-shrink-0">
             <p className="text-xs text-gray-500">
               Total ({selectedCount} items)
             </p>
-            <p className="text-base sm:text-lg font-bold text-lime-600">
+            <p className="text-sm sm:text-base md:text-lg font-bold text-lime-600">
               ₱{totalPrice.toLocaleString()}
             </p>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <Button
-            onClick={handleExportExcel}
-            disabled={selectedCount === 0}
-            className="text-gray-600 hover:text-lime-600 hover:border-lime-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-95 hover:scale-105 h-8 w-8 sm:h-10 sm:w-10"
-            title="Export to Excel"
-            variant="outline"
-            size="icon"
-          >
-            <FaFileExcel className="text-base sm:text-xl" />
-          </Button>
+        {/* Bottom Row: Action Buttons */}
+        <div className="flex items-center justify-between gap-2 w-full flex-wrap">
+          {/* Left Group: Icon Buttons */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Button
+              onClick={handleExportExcel}
+              disabled={selectedCount === 0}
+              className="text-gray-600 hover:text-lime-600 hover:border-lime-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-95 hover:scale-105 h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10"
+              title="Export to Excel"
+              variant="outline"
+              size="icon"
+            >
+              <FaFileExcel className="text-sm sm:text-base md:text-lg" />
+            </Button>
 
-          <Button
-            onClick={handleClearAll}
-            disabled={selectedCount === 0}
-            className="text-gray-600 hover:text-red-600 hover:border-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-95 hover:scale-105 h-8 w-8 sm:h-10 sm:w-10"
-            title="Clear All"
-            variant="outline"
-            size="icon"
-          >
-            <FaTrash className="text-sm sm:text-lg" />
-          </Button>
+            <Button
+              onClick={handleClearAll}
+              disabled={selectedCount === 0}
+              className="text-gray-600 hover:text-red-600 hover:border-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-95 hover:scale-105 h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10"
+              title="Clear All"
+              variant="outline"
+              size="icon"
+            >
+              <FaTrash className="text-xs sm:text-sm md:text-base" />
+            </Button>
+          </div>
 
-          <button
-            onClick={handleSaveBuild}
-            disabled={selectedCount === 0}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-95 hover:scale-105 text-sm sm:text-base"
-          >
-            <FaSave className="text-sm sm:text-base" />
-            <span className="hidden sm:inline">Save Build</span>
-            <span className="sm:hidden">Save</span>
-          </button>
+          {/* Middle Group: Primary Action Buttons */}
+          <div className="flex items-center gap-2 flex-1 justify-center sm:justify-start min-w-0">
+            <button
+              onClick={handleSaveBuild}
+              disabled={selectedCount === 0}
+              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-95 hover:scale-105 text-xs sm:text-sm md:text-base whitespace-nowrap"
+            >
+              <FaSave className="text-xs sm:text-sm flex-shrink-0" />
+              <span className="hidden xs:inline">Save</span>
+              <span className="xs:hidden">Save Build</span>
+            </button>
 
-          <button
-            onClick={handleAddToCart}
-            disabled={selectedCount === 0}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-lime-500 text-white rounded-lg hover:bg-lime-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-95 hover:scale-105 text-sm sm:text-base"
-          >
-            <FaShoppingCart className="text-sm sm:text-base" />
-            <span className="hidden sm:inline">Add to Cart</span>
-            <span className="sm:hidden">Cart</span>
-          </button>
+            <button
+              onClick={handleAddToCart}
+              disabled={selectedCount === 0}
+              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-lime-500 text-white rounded-lg hover:bg-lime-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-95 hover:scale-105 text-xs sm:text-sm md:text-base whitespace-nowrap"
+            >
+              <FaShoppingCart className="text-xs sm:text-sm flex-shrink-0" />
+              <span className="hidden xs:inline">Cart</span>
+              <span className="xs:hidden">Add to Cart</span>
+            </button>
+          </div>
 
-          {/* 3D Toggle */}
-          <div className="flex items-center gap-2 sm:gap-3 sm:ml-4 sm:pl-4 sm:border-l border-gray-300">
+          {/* Right Group: 3D Toggle */}
+          <div className="flex items-center gap-2 flex-shrink-0 pl-2 sm:pl-4 border-l border-gray-300">
             <span className="text-xs sm:text-sm font-semibold text-gray-700">
               3D
             </span>
             <button
               onClick={toggleViewMode}
-              className={`relative w-12 sm:w-14 h-6 sm:h-7 rounded-full transition-all duration-300 active:scale-95 ${
+              className={`relative w-10 sm:w-12 md:w-14 h-5 sm:h-6 md:h-7 rounded-full transition-all duration-300 active:scale-95 flex-shrink-0 ${
                 viewMode === "3d" ? "bg-lime-500" : "bg-gray-300"
               }`}
+              title={viewMode === "3d" ? "Switch to Table View" : "Switch to 3D View"}
             >
               <span
-                className={`absolute top-1 left-1 w-4 sm:w-5 h-4 sm:h-5 bg-white rounded-full shadow-md transition-transform duration-300 ${
+                className={`absolute top-0.5 sm:top-1 left-0.5 sm:left-1 w-4 sm:w-4 md:w-5 h-4 sm:h-4 md:h-5 bg-white rounded-full shadow-md transition-transform duration-300 ${
                   viewMode === "3d"
-                    ? "translate-x-6 sm:translate-x-7"
+                    ? "translate-x-5 sm:translate-x-6 md:translate-x-7"
                     : "translate-x-0"
                 }`}
               />

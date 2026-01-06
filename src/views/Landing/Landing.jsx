@@ -5,6 +5,7 @@ import BuildLaps from "./Landing Components/BuildLaps";
 import Brands from "./Landing Components/Brands";
 import NewArrivals from "./Landing Components/NewArrivals";
 import TopSeller from "./Landing Components/TopSeller";
+import CustomerReviews from "./Landing Components/CustomerReviews";
 import Faq from "./Landing Components/Faq";
 
 const Landing = () => {
@@ -18,6 +19,7 @@ const Landing = () => {
         <Brands />
         <NewArrivals />
         <TopSeller />
+        <CustomerReviews />
         <Faq />
       </div>
     </>
