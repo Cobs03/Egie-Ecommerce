@@ -168,14 +168,12 @@ const CustomerReviews = () => {
     );
   }
 
+  console.log('Rendering reviews section, count:', reviews.length);
+
   return (
     <div 
       ref={ref}
-      className={`w-full bg-transparent py-12 overflow-hidden relative transition-all duration-1000 ${
-        isVisible 
-          ? 'opacity-100 translate-y-0' 
-          : 'opacity-0 translate-y-10'
-      }`}
+      className="w-full bg-transparent py-12 overflow-hidden relative opacity-100"
     >
       <style>{`
         @keyframes scrollReviews {
