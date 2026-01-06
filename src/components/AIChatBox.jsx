@@ -4225,9 +4225,22 @@ Rules:
           }
         }
         
+        @keyframes spin-continuous {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        
         .animate-spin-smooth {
           animation: shake-bottom 2s ease-in-out infinite;
           transform-origin: bottom center;
+        }
+        
+        .animate-spin-continuous {
+          animation: spin-continuous 3s linear infinite;
         }
       `}</style>
       
@@ -4286,7 +4299,7 @@ Rules:
                 <img 
                   src={aiLogoUrl} 
                   alt={aiName}
-                  className="w-full h-full object-cover animate-spin-smooth"
+                  className="w-full h-full object-cover animate-spin-continuous"
                 />
               </div>
               <div>
