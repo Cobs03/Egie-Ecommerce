@@ -239,7 +239,7 @@ const ResetPassword = () => {
       {/* Right Side with Illustration - Only visible on desktop */}
       <div 
         ref={imageAnim.ref}
-        className={`hidden md:flex md:w-1/2 bg-gradient-to-r from-green-200 to-blue-200 items-center justify-center transition-all duration-700 ${
+        className={`hidden md:flex md:w-1/2 bg-gradient-to-r from-blue-200 to-purple-200 items-center justify-center transition-all duration-700 ${
           imageAnim.isVisible
             ? "opacity-100 translate-x-0"
             : "opacity-0 translate-x-8"
@@ -247,7 +247,7 @@ const ResetPassword = () => {
       >
         <img
           className="w-full h-full object-cover"
-          src="https://i.ibb.co/yF04zrC9"
+          src={settings?.authBackgroundUrl || "https://i.ibb.co/yF04zrC9"}
           alt="Computer Illustration"
         />
       </div>
