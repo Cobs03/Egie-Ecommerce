@@ -6,6 +6,7 @@ import ReviewService from "../../../services/ReviewService";
 import { ProductService } from "../../../services/ProductService";
 import BuildService from "../../../services/BuildService";
 import { useScrollAnimation } from "../../../hooks/useScrollAnimation";
+import { useCart } from "../../../context/CartContext";
 import {
   Carousel,
   CarouselContent,
@@ -13,9 +14,9 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { MdComputer } from "react-icons/md";
-import { FaHeart, FaRegHeart, FaShoppingCart, FaEye } from "react-icons/fa";
+import { FaHeart, FaRegHeart, FaEye } from "react-icons/fa";
+import { ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 const BuildLaps = ({ set }) => {
@@ -24,8 +25,35 @@ const BuildLaps = ({ set }) => {
   const [builds, setBuilds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [likedBuilds, setLikedBuilds] = useState(new Set());
+  const [addingToCart, setAddingToCart] = useState(null);
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 });
+  const { addToCart, user } = useCart();
   const navigate = useNavigate();
+
+  // Handle Add to Cart
+  const handleAddToCart = async (e, product) => {
+    e.stopPropagation();
+    
+    if (!user) {
+      toast.error('Please login to add items to cart');
+      return;
+    }
+
+    let selectedVariant = null;
+    if (product.variants && product.variants.length > 0) {
+      selectedVariant = product.variants[0].sku || product.variants[0].name || null;
+    }
+
+    setAddingToCart(product.id);
+    await addToCart({
+      product_id: product.id,
+      product_name: product.title,
+      variant_name: selectedVariant,
+      price: product.price,
+      quantity: 1
+    });
+    setAddingToCart(null);
+  };
 
   // Helper function to determine stock status based on quantity
   const getStockStatus = (stockQuantity) => {
@@ -269,89 +297,75 @@ const BuildLaps = ({ set }) => {
                     key={index}
                     className="pl-2 md:pl-4 basis-1/2 sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5"
                   >
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div
-                          onClick={() => handleBuildClick(build)}
-                          className="group relative bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col p-3 sm:p-4 active:scale-95 active:shadow-sm"
+                    <div
+                      onClick={() => handleBuildClick(build)}
+                      className="bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-all duration-500 cursor-pointer overflow-hidden group active:scale-95 h-full flex flex-col"
+                    >
+                      <div className="w-full h-32 sm:h-36 md:h-40 bg-gray-50 relative overflow-hidden">
+                        {/* Like button */}
+                        <button
+                          onClick={(e) => handleLike(e, build.id)}
+                          className="absolute top-2 left-2 z-10 p-2 rounded-full bg-white/90 hover:bg-white shadow-md transition-all hover:scale-110"
                         >
-                          {/* Like button */}
-                          <button
-                            onClick={(e) => handleLike(e, build.id)}
-                            className="absolute top-2 right-2 z-10 p-2 rounded-full bg-white/90 hover:bg-white shadow-md transition-all hover:scale-110"
-                          >
-                            {isLiked ? (
-                              <FaHeart className="text-red-500 text-lg" />
-                            ) : (
-                              <FaRegHeart className="text-gray-600 text-lg" />
-                            )}
-                          </button>
-
-                          {firstImage ? (
-                            <img
-                              src={firstImage}
-                              alt={build.build_name}
-                              className="rounded-md object-contain bg-gray-100 mb-3 sm:mb-4 h-32 sm:h-36 md:h-40 w-full"
-                            />
+                          {isLiked ? (
+                            <FaHeart className="text-red-500 text-base" />
                           ) : (
-                            <div className="rounded-md bg-gray-100 mb-3 sm:mb-4 h-32 sm:h-36 md:h-40 w-full flex items-center justify-center">
-                              <MdComputer className="text-gray-400 text-5xl" />
-                            </div>
+                            <FaRegHeart className="text-gray-600 text-base" />
                           )}
-                          <div className="flex flex-col flex-grow justify-between">
-                            <span
-                              className={`text-xs sm:text-sm font-semibold mb-2 select-none ${getStockStatusColor(
-                                stockStatus
-                              )}`}
-                            >
-                              {stockStatus} ({componentCount})
-                            </span>
-                            <h4 className="select-none font-medium text-gray-800 overflow-hidden text-ellipsis line-clamp-2 text-sm sm:text-base mb-1">
-                              {build.build_name}
-                            </h4>
-                            
-                            {/* Creator username */}
-                            <p className="text-xs text-gray-500 mb-2">
-                              by {build.created_by_username || 'Anonymous'}
-                            </p>
+                        </button>
 
-                            {/* Stats */}
-                            <div className="flex items-center gap-3 text-xs text-gray-600 mb-2">
-                              <span className="flex items-center gap-1">
-                                <FaHeart className="text-red-500" />
-                                {build.likes_count || 0}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <FaShoppingCart className="text-blue-500" />
-                                {build.purchase_count || 0}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <FaEye className="text-gray-500" />
-                                {build.view_count || 0}
-                              </span>
-                            </div>
-
-                            <span className="text-gray-500 select-none text-xs sm:text-sm mb-2">
-                              Components ({componentCount})
-                            </span>
-                            <div className="mt-auto">
-                              <div className="flex flex-wrap items-baseline gap-1">
-                                <span className="text-indigo-600 font-bold text-sm sm:text-base select-none">
-                                  ₱{build.total_price?.toLocaleString() || '0'}
-                                </span>
-                              </div>
-                            </div>
+                        {firstImage ? (
+                          <img
+                            src={firstImage}
+                            alt={build.build_name}
+                            className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-200"
+                            draggable="false"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <MdComputer className="text-gray-400 text-5xl group-hover:scale-105 transition-transform duration-200" />
                           </div>
+                        )}
+                      </div>
+                      <div className="p-3 flex flex-col flex-grow">
+                        <h4 className="select-none text-sm font-medium text-gray-800 mb-2 line-clamp-2">
+                          {build.build_name}
+                        </h4>
+                        
+                        {/* Creator username */}
+                        <p className="text-xs text-gray-500 mb-2">
+                          by {build.created_by_username || 'Anonymous'}
+                        </p>
+
+                        {/* Stats */}
+                        <div className="flex items-center gap-3 text-xs text-gray-600 mb-2">
+                          <span className="flex items-center gap-1">
+                            <FaHeart className="text-red-500" />
+                            {build.likes_count || 0}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <FaEye className="text-gray-500" />
+                            {build.view_count || 0}
+                          </span>
                         </div>
-                      </TooltipTrigger>
-                      <TooltipContent
-                        side="top"
-                        sideOffset={6}
-                        className="z-50 overflow-hidden rounded-md bg-gray-800 px-3 py-1 text-xs text-white shadow-md"
-                      >
-                        {build.build_name}
-                      </TooltipContent>
-                    </Tooltip>
+
+                        <span className="text-gray-500 select-none text-xs mb-2">
+                          {componentCount} Components
+                        </span>
+                        <div className="flex items-center gap-2 mb-2 mt-auto">
+                          <span className="text-lg font-bold text-green-600 select-none">
+                            ₱{build.total_price?.toLocaleString() || '0'}
+                          </span>
+                        </div>
+                        <span
+                          className={`text-xs font-semibold select-none ${getStockStatusColor(
+                            stockStatus
+                          )}`}
+                        >
+                          {stockStatus}
+                        </span>
+                      </div>
+                    </div>
                   </CarouselItem>
                 );
               })}
@@ -368,56 +382,57 @@ const BuildLaps = ({ set }) => {
                   key={index}
                   className="pl-2 md:pl-4 basis-1/2 sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5"
                 >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div
-                        key={product.id}
-                        onClick={() => setSelectedProduct(product)}
-                        className="group relative bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col p-3 sm:p-4 active:scale-95 active:shadow-sm"
+                  <div
+                    onClick={() => setSelectedProduct(product)}
+                    className="bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-all duration-500 cursor-pointer overflow-hidden group active:scale-95 h-full flex flex-col"
+                  >
+                    <div className="w-full h-32 sm:h-36 md:h-40 bg-gray-50 relative overflow-hidden">
+                      <img
+                        src={product.imageUrl}
+                        alt={product.title}
+                        className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-200"
+                        draggable="false"
+                      />
+                      {/* Add to Cart Icon Button */}
+                      <button
+                        onClick={(e) => handleAddToCart(e, product)}
+                        disabled={addingToCart === product.id}
+                        className="absolute top-2 right-2 bg-green-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-green-600 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Add to Cart"
                       >
-                        <img
-                          src={product.imageUrl}
-                          alt={product.title}
-                          className="rounded-md object-contain bg-gray-100 mb-3 sm:mb-4 h-32 sm:h-36 md:h-40 w-full"
-                        />
-                        <div className="flex flex-col flex-grow justify-between">
-                          <span
-                            className={`text-xs sm:text-sm font-semibold mb-2 select-none ${getStockStatusColor(
-                              product.stockStatus
-                            )}`}
-                          >
-                            {product.stockStatus}
-                            {product.stock > 0 && ` (${product.stock})`}
+                        {addingToCart === product.id ? (
+                          <div className="animate-spin h-[18px] w-[18px] border-2 border-white border-t-transparent rounded-full" />
+                        ) : (
+                          <ShoppingCart size={18} />
+                        )}
+                      </button>
+                    </div>
+                    <div className="p-3 flex flex-col flex-grow">
+                      <h4 className="select-none text-sm font-medium text-gray-800 mb-2 line-clamp-2">
+                        {product.title}
+                      </h4>
+                      <span className="text-gray-500 select-none text-xs mb-2">
+                        Reviews ({product.reviews})
+                      </span>
+                      <div className="flex items-center gap-2 mb-2 mt-auto">
+                        <span className="text-lg font-bold text-green-600 select-none">
+                          {product.displayPrice}
+                        </span>
+                        {product.displayOldPrice && (
+                          <span className="text-sm line-through text-gray-400 select-none">
+                            {product.displayOldPrice}
                           </span>
-                          <h4 className="select-none font-medium text-gray-800 overflow-hidden text-ellipsis line-clamp-2 text-sm sm:text-base mb-1">
-                            {product.title}
-                          </h4>
-                          <span className="text-gray-500 select-none text-xs sm:text-sm mb-2">
-                            Reviews ({product.reviews})
-                          </span>
-                          <div className="mt-auto">
-                            <div className="flex flex-wrap items-baseline gap-1">
-                              <span className="text-indigo-600 font-bold text-sm sm:text-base select-none">
-                                {product.displayPrice}
-                              </span>
-                              {product.displayOldPrice && (
-                                <span className="line-through text-gray-400 text-[10px] sm:text-xs select-none">
-                                  {product.displayOldPrice}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                        )}
                       </div>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      side="top"
-                      sideOffset={6}
-                      className="z-50 overflow-hidden rounded-md bg-gray-800 px-3 py-1 text-xs text-white shadow-md"
-                    >
-                      {product.title}
-                    </TooltipContent>
-                  </Tooltip>
+                      <span
+                        className={`text-xs font-semibold select-none ${getStockStatusColor(
+                          product.stockStatus
+                        )}`}
+                      >
+                        {product.stockStatus}
+                      </span>
+                    </div>
+                  </div>
                 </CarouselItem>
               ))}
             </CarouselContent>

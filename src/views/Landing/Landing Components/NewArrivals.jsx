@@ -4,6 +4,9 @@ import { supabase } from "../../../lib/supabase";
 import ReviewService from "../../../services/ReviewService";
 import { ProductService } from "../../../services/ProductService";
 import { useScrollAnimation } from "../../../hooks/useScrollAnimation";
+import { useCart } from "../../../context/CartContext";
+import { toast } from "sonner";
+import { ShoppingCart } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
@@ -16,7 +19,37 @@ const NewArrivals = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [addingToCart, setAddingToCart] = useState(null);
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 });
+  const { addToCart, user } = useCart();
+
+  // Handle Add to Cart from carousel
+  const handleAddToCart = async (e, product) => {
+    e.stopPropagation(); // Prevent opening the modal
+    
+    // Check if user is logged in
+    if (!user) {
+      toast.error('Please login to add items to cart');
+      return;
+    }
+
+    // Auto-select first variant if product has variants
+    let selectedVariant = null;
+    if (product.variants && product.variants.length > 0) {
+      selectedVariant = product.variants[0].sku || product.variants[0].name || null;
+    }
+
+    // Add to cart
+    setAddingToCart(product.id);
+    await addToCart({
+      product_id: product.id,
+      product_name: product.title,
+      variant_name: selectedVariant,
+      price: product.price,
+      quantity: 1
+    });
+    setAddingToCart(null);
+  };
 
   // Helper function to get stock status color
   const getStockStatusColor = (stockStatus) => {
@@ -169,40 +202,53 @@ const NewArrivals = () => {
             >
               <div
                 onClick={() => setSelectedProduct(product)}
-                className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 p-3 sm:p-4 cursor-pointer flex flex-col h-full"
+                className="bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-all duration-500 cursor-pointer overflow-hidden group active:scale-95 h-full flex flex-col"
               >
-                <img
-                  src={product.image}
-                  alt={product.title}
-                  className="rounded-md mb-3 sm:mb-4 object-contain h-32 sm:h-36 md:h-40 w-full bg-gray-100"
-                />
-                <div className="flex flex-col flex-grow justify-between">
+                <div className="w-full h-32 sm:h-36 md:h-40 bg-gray-50 relative overflow-hidden">
+                  <img
+                    src={product.image}
+                    alt={product.title}
+                    className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-200"
+                    draggable="false"
+                  />
+                  {/* Add to Cart Icon Button - Shows on hover */}
+                  <button
+                    onClick={(e) => handleAddToCart(e, product)}
+                    disabled={addingToCart === product.id}
+                    className="absolute top-2 right-2 bg-green-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-green-600 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Add to Cart"
+                  >
+                    {addingToCart === product.id ? (
+                      <div className="animate-spin h-[18px] w-[18px] border-2 border-white border-t-transparent rounded-full" />
+                    ) : (
+                      <ShoppingCart size={18} />
+                    )}
+                  </button>
+                </div>
+                <div className="p-3 flex flex-col flex-grow">
+                  <h4 className="select-none text-sm font-medium text-gray-800 mb-2 line-clamp-2">
+                    {product.title}
+                  </h4>
+                  <span className="text-gray-500 text-xs mb-2 select-none">
+                    Reviews ({product.reviews})
+                  </span>
+                  <div className="flex items-center gap-2 mb-2 mt-auto">
+                    <span className="text-lg font-bold text-green-600 select-none">
+                      {product.displayPrice}
+                    </span>
+                    {product.displayOldPrice && (
+                      <span className="text-sm line-through text-gray-400 select-none">
+                        {product.displayOldPrice}
+                      </span>
+                    )}
+                  </div>
                   <span
-                    className={`text-xs sm:text-sm font-semibold mb-2 select-none ${getStockStatusColor(
+                    className={`text-xs font-semibold select-none ${getStockStatusColor(
                       product.stockStatus
                     )}`}
                   >
                     {product.stockStatus}
-                    {product.stock > 0 && ` (${product.stock})`}
                   </span>
-                  <h4 className="select-none text-sm sm:text-base lg:text-lg font-medium text-gray-800 mb-1 overflow-hidden text-ellipsis line-clamp-2">
-                    {product.title}
-                  </h4>
-                  <span className="text-gray-500 text-xs sm:text-sm mb-2 select-none">
-                    Reviews ({product.reviews})
-                  </span>
-                  <div className="mt-auto">
-                    <div className="flex items-center space-x-2">
-                      {product.displayOldPrice && (
-                      <span className="line-through text-gray-400 text-xs sm:text-sm select-none">
-                        {product.displayOldPrice}
-                      </span>
-                      )}
-                      <span className="text-indigo-600 font-bold text-sm sm:text-base lg:text-lg select-none">
-                        {product.displayPrice}
-                      </span>
-                    </div>
-                  </div>
                 </div>
               </div>
             </CarouselItem>

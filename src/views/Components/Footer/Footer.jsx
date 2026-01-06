@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom"; // Import Link
-import { FaFacebook } from "react-icons/fa";
-import { FaInstagram } from "react-icons/fa";
+import { FaFacebook, FaInstagram, FaXTwitter } from "react-icons/fa6";
+import { SiTiktok } from "react-icons/si";
 import { RiMastercardFill } from "react-icons/ri";
 import { FaCcVisa } from "react-icons/fa";
 import { useWebsiteSettings } from "../../../hooks/useWebsiteSettings";
@@ -73,26 +73,62 @@ const Footer = ({ isAuth }) => {
             {/* Socials */}
             <div className="mb-6">
               <h4 className="mb-3 font-semibold text-lg">Follow Us:</h4>
-              <div className="flex flex-row gap-2 space-y-1">
-                {settings?.facebookUrl && (
+              <div className="flex flex-row gap-3 items-center">
+                {settings?.facebookUrl ? (
                   <a
                     href={settings.facebookUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:underline"
+                    className="hover:scale-110 transition-transform"
                   >
                     <FaFacebook className="text-white hover:text-green-500 text-2xl" />
                   </a>
+                ) : (
+                  <div className="opacity-50 cursor-not-allowed">
+                    <FaFacebook className="text-gray-400 text-2xl" />
+                  </div>
                 )}
-                {settings?.instagramUrl && (
+                {settings?.instagramUrl ? (
                   <a
                     href={settings.instagramUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:underline"
+                    className="hover:scale-110 transition-transform"
                   >
                     <FaInstagram className="text-white hover:text-green-500 text-2xl" />
                   </a>
+                ) : (
+                  <div className="opacity-50 cursor-not-allowed">
+                    <FaInstagram className="text-gray-400 text-2xl" />
+                  </div>
+                )}
+                {settings?.tiktokUrl ? (
+                  <a
+                    href={settings.tiktokUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:scale-110 transition-transform"
+                  >
+                    <SiTiktok className="text-white hover:text-green-500 text-2xl" />
+                  </a>
+                ) : (
+                  <div className="opacity-50 cursor-not-allowed">
+                    <SiTiktok className="text-gray-400 text-2xl" />
+                  </div>
+                )}
+                {settings?.twitterUrl ? (
+                  <a
+                    href={settings.twitterUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:scale-110 transition-transform"
+                  >
+                    <FaXTwitter className="text-white hover:text-green-500 text-2xl" />
+                  </a>
+                ) : (
+                  <div className="opacity-50 cursor-not-allowed">
+                    <FaXTwitter className="text-gray-400 text-2xl" />
+                  </div>
                 )}
               </div>
             </div>
