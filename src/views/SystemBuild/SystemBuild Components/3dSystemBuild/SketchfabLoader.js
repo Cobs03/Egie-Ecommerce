@@ -664,7 +664,8 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
         let score = 0;
         const nameLower = result.name.toLowerCase();
         const descriptionLower = (result.description || '').toLowerCase();
-        const productNameLower = (productData.productName || '').toLowerCase();
+        // FIX: Use same logic as buildSearchQuery - check BOTH .name and .productName
+        const productNameLower = (productData.name || productData.productName || '').toLowerCase();
         const brandLower = (productData.brand || '').toLowerCase();
         
         // HIGHEST PRIORITY: Exact name match (ignoring case and extra spaces)
