@@ -660,23 +660,39 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
         const productNameLower = (productData.productName || '').toLowerCase();
         const brandLower = (productData.brand || '').toLowerCase();
         
+        // HIGHEST PRIORITY: Exact name match (ignoring case and extra spaces)
+        const cleanProductName = productNameLower.replace(/\s+/g, ' ').trim();
+        const cleanResultName = nameLower.replace(/\s+/g, ' ').trim();
+        
+        if (cleanResultName === cleanProductName) {
+          score += 10000; // Massively high score for exact match
+        }
+        // Check if result name contains the full product name
+        else if (nameLower.includes(cleanProductName)) {
+          score += 5000; // Very high score for containing full product name
+        }
+        // Check if product name contains the result name (reversed)
+        else if (cleanProductName.includes(cleanResultName)) {
+          score += 3000;
+        }
+        
         // Extract key product words (like "Blackshark", "Kraken", "G2000")
         const productWords = productNameLower
           .split(/\s+/)
-          .filter(w => w.length > 3 && !['headset', 'keyboard', 'mouse', 'monitor', 'razer'].includes(w));
+          .filter(w => w.length > 3 && !['headset', 'keyboard', 'mouse', 'monitor', 'gaming', 'mechanical'].includes(w));
         
-        // HIGH PRIORITY: Exact product model name match (e.g., "Blackshark" in name)
-        let hasExactModelMatch = false;
+        // Count matching key words
+        let matchedWords = 0;
         productWords.forEach(word => {
           if (nameLower.includes(word)) {
-            score += 200; // High score for matching specific model
-            hasExactModelMatch = true;
+            score += 200;
+            matchedWords++;
           }
         });
         
-        // Brand match (but only if we also have model match)
+        // Brand match
         if (brandLower && nameLower.includes(brandLower)) {
-          score += hasExactModelMatch ? 50 : 20; // Higher if also has model match
+          score += 50;
         }
         
         // Model number match (RTX, G2000, etc.)
@@ -684,25 +700,27 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
         const productModels = productNameLower.match(modelPattern) || [];
         const resultModels = nameLower.match(modelPattern) || [];
         if (productModels.some(pm => resultModels.some(rm => rm.toLowerCase().includes(pm.toLowerCase())))) {
-          score += 100;
+          score += 300;
         }
         
-        // Component type in name
-        if (nameLower.includes(componentType.toLowerCase())) score += 10;
+        // CRITICAL FILTERS - Heavily penalize wrong types
+        // For audio headsets, exclude VR/character models
+        if (componentType === 'Headset') {
+          if (nameLower.includes('vr')) score -= 5000;
+          if (nameLower.includes('virtual reality')) score -= 5000;
+          if (nameLower.includes('character')) score -= 3000;
+          if (nameLower.includes('animated')) score -= 3000;
+          if (nameLower.includes('avatar')) score -= 3000;
+          if (descriptionLower.includes('vr')) score -= 2000;
+        }
         
-        // HEAVILY PENALIZE stylized/toy versions
-        if (nameLower.includes('low poly')) score -= 50;
-        if (nameLower.includes('cartoon')) score -= 100;
-        if (nameLower.includes('stylized')) score -= 80;
-        if (nameLower.includes('color pop')) score -= 100; // Specifically penalize color pop
-        if (nameLower.includes('toy')) score -= 80;
-        if (nameLower.includes('cute')) score -= 60;
-        if (nameLower.includes('chibi')) score -= 100;
-        if (nameLower.includes('simple')) score -= 30;
-        
-        // Penalize generic descriptions
-        if (descriptionLower.includes('stylized')) score -= 40;
-        if (descriptionLower.includes('cartoon')) score -= 50;
+        // Penalize stylized/toy versions
+        if (nameLower.includes('cartoon')) score -= 2000;
+        if (nameLower.includes('stylized')) score -= 1000;
+        if (nameLower.includes('color pop')) score -= 2000;
+        if (nameLower.includes('toy')) score -= 1000;
+        if (nameLower.includes('chibi')) score -= 2000;
+        if (nameLower.includes('low poly')) score -= 500;
         
         // Prefer realistic/detailed models
         if (nameLower.includes('realistic')) score += 30;
