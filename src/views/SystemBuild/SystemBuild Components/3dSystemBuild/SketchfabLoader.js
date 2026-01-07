@@ -168,9 +168,21 @@ const searchCache = new Map();
 const buildSearchQuery = (productData, componentType) => {
   if (!productData) return null;
   
+  // DEBUG: Log what we're receiving
+  console.log('🔍 buildSearchQuery received:', {
+    componentType,
+    productData,
+    hasName: !!productData.name,
+    hasProductName: !!productData.productName,
+    keys: Object.keys(productData)
+  });
+  
   const productName = productData.name || productData.productName || '';
   
-  if (!productName) return null;
+  if (!productName) {
+    console.warn('⚠️ No product name found in productData:', productData);
+    return null;
+  }
   
   // Clean product name - remove storage sizes, speeds, but keep model identifiers
   let cleanName = productName
