@@ -6,6 +6,49 @@ import JSZip from 'jszip';
 // Your Sketchfab API token
 const SKETCHFAB_API_TOKEN = '48281f7f66154a9d90b8fbe1201336e5';
 
+// ========== RATE LIMITING & QUEUE SYSTEM ==========
+// Prevents hitting API rate limits (429 errors)
+let requestQueue = [];
+let activeRequests = 0;
+const MAX_CONCURRENT_REQUESTS = 2; // Only 2 requests at a time
+const REQUEST_DELAY = 1000; // 1 second between requests
+
+// Process the request queue
+const processQueue = async () => {
+  if (activeRequests >= MAX_CONCURRENT_REQUESTS || requestQueue.length === 0) {
+    return;
+  }
+
+  const { fn, resolve, reject } = requestQueue.shift();
+  activeRequests++;
+
+  try {
+    const result = await fn();
+    resolve(result);
+  } catch (error) {
+    reject(error);
+  } finally {
+    activeRequests--;
+    // Add delay before next request to avoid rate limiting
+    setTimeout(() => {
+      processQueue();
+    }, REQUEST_DELAY);
+  }
+};
+
+// Queue a request with rate limiting
+const queueRequest = (fn) => {
+  return new Promise((resolve, reject) => {
+    requestQueue.push({ fn, resolve, reject });
+    processQueue();
+  });
+};
+
+// ========== ENHANCED CACHING ==========
+// Cache for model download URLs (lasts 1 hour)
+const downloadUrlCache = new Map();
+const DOWNLOAD_CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
 // Default configurations for component positioning (no search terms - will use product name)
 const COMPONENT_CONFIGS = {
   Case: {
@@ -208,7 +251,7 @@ const generateFallbackQueries = (productData, componentType) => {
 };
 
 /**
- * Search Sketchfab for downloadable models
+ * Search Sketchfab for downloadable models (WITH RATE LIMITING)
  */
 export const searchSketchfabModels = async (searchTerm, options = {}) => {
   const { count = 5 } = options;
@@ -216,33 +259,43 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
   // Check search cache first
   const cacheKey = searchTerm.toLowerCase();
   if (searchCache.has(cacheKey)) {
+    console.log('📦 Using cached results for "' + searchTerm + '"');
     return searchCache.get(cacheKey);
   }
 
-  try {
-    const params = new URLSearchParams({
-      q: searchTerm,
-      type: 'models',
-      downloadable: 'true',
-      count: '24', // Increased to get more results for better matching
-      sort_by: '-relevance' // Changed from -likeCount to -relevance for better matches
-    });
+  // Use the request queue to avoid rate limiting
+  return queueRequest(async () => {
+    try {
+      const params = new URLSearchParams({
+        q: searchTerm,
+        type: 'models',
+        downloadable: 'true',
+        count: '24', // Increased to get more results for better matching
+        sort_by: '-relevance' // Changed from -likeCount to -relevance for better matches
+      });
 
-    const response = await fetch(
-      'https://api.sketchfab.com/v3/search?' + params,
-      {
-        headers: {
-          'Authorization': 'Token ' + SKETCHFAB_API_TOKEN
+      console.log('🔍 Searching Sketchfab API for "' + searchTerm + '"...');
+      const response = await fetch(
+        'https://api.sketchfab.com/v3/search?' + params,
+        {
+          headers: {
+            'Authorization': 'Token ' + SKETCHFAB_API_TOKEN
+          }
         }
+      );
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          console.warn('⚠️ Rate limited, will retry...');
+          // Wait and retry
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          throw new Error('Rate limited, please try again');
+        }
+        throw new Error('Sketchfab API error: ' + response.status);
       }
-    );
 
-    if (!response.ok) {
-      throw new Error('Sketchfab API error: ' + response.status);
-    }
-
-    const data = await response.json();
-    console.log('✅ Found ' + (data.results?.length || 0) + ' models for "' + searchTerm + '"');
+      const data = await response.json();
+      console.log('✅ Found ' + (data.results?.length || 0) + ' models for "' + searchTerm + '"');
     
     const downloadableModels = data.results?.filter(function(model) {
       return model.isDownloadable;
@@ -310,51 +363,77 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
       console.log('🎯 Best match: "' + sortedModels[0].name + '" (score: ' + scoredModels[0].score + ')');
     }
     
-    // Cache the results
+    // Cache the results with timestamp
     searchCache.set(cacheKey, sortedModels);
     
     return sortedModels;
-  } catch (error) {
-    return [];
-  }
+    } catch (error) {
+      console.error('❌ Search error:', error);
+      return [];
+    }
+  });
 };
 
 /**
- * Get download URL for a Sketchfab model
+ * Get download URL for a Sketchfab model (WITH RATE LIMITING & CACHING)
  */
 export const getSketchfabDownloadUrl = async (modelUid) => {
-  try {
-    const response = await fetch(
-      'https://api.sketchfab.com/v3/models/' + modelUid + '/download',
-      {
-        headers: {
-          'Authorization': 'Token ' + SKETCHFAB_API_TOKEN
-        }
-      }
-    );
-
-    if (!response.ok) {
-      if (response.status === 403) {
-        throw new Error('Model not downloadable');
-      }
-      throw new Error('API error: ' + response.status);
-    }
-
-    const data = await response.json();
-    console.log('📋 Available formats:', Object.keys(data));
-    
-    if (data.gltf?.url) {
-      return { url: data.gltf.url, format: 'gltf' };
-    }
-    
-    if (data.glb?.url) {
-      return { url: data.glb.url, format: 'glb' };
-    }
-    
-    throw new Error('No GLTF/GLB format available');
-  } catch (error) {
-    return null;
+  // Check cache first
+  const cached = downloadUrlCache.get(modelUid);
+  if (cached && (Date.now() - cached.timestamp < DOWNLOAD_CACHE_DURATION)) {
+    console.log('📦 Using cached download URL for', modelUid);
+    return cached.data;
   }
+
+  // Use the request queue to avoid rate limiting
+  return queueRequest(async () => {
+    try {
+      console.log('📥 Fetching download URL for', modelUid);
+      const response = await fetch(
+        'https://api.sketchfab.com/v3/models/' + modelUid + '/download',
+        {
+          headers: {
+            'Authorization': 'Token ' + SKETCHFAB_API_TOKEN
+          }
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          throw new Error('Model not downloadable');
+        }
+        if (response.status === 429) {
+          console.warn('⚠️ Rate limited on download URL');
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          throw new Error('Rate limited');
+        }
+        throw new Error('API error: ' + response.status);
+      }
+
+      const data = await response.json();
+      console.log('📋 Available formats:', Object.keys(data));
+      
+      let result = null;
+      if (data.gltf?.url) {
+        result = { url: data.gltf.url, format: 'gltf' };
+      } else if (data.glb?.url) {
+        result = { url: data.glb.url, format: 'glb' };
+      } else {
+        throw new Error('No GLTF/GLB format available');
+      }
+
+      // Cache the result
+      downloadUrlCache.set(modelUid, {
+        data: result,
+        timestamp: Date.now()
+      });
+
+      return result;
+    } catch (error) {
+      console.error('❌ Download URL error:', error);
+      return null;
+    }
+  });
 };
 
 /**
