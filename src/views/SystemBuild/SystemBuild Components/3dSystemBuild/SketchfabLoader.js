@@ -270,7 +270,7 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
         q: searchTerm,
         type: 'models',
         downloadable: 'true',
-        count: '24', // Increased to get more results for better matching
+        count: '30', // Increased to get more results (some may fail to download)
         sort_by: '-relevance' // Changed from -likeCount to -relevance for better matches
       });
 
@@ -400,6 +400,7 @@ export const getSketchfabDownloadUrl = async (modelUid) => {
 
       if (!response.ok) {
         if (response.status === 403) {
+          console.warn('⚠️ Model', modelUid, 'claims to be downloadable but returns 403 - trying next model');
           throw new Error('Model not downloadable');
         }
         if (response.status === 429) {
@@ -688,19 +689,26 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
       // Try each result until one works
       for (const result of scoredResults) {
         console.log('🎯 Trying model: ' + result.name + ' (score: ' + result.relevanceScore + ')');
-        model = await loadSketchfabModel(result.uid, onProgress);
-        if (model) {
-          // Store model info including creator
-          modelInfo = {
-            name: result.name,
-            uid: result.uid,
-            creator: result.user?.displayName || result.user?.username || 'Unknown',
-            creatorUrl: result.user?.profileUrl || ('https://sketchfab.com/' + (result.user?.username || '')),
-            modelUrl: 'https://sketchfab.com/3d-models/' + result.uid,
-            source: 'Sketchfab',
-            relevanceScore: result.relevanceScore
-          };
-          break;
+        try {
+          model = await loadSketchfabModel(result.uid, onProgress);
+          if (model) {
+            // Store model info including creator
+            modelInfo = {
+              name: result.name,
+              uid: result.uid,
+              creator: result.user?.displayName || result.user?.username || 'Unknown',
+              creatorUrl: result.user?.profileUrl || ('https://sketchfab.com/' + (result.user?.username || '')),
+              modelUrl: 'https://sketchfab.com/3d-models/' + result.uid,
+              source: 'Sketchfab',
+              relevanceScore: result.relevanceScore
+            };
+            console.log('✅ Successfully loaded: ' + result.name);
+            break;
+          } else {
+            console.log('⚠️ Model failed to load (likely not downloadable), trying next...');
+          }
+        } catch (error) {
+          console.log('⚠️ Model error:', error.message, '- trying next...');
         }
       }
     }
