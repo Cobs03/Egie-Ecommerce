@@ -1838,18 +1838,36 @@ IMPORTANT:
       // Remove the recording message
       setMessages(prev => prev.filter(msg => !msg.isRecording));
       
-      // Only show error message for actual errors, not for user actions
-      const ignoredErrors = ['no-speech', 'aborted', 'audio-capture'];
+      // Provide helpful error messages based on error type
+      let errorMessage = '';
       
-      if (!ignoredErrors.includes(event.error)) {
-        const errorMsg = {
-          id: Date.now(),
-          text: `⚠️ Voice recognition error: ${event.error}. Please try again.`,
-          sender: "ai",
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, errorMsg]);
+      switch(event.error) {
+        case 'not-allowed':
+          errorMessage = '🔒 Microphone access denied. Click the lock icon in the address bar and allow microphone access. Note: HTTPS is required for microphone access.';
+          break;
+        case 'no-speech':
+          errorMessage = '🎤 No speech detected. Please try again and speak clearly.';
+          break;
+        case 'audio-capture':
+          errorMessage = '🎤 Microphone not found. Please connect a microphone and try again.';
+          break;
+        case 'network':
+          errorMessage = '📡 Network error. Please check your internet connection.';
+          break;
+        case 'aborted':
+          // User cancelled, no error needed
+          return;
+        default:
+          errorMessage = `⚠️ Voice recognition error: ${event.error}. Please try again.`;
       }
+      
+      const errorMsg = {
+        id: Date.now(),
+        text: errorMessage,
+        sender: "ai",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMsg]);
     };
 
     recognition.onend = () => {
