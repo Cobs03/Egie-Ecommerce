@@ -4,14 +4,14 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import JSZip from 'jszip';
 
 // Your Sketchfab API token
-const SKETCHFAB_API_TOKEN = '48281f7f66154a9d90b8fbe1201336e5';
+const SKETCHFAB_API_TOKEN = '40e432b03bd3443787fd33a830b1eae4';
 
 // ========== RATE LIMITING & QUEUE SYSTEM ==========
 // Prevents hitting API rate limits (429 errors)
 let requestQueue = [];
 let activeRequests = 0;
-const MAX_CONCURRENT_REQUESTS = 2; // Only 2 requests at a time
-const REQUEST_DELAY = 1000; // 1 second between requests
+const MAX_CONCURRENT_REQUESTS = 1; // Only 1 request at a time (more strict)
+const REQUEST_DELAY = 2000; // 2 seconds between requests (increased)
 
 // Process the request queue
 const processQueue = async () => {
@@ -286,9 +286,9 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
 
       if (!response.ok) {
         if (response.status === 429) {
-          console.warn('⚠️ Rate limited, will retry...');
-          // Wait and retry
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          console.warn('⚠️ Rate limited, waiting 5 seconds...');
+          // Wait longer before retry
+          await new Promise(resolve => setTimeout(resolve, 5000));
           throw new Error('Rate limited, please try again');
         }
         throw new Error('Sketchfab API error: ' + response.status);
@@ -403,8 +403,8 @@ export const getSketchfabDownloadUrl = async (modelUid) => {
           throw new Error('Model not downloadable');
         }
         if (response.status === 429) {
-          console.warn('⚠️ Rate limited on download URL');
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          console.warn('⚠️ Rate limited on download URL, waiting 5 seconds...');
+          await new Promise(resolve => setTimeout(resolve, 5000));
           throw new Error('Rate limited');
         }
         throw new Error('API error: ' + response.status);
