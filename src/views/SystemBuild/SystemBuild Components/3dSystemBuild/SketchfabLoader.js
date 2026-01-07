@@ -182,12 +182,7 @@ const buildSearchQuery = (productData, componentType) => {
     .replace(/\s+/g, ' ')
     .trim();
   
-  // Limit query length (Sketchfab works better with shorter queries)
-  const words = cleanName.split(' ').filter(w => w.length > 1);
-  if (words.length > 5) {
-    cleanName = words.slice(0, 5).join(' ');
-  }
-  
+  // Don't limit query length - use full product name for exact matches
   return cleanName;
 };
 
@@ -664,8 +659,18 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
         const cleanProductName = productNameLower.replace(/\s+/g, ' ').trim();
         const cleanResultName = nameLower.replace(/\s+/g, ' ').trim();
         
+        // Debug logging for exact matches
+        if (nameLower.includes('knob')) {
+          console.log('🔍 Comparing:', {
+            result: cleanResultName,
+            product: cleanProductName,
+            exactMatch: cleanResultName === cleanProductName
+          });
+        }
+        
         if (cleanResultName === cleanProductName) {
           score += 10000; // Massively high score for exact match
+          console.log('✅ EXACT MATCH BONUS +10000:', result.name);
         }
         // Check if result name contains the full product name
         else if (nameLower.includes(cleanProductName)) {
@@ -824,6 +829,28 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
         modelInfo: modelInfo
       };
       model.name = 'component_' + componentType;
+
+      // Remove any existing model with the same name (prevent stacking)
+      const existingModel = scene.children.find(child => child.name === model.name);
+      if (existingModel) {
+        console.log('🗑️ Removing existing ' + componentType + ' model');
+        scene.remove(existingModel);
+        // Dispose of old model resources
+        existingModel.traverse(function(child) {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach(m => {
+                if (m.map) m.map.dispose();
+                m.dispose();
+              });
+            } else {
+              if (child.material.map) child.material.map.dispose();
+              child.material.dispose();
+            }
+          }
+        });
+      }
 
       // Enable shadows
       model.traverse(function(child) {
