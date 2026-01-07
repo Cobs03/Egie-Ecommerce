@@ -695,12 +695,36 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
           score += 50;
         }
         
-        // Model number match (RTX, G2000, etc.)
-        const modelPattern = /\b([A-Z]{2,4}[-\s]?\d{3,4}[A-Z]?[Xi]?)\b/gi;
+        // CRITICAL: Exact model number match (G604 must match G604, NOT G603)
+        const modelPattern = /\b([A-Z]+[-]?[0-9]+[A-Z0-9]*)\b/gi;
         const productModels = productNameLower.match(modelPattern) || [];
         const resultModels = nameLower.match(modelPattern) || [];
-        if (productModels.some(pm => resultModels.some(rm => rm.toLowerCase().includes(pm.toLowerCase())))) {
-          score += 300;
+        
+        let hasExactModelMatch = false;
+        let hasWrongModelNumber = false;
+        
+        productModels.forEach(productModel => {
+          const productModelClean = productModel.toLowerCase().replace(/[-\s]/g, '');
+          
+          resultModels.forEach(resultModel => {
+            const resultModelClean = resultModel.toLowerCase().replace(/[-\s]/g, '');
+            
+            // Exact match (G604 === G604)
+            if (productModelClean === resultModelClean) {
+              score += 2000; // High bonus for exact model number match
+              hasExactModelMatch = true;
+            }
+            // Similar but different (G604 vs G603) - REJECT
+            else if (productModelClean.length === resultModelClean.length) {
+              score -= 10000; // Massive penalty for wrong but similar model
+              hasWrongModelNumber = true;
+            }
+          });
+        });
+        
+        // If wrong model number found, skip this result entirely
+        if (hasWrongModelNumber && !hasExactModelMatch) {
+          return { ...result, relevanceScore: -99999 };
         }
         
         // CRITICAL FILTERS - Heavily penalize wrong types
