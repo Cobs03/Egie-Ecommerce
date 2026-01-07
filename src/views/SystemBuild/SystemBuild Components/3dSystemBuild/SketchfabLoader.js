@@ -163,20 +163,16 @@ const searchCache = new Map();
 
 /**
  * Build search query from product data
- * Strategy: Try multiple search approaches for better accuracy
+ * Strategy: Use FULL PRODUCT NAME first, then fallbacks
  */
 const buildSearchQuery = (productData, componentType) => {
   if (!productData) return null;
   
   const productName = productData.name || productData.productName || '';
-  const brand = productData.brand || '';
   
-  // Extract key identifiers (model numbers, series names)
-  // Examples: "RTX 4090", "Ryzen 9 7950X", "H510", "RM850x"
-  const modelPattern = /\b([A-Z]{2,4}[-\s]?\d{3,4}[A-Z]?[Xi]?)\b/gi;
-  const modelMatches = productName.match(modelPattern) || [];
+  if (!productName) return null;
   
-  // Clean product name but keep important identifiers
+  // Clean product name - remove storage sizes, speeds, but keep model identifiers
   let cleanName = productName
     .replace(/\([^)]*\)/g, '') // Remove parentheses content
     .replace(/\d+GB|\d+TB/gi, '') // Remove storage sizes
@@ -186,33 +182,13 @@ const buildSearchQuery = (productData, componentType) => {
     .replace(/\s+/g, ' ')
     .trim();
   
-  // Build prioritized search query
-  let searchQuery = '';
-  
-  // Priority 1: Brand + Model number (most specific)
-  if (brand && modelMatches.length > 0) {
-    searchQuery = brand + ' ' + modelMatches[0];
-  }
-  // Priority 2: Just model number if distinctive
-  else if (modelMatches.length > 0 && modelMatches[0].length >= 4) {
-    searchQuery = modelMatches[0];
-  }
-  // Priority 3: Brand + cleaned product name
-  else if (brand && !cleanName.toLowerCase().includes(brand.toLowerCase())) {
-    searchQuery = brand + ' ' + cleanName;
-  }
-  // Priority 4: Just the cleaned name
-  else {
-    searchQuery = cleanName;
-  }
-  
   // Limit query length (Sketchfab works better with shorter queries)
-  const words = searchQuery.split(' ').filter(w => w.length > 1);
-  if (words.length > 4) {
-    searchQuery = words.slice(0, 4).join(' ');
+  const words = cleanName.split(' ').filter(w => w.length > 1);
+  if (words.length > 5) {
+    cleanName = words.slice(0, 5).join(' ');
   }
   
-  return searchQuery;
+  return cleanName;
 };
 
 /**
@@ -220,27 +196,56 @@ const buildSearchQuery = (productData, componentType) => {
  */
 const generateFallbackQueries = (productData, componentType) => {
   const brand = productData?.brand || '';
+  const productName = productData?.name || productData?.productName || '';
   const queries = [];
   
-  // Fallback 1: Brand + component type
+  // Extract model numbers/identifiers from product name
+  const modelPattern = /\b([A-Z]{2,4}[-\s]?\d{3,4}[A-Z]?[Xi]?)\b/gi;
+  const modelMatches = productName.match(modelPattern) || [];
+  
+  // Fallback 1: Model number only (if found)
+  if (modelMatches.length > 0) {
+    queries.push(modelMatches[0]);
+  }
+  
+  // Fallback 2: Brand + component type
   if (brand) {
     queries.push(brand + ' ' + componentType);
   }
   
-  // Fallback 2: Component type + "3D model"
-  queries.push(componentType + ' 3D model');
+  // Fallback 3: Component type + key feature words from product name
+  const keyWords = productName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/gi, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 3 && !['with', 'the', 'for', 'and'].includes(w))
+    .slice(0, 2);
   
-  // Fallback 3: Generic component
+  if (keyWords.length > 0) {
+    queries.push(componentType + ' ' + keyWords.join(' '));
+  }
+  
+  // Fallback 4: Generic component type
   const genericTerms = {
     'Case': 'PC case computer tower',
     'Motherboard': 'motherboard PCB',
     'CPU': 'CPU processor chip',
+    'Processor': 'CPU processor chip',
     'GPU': 'graphics card GPU',
     'RAM': 'RAM memory stick DDR',
     'CPU Cooler': 'CPU cooler heatsink fan',
+    'Cooling': 'CPU cooler heatsink fan',
     'Storage': 'SSD NVMe drive',
+    'SSD': 'SSD drive',
+    'HDD': 'hard drive',
     'PSU': 'power supply unit PSU',
-    'Fans': 'PC case fan RGB'
+    'Fans': 'PC case fan RGB',
+    'Keyboard': 'mechanical keyboard',
+    'Mouse': 'gaming mouse',
+    'Monitor': 'gaming monitor display',
+    'Headset': 'gaming headset',
+    'Speaker': 'speaker audio',
+    'Webcam': 'webcam camera'
   };
   
   if (genericTerms[componentType]) {
