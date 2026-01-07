@@ -35,7 +35,6 @@ class ThirdPartyAuditService {
 
         if (error) {
           // Table might not exist, log to console instead
-          console.warn('Third-party audit log table not found, logging to console');
           console.log('[THIRD-PARTY AUDIT]', JSON.stringify(logEntry, null, 2));
         }
       } catch (dbError) {
@@ -45,7 +44,6 @@ class ThirdPartyAuditService {
 
       return { success: true, logEntry };
     } catch (error) {
-      console.error('Error logging third-party data sharing:', error);
       return { success: false, error: error.message };
     }
   }
@@ -142,7 +140,6 @@ class ThirdPartyAuditService {
       
       localStorage.setItem('third_party_audit_logs', JSON.stringify(existingLogs));
     } catch (error) {
-      console.error('Failed to log to localStorage:', error);
     }
   }
 
@@ -164,7 +161,6 @@ class ThirdPartyAuditService {
 
       return { success: true, logs: data || [] };
     } catch (error) {
-      console.error('Error fetching audit logs:', error);
       return { success: false, error: error.message, logs: [] };
     }
   }
@@ -208,7 +204,6 @@ class ThirdPartyAuditService {
 
       return { success: true, report: Object.values(report) };
     } catch (error) {
-      console.error('Error generating compliance report:', error);
       return { success: false, error: error.message, report: [] };
     }
   }
@@ -238,7 +233,6 @@ class ThirdPartyAuditService {
       const consentKey = consentMapping[service];
       return consentKey === true || consents[consentKey] === true;
     } catch (error) {
-      console.error('Error checking user consent:', error);
       return false;
     }
   }

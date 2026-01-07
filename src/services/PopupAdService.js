@@ -33,7 +33,6 @@ class PopupAdService {
 
       return { data: filteredData, error: null };
     } catch (error) {
-      console.error('Error fetching active popup ads:', error);
       return { data: null, error };
     }
   }
@@ -101,7 +100,6 @@ class PopupAdService {
       if (error) throw error;
       return { error: null };
     } catch (error) {
-      console.error('Error tracking impression:', error);
       return { error };
     }
   }
@@ -115,7 +113,6 @@ class PopupAdService {
       if (error) throw error;
       return { error: null };
     } catch (error) {
-      console.error('Error tracking click:', error);
       return { error };
     }
   }

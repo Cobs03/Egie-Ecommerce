@@ -21,7 +21,6 @@ const Notification = () => {
     
     // Subscribe to real-time updates
     const subscription = NotificationService.subscribeToNotifications((payload) => {
-      console.log('Notification update:', payload);
       fetchNotifications(); // Refetch when notifications change
     });
 
@@ -37,8 +36,6 @@ const Notification = () => {
       
       // Fetch order updates
       const { data: orderData, error: orderError } = await NotificationService.getUserNotifications('order_update', null, 50);
-      console.log('Order notifications fetched:', { data: orderData, error: orderError });
-      
       if (!orderError && orderData) {
         // Transform data to match component format
         const transformedOrders = orderData.map(notification => ({
@@ -62,8 +59,6 @@ const Notification = () => {
 
       // Fetch promotions
       const { data: promoData, error: promoError } = await NotificationService.getUserNotifications('promotion', null, 50);
-      console.log('Promotion notifications fetched:', { data: promoData, error: promoError });
-      
       if (!promoError && promoData) {
         // Transform data to match component format
         const transformedPromos = promoData.map(notification => ({
@@ -77,11 +72,9 @@ const Notification = () => {
           voucherId: notification.voucher_id,
           discountId: notification.discount_id
         }));
-        console.log('Transformed promotions:', transformedPromos);
         setPromotionsState(transformedPromos);
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error);
     } finally {
       setLoading(false);
     }

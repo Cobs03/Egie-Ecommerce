@@ -20,7 +20,6 @@ export const useWebsiteSettings = () => {
         .single();
 
       if (error) {
-        console.warn('Could not fetch website settings, using defaults:', error);
         throw error;
       }
       
@@ -46,11 +45,12 @@ export const useWebsiteSettings = () => {
           footerText: data.footer_text || 'All rights reserved.',
           termsAndConditions: data.terms_and_conditions || null,
           privacyPolicy: data.privacy_policy || null,
+          aiName: data.ai_name || 'AI Assistant',
+          aiLogoUrl: data.ai_logo_url || '/Logo/Ai.png',
         });
         return; // Success - exit here
       }
     } catch (err) {
-      console.error('Error fetching website settings:', err);
       setError(err.message);
       // Set defaults if fetch fails
       setSettings({

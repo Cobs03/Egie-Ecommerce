@@ -87,7 +87,6 @@ const Settings = () => {
       const provinceData = await PhilippineAddressService.getProvinces();
       setProvinces(provinceData);
     } catch (error) {
-      console.error('Error loading provinces:', error);
     }
   };
 
@@ -103,7 +102,6 @@ const Settings = () => {
 
       if (error) {
         if (error.code !== 'PGRST116') {
-          console.error('Error loading profile:', error);
         }
         return;
       }
@@ -118,7 +116,6 @@ const Settings = () => {
         }));
       }
     } catch (error) {
-      console.error('Unexpected error loading profile:', error);
     } finally {
       setLoading(false);
     }
@@ -131,13 +128,11 @@ const Settings = () => {
       const OrderService = (await import("../../services/OrderService")).default;
       const { data, error } = await OrderService.getShippingAddresses();
       if (error) {
-        console.error('Error loading addresses:', error);
         setAddresses([]);
       } else {
         setAddresses(data || []);
       }
     } catch (error) {
-      console.error('Error loading addresses:', error);
       setAddresses([]);
     } finally {
       setLoadingAddresses(false);
@@ -203,7 +198,6 @@ const Settings = () => {
         setNotificationPreferences(data.notification_preferences);
       }
     } catch (error) {
-      console.error('Error loading notification preferences:', error);
     }
   };
 

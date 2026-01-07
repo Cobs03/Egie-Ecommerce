@@ -17,7 +17,6 @@ class BundleReviewService {
         .eq('bundle_id', bundleId);
 
       if (error) {
-        console.error('Error fetching bundle rating summary:', error);
         return { 
           data: { 
             average_rating: 0, 
@@ -73,7 +72,6 @@ class BundleReviewService {
         error: null 
       };
     } catch (error) {
-      console.error('Exception in getBundleRatingSummary:', error);
       return { 
         data: { 
           average_rating: 0, 
@@ -110,13 +108,11 @@ class BundleReviewService {
         .range(offset, offset + limit - 1);
 
       if (error) {
-        console.error('Error fetching bundle reviews:', error);
         return { data: null, error };
       }
 
       return { data, error: null };
     } catch (error) {
-      console.error('Exception in getBundleReviews:', error);
       return { data: null, error };
     }
   }
@@ -140,7 +136,6 @@ class BundleReviewService {
         .maybeSingle();
 
       if (error) {
-        console.error('Error checking user bundle review:', error);
         return { data: { hasReviewed: false, review: null }, error };
       }
 
@@ -152,7 +147,6 @@ class BundleReviewService {
         error: null 
       };
     } catch (error) {
-      console.error('Exception in hasUserReviewed:', error);
       return { data: { hasReviewed: false, review: null }, error };
     }
   }
@@ -182,13 +176,11 @@ class BundleReviewService {
         .single();
 
       if (error) {
-        console.error('Error creating bundle review:', error);
         return { data: null, error };
       }
 
       return { data, error: null };
     } catch (error) {
-      console.error('Exception in createReview:', error);
       return { data: null, error };
     }
   }
@@ -218,13 +210,11 @@ class BundleReviewService {
         .single();
 
       if (error) {
-        console.error('Error updating bundle review:', error);
         return { data: null, error };
       }
 
       return { data, error: null };
     } catch (error) {
-      console.error('Exception in updateReview:', error);
       return { data: null, error };
     }
   }
@@ -247,13 +237,11 @@ class BundleReviewService {
         .eq('user_id', user.id);
 
       if (error) {
-        console.error('Error deleting bundle review:', error);
         return { error };
       }
 
       return { error: null };
     } catch (error) {
-      console.error('Exception in deleteReview:', error);
       return { error };
     }
   }

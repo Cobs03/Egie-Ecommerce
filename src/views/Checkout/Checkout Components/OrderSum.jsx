@@ -85,7 +85,6 @@ const OrderSum = () => {
         toast.error(result.error || result.data.message);
       }
     } catch (error) {
-      console.error('Error applying voucher:', error);
       setVoucherError('Failed to apply voucher. Please try again.');
       toast.error('Failed to apply voucher');
     } finally {

@@ -33,11 +33,9 @@ const SearchFill = ({ filters, onChange, selectedCategory }) => {
         if (result.success) {
           setAllBrands(result.data);
         } else {
-          console.error('Error fetching brands:', result.error);
           setAllBrands([]);
         }
       } catch (error) {
-        console.error('Error fetching brands:', error);
         setAllBrands([]);
       } finally {
         setLoadingBrands(false);

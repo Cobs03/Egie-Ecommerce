@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import OtherCart from "../Cart/Cart Components/OtherCart";
-import "../Checkout/Checkout Components/fireworks.scss";
+import "../Checkout/Checkout Components/Fireworks.scss";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 const ThankYou = () => {

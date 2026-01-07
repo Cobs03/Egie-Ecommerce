@@ -17,15 +17,11 @@ const CompComponents = ({ product }) => {
     const fetchCompatibleProducts = async () => {
       // Check if product has compatibility tags
       if (!product?.compatibility_tags || product.compatibility_tags.length === 0) {
-        console.log('❌ No compatibility_tags found for product:', product?.name);
-        console.log('Product data:', product);
         setLoading(false);
         return;
       }
 
       setLoading(true);
-      console.log('🔍 Searching for compatible products with tags:', product.compatibility_tags);
-      
       try {
         // Query products with matching tags
         const { data, error } = await supabase
@@ -37,14 +33,11 @@ const CompComponents = ({ product }) => {
           .limit(12); // Fetch more for pagination
 
         if (error) {
-          console.error('❌ Error fetching compatible products:', error);
           setCompatibleProducts([]);
         } else {
-          console.log(`✅ Found ${data.length} compatible products for tags:`, product.compatibility_tags);
           setCompatibleProducts(data || []);
         }
       } catch (err) {
-        console.error('❌ Error:', err);
         setCompatibleProducts([]);
       } finally {
         setLoading(false);

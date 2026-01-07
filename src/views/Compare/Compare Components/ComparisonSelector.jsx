@@ -28,7 +28,6 @@ const ComparisonSelector = ({ addToComparison, existingProducts = [], selectedPr
         if (error) throw error;
         setCategories(data || []);
       } catch (error) {
-        console.error('Error fetching categories:', error);
         toast.error('Failed to load categories');
       }
     };
@@ -114,7 +113,6 @@ const ComparisonSelector = ({ addToComparison, existingProducts = [], selectedPr
 
         setProducts(transformedProducts);
       } catch (error) {
-        console.error('Error fetching products:', error);
         toast.error('Failed to load products');
       } finally {
         setLoading(false);

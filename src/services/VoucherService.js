@@ -31,7 +31,6 @@ class VoucherService {
       });
 
       if (error) {
-        console.error('Error validating voucher:', error);
         return { 
           success: false, 
           data: null, 
@@ -55,7 +54,6 @@ class VoucherService {
         error: result.valid ? null : result.message 
       };
     } catch (error) {
-      console.error('Error in validateVoucher:', error);
       return { 
         success: false, 
         data: null, 
@@ -79,13 +77,11 @@ class VoucherService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching vouchers:', error);
         return { success: false, data: null, error: error.message };
       }
 
       return { success: true, data, error: null };
     } catch (error) {
-      console.error('Error in getActiveVouchers:', error);
       return { success: false, data: null, error: error.message };
     }
   }
@@ -110,7 +106,6 @@ class VoucherService {
 
       return { success: true, data, error: null };
     } catch (error) {
-      console.error('Error in getVoucherByCode:', error);
       return { success: false, data: null, error: error.message };
     }
   }
@@ -149,13 +144,11 @@ class VoucherService {
         .order('used_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching voucher usage:', error);
         return { success: false, data: null, error: error.message };
       }
 
       return { success: true, data, error: null };
     } catch (error) {
-      console.error('Error in getUserVoucherUsage:', error);
       return { success: false, data: null, error: error.message };
     }
   }

@@ -9,8 +9,6 @@ const loadedComponents = new Map();
  * Update scene with selected components
  */
 export const updateSceneWithComponents = async (scene, selectedProducts, onProgress, onStatusChange) => {
-  console.log('Updating scene with components:', selectedProducts);
-  
   const newTypes = new Set();
   
   // Get all selected component types
@@ -23,7 +21,6 @@ export const updateSceneWithComponents = async (scene, selectedProducts, onProgr
   // Remove components that are no longer selected
   loadedComponents.forEach(function(modelData, type) {
     if (!newTypes.has(type)) {
-      console.log('🗑️ Removing:', type);
       if (modelData.model && modelData.model.parent) {
         scene.remove(modelData.model);
         disposeModel(modelData.model);
@@ -34,7 +31,6 @@ export const updateSceneWithComponents = async (scene, selectedProducts, onProgr
   
   // Check if there are components to load
   if (newTypes.size === 0) {
-    console.log('No components to load');
     if (onStatusChange) onStatusChange('No components selected');
     return;
   }
@@ -86,8 +82,6 @@ export const updateSceneWithComponents = async (scene, selectedProducts, onProgr
     }
   }
   
-  console.log('Scene now has', loadedComponents.size, 'component models');
-  
   // Return summary of loaded models
   const summary = {
     total: loadedComponents.size,
@@ -110,8 +104,6 @@ export const updateSceneWithComponents = async (scene, selectedProducts, onProgr
  * Clear all component models from scene
  */
 export const clearAllComponents = (scene) => {
-  console.log('Clearing all component models...');
-  
   loadedComponents.forEach(function(modelData, type) {
     if (modelData.model && modelData.model.parent) {
       scene.remove(modelData.model);
@@ -189,7 +181,6 @@ export const showOnlyComponent = (componentType) => {
       modelData.model.visible = (type === componentType);
     }
   });
-  console.log('👁️ Showing only:', componentType);
 };
 
 /**
@@ -201,5 +192,4 @@ export const showAllComponents = () => {
       modelData.model.visible = true;
     }
   });
-  console.log('👁️ Showing all components');
 };

@@ -64,7 +64,6 @@ class OrderService {
         });
 
         if (error) {
-          console.error('Error creating order from selected items:', error);
           return { data: null, error: error.message };
         }
 
@@ -84,7 +83,6 @@ class OrderService {
       });
 
       if (error) {
-        console.error('Error creating order:', error);
         return { data: null, error: error.message };
       }
 
@@ -93,7 +91,6 @@ class OrderService {
 
       return { data: orderData, error: null };
     } catch (error) {
-      console.error('Error in createOrder:', error);
       return { data: null, error: error.message };
     }
   }
@@ -151,13 +148,11 @@ class OrderService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching orders:', error);
         return { data: null, error: error.message };
       }
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error in getUserOrders:', error);
       return { data: null, error: error.message };
     }
   }
@@ -221,13 +216,11 @@ class OrderService {
         .single();
 
       if (error) {
-        console.error('Error fetching order:', error);
         return { data: null, error: error.message };
       }
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error in getOrderById:', error);
       return { data: null, error: error.message };
     }
   }
@@ -274,7 +267,6 @@ class OrderService {
         .single();
 
       if (error) {
-        console.error('Error cancelling order:', error);
         return { data: null, error: error.message };
       }
 
@@ -286,7 +278,6 @@ class OrderService {
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error in cancelOrder:', error);
       return { data: null, error: error.message };
     }
   }
@@ -316,7 +307,6 @@ class OrderService {
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error in getDefaultAddress:', error);
       return { data: null, error: error.message };
     }
   }
@@ -346,7 +336,6 @@ class OrderService {
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error in getShippingAddresses:', error);
       return { data: null, error: error.message };
     }
   }
@@ -382,13 +371,11 @@ class OrderService {
         .single();
 
       if (error) {
-        console.error('Error creating address:', error);
         return { data: null, error: error.message };
       }
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error in createShippingAddress:', error);
       return { data: null, error: error.message };
     }
   }
@@ -425,13 +412,11 @@ class OrderService {
         .single();
 
       if (error) {
-        console.error('Error updating address:', error);
         return { data: null, error: error.message };
       }
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error in updateShippingAddress:', error);
       return { data: null, error: error.message };
     }
   }
@@ -456,13 +441,11 @@ class OrderService {
         .eq('user_id', user.id);
 
       if (error) {
-        console.error('Error deleting address:', error);
         return { data: null, error: error.message };
       }
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error in deleteShippingAddress:', error);
       return { data: null, error: error.message };
     }
   }

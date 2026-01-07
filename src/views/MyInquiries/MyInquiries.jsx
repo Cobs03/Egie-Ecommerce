@@ -40,12 +40,9 @@ const MyInquiries = () => {
       // Mark staff replies as read by customer
       const inquiry = inquiries.find(i => i.id === inquiryId);
       if (inquiry && inquiry.unread_by_customer > 0) {
-        console.log('Marking replies as read for inquiry:', inquiryId, 'Unread count:', inquiry.unread_by_customer);
         const result = await InquiryService.markRepliesAsReadByCustomer(inquiryId);
         if (result.error) {
-          console.error('Error marking as read:', result.error);
         } else {
-          console.log('Successfully marked as read, refreshing list...');
           await loadInquiries();
         }
       }

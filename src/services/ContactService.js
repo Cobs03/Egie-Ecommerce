@@ -32,7 +32,6 @@ class ContactService {
         .single();
 
       if (error) {
-        console.error('Error submitting contact form:', error);
         return {
           success: false,
           error: error.message || 'Failed to submit contact form'
@@ -45,7 +44,6 @@ class ContactService {
         message: 'Your message has been sent successfully! We\'ll get back to you soon.'
       };
     } catch (error) {
-      console.error('Unexpected error submitting contact form:', error);
       return {
         success: false,
         error: 'An unexpected error occurred. Please try again later.'
@@ -78,7 +76,6 @@ class ContactService {
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching contact submissions:', error);
         return {
           success: false,
           error: error.message || 'Failed to fetch contact submissions'
@@ -90,7 +87,6 @@ class ContactService {
         data
       };
     } catch (error) {
-      console.error('Unexpected error fetching contact submissions:', error);
       return {
         success: false,
         error: 'An unexpected error occurred'
@@ -125,7 +121,6 @@ class ContactService {
         .single();
 
       if (error) {
-        console.error('Error updating submission status:', error);
         return {
           success: false,
           error: error.message || 'Failed to update submission status'
@@ -137,7 +132,6 @@ class ContactService {
         data
       };
     } catch (error) {
-      console.error('Unexpected error updating submission:', error);
       return {
         success: false,
         error: 'An unexpected error occurred'
@@ -156,7 +150,6 @@ class ContactService {
         .select('status, created_at');
 
       if (error) {
-        console.error('Error fetching submission stats:', error);
         return {
           success: false,
           error: error.message || 'Failed to fetch statistics'
@@ -181,7 +174,6 @@ class ContactService {
         data: stats
       };
     } catch (error) {
-      console.error('Unexpected error fetching stats:', error);
       return {
         success: false,
         error: 'An unexpected error occurred'

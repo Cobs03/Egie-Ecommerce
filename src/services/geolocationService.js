@@ -24,7 +24,6 @@ export const getUserGeolocation = async () => {
       isPhilippines: data.country_code === 'PH'
     };
   } catch (error) {
-    console.error('Error getting geolocation:', error);
     // Fallback: Allow access if geolocation fails (prevent false blocks)
     return {
       ip: 'unknown',
@@ -59,10 +58,8 @@ export const logGeoBlock = async (location, attemptedUrl = null) => {
     });
     
     if (error) {
-      console.error('Error logging geo block:', error);
     }
   } catch (error) {
-    console.error('Error logging geo block:', error);
   }
 };
 
@@ -87,7 +84,6 @@ export const validateUserLocation = async (strict = false) => {
         };
       } else {
         // Log but allow (useful during testing)
-        console.warn('User accessing from outside Philippines:', location);
         return {
           allowed: true,
           location,
@@ -102,7 +98,6 @@ export const validateUserLocation = async (strict = false) => {
       message: 'Access allowed from Philippines'
     };
   } catch (error) {
-    console.error('Error validating location:', error);
     // On error, allow access to prevent blocking legitimate users
     return {
       allowed: true,
@@ -168,7 +163,6 @@ export const getPhilippineProvinces = async () => {
     
     return data || [];
   } catch (error) {
-    console.error('Error fetching provinces:', error);
     // Return common provinces as fallback
     return [
       { province_name: 'Metro Manila', region_name: 'National Capital Region' },
@@ -205,7 +199,6 @@ export const getDataResidencyReport = async () => {
     
     return data || [];
   } catch (error) {
-    console.error('Error fetching residency report:', error);
     return [];
   }
 };
@@ -223,7 +216,6 @@ export const getDPAComplianceSummary = async () => {
     
     return data || [];
   } catch (error) {
-    console.error('Error fetching DPA compliance:', error);
     return [];
   }
 };

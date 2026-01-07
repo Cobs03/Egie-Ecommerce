@@ -41,14 +41,11 @@ class PolicyBreachNotificationService {
         });
 
       if (usersError) {
-        console.error('Error fetching users:', usersError);
         throw usersError;
       }
 
       // Filter users who have notifications enabled
       const usersToNotify = users.filter(u => u.notification_enabled);
-
-      console.log(`📧 Sending ${policy.policy_type} change notifications to ${usersToNotify.length} users`);
 
       const results = {
         total: usersToNotify.length,
@@ -64,7 +61,6 @@ class PolicyBreachNotificationService {
           await this.createPolicyChangeNotification(user.user_id, policy);
           results.sent++;
         } catch (error) {
-          console.error(`Failed to notify user ${user.email}:`, error);
           results.failed++;
           results.errors.push({
             userId: user.user_id,
@@ -86,7 +82,6 @@ class PolicyBreachNotificationService {
       return results;
 
     } catch (error) {
-      console.error('Error in notifyPolicyChange:', error);
       throw error;
     }
   }
@@ -116,14 +111,11 @@ class PolicyBreachNotificationService {
         });
 
       if (usersError) {
-        console.error('Error fetching affected users:', usersError);
         throw usersError;
       }
 
       // Filter users who have breach notifications enabled
       const usersToNotify = users.filter(u => u.notification_enabled);
-
-      console.log(`🚨 Sending data breach notifications to ${usersToNotify.length} users`);
 
       const results = {
         total: usersToNotify.length,
@@ -139,7 +131,6 @@ class PolicyBreachNotificationService {
           await this.createBreachNotification(user.user_id, incident);
           results.sent++;
         } catch (error) {
-          console.error(`Failed to notify user ${user.email}:`, error);
           results.failed++;
           results.errors.push({
             userId: user.user_id,
@@ -162,7 +153,6 @@ class PolicyBreachNotificationService {
       return results;
 
     } catch (error) {
-      console.error('Error in notifyDataBreach:', error);
       throw error;
     }
   }
@@ -427,7 +417,6 @@ class PolicyBreachNotificationService {
    */
   async sendEmail(emailData) {
     if (!this.resendApiKey) {
-      console.warn('⚠️ Resend API key not configured. Email would be sent to:', emailData.to);
       return { success: false, reason: 'API key not configured' };
     }
 
@@ -453,11 +442,9 @@ class PolicyBreachNotificationService {
       }
 
       const result = await response.json();
-      console.log('✅ Email sent successfully:', result.id);
       return { success: true, id: result.id };
 
     } catch (error) {
-      console.error('❌ Failed to send email:', error);
       throw error;
     }
   }
@@ -476,7 +463,6 @@ class PolicyBreachNotificationService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching security notifications:', error);
       return [];
     }
 
@@ -505,7 +491,6 @@ class PolicyBreachNotificationService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching policy notifications:', error);
       return [];
     }
 
@@ -527,7 +512,6 @@ class PolicyBreachNotificationService {
     });
 
     if (error) {
-      console.error('Error marking notification as read:', error);
       throw error;
     }
 

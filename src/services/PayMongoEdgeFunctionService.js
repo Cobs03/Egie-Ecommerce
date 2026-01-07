@@ -28,9 +28,6 @@ class PayMongoEdgeFunctionService {
         }
       }
 
-      console.log('Calling Edge Function: create-gcash-source');
-      console.log('Amount:', amount, 'PHP');
-
       // Apply data minimization - mask sensitive billing info
       const sanitizedBilling = {
         name: billing.name,
@@ -54,16 +51,12 @@ class PayMongoEdgeFunctionService {
       });
 
       if (error) {
-        console.error('Edge Function error:', error);
         throw new Error(error.message || 'Failed to create GCash source');
       }
 
       if (!data.success) {
-        console.error('PayMongo API error:', data.error);
         throw new Error(data.error || 'Failed to create GCash source');
       }
-
-      console.log('GCash source created:', data.source.id);
 
       // Log third-party data sharing
       if (userId) {
@@ -87,7 +80,6 @@ class PayMongoEdgeFunctionService {
       };
 
     } catch (error) {
-      console.error('PayMongo createGCashSource error:', error);
       return {
         success: false,
         error: error.message
@@ -112,9 +104,6 @@ class PayMongoEdgeFunctionService {
         }
       }
 
-      console.log('Calling Edge Function: create-payment');
-      console.log('Source ID:', sourceId);
-
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
           amount,
@@ -124,16 +113,12 @@ class PayMongoEdgeFunctionService {
       });
 
       if (error) {
-        console.error('Edge Function error:', error);
         throw new Error(error.message || 'Failed to create payment');
       }
 
       if (!data.success) {
-        console.error('PayMongo API error:', data.error);
         throw new Error(data.error || 'Failed to create payment');
       }
-
-      console.log('Payment created:', data.payment.id);
 
       // Log third-party data sharing
       if (userId) {
@@ -157,7 +142,6 @@ class PayMongoEdgeFunctionService {
       };
 
     } catch (error) {
-      console.error('PayMongo createPayment error:', error);
       return {
         success: false,
         error: error.message
@@ -186,15 +170,11 @@ class PayMongoEdgeFunctionService {
         }
       }
 
-      console.log('Calling Edge Function: process-card-payment');
-      console.log('Amount:', amount, 'PHP');
       console.log('Card Details:', { 
         number: cardDetails.number.substring(0, 4) + '****', 
         exp_month: cardDetails.exp_month,
         exp_year: cardDetails.exp_year 
       });
-      console.log('Billing:', billing);
-
       const response = await supabase.functions.invoke('process-card-payment', {
         body: {
           cardDetails,
@@ -206,12 +186,8 @@ class PayMongoEdgeFunctionService {
         }
       });
 
-      console.log('Edge Function Response:', response);
-
       // If there's an error from Supabase Functions
       if (response.error) {
-        console.error('Edge Function error:', response.error);
-        
         // Try to extract error message from response body
         let errorMessage = 'Failed to process card payment';
         
@@ -219,12 +195,10 @@ class PayMongoEdgeFunctionService {
         if (response.response) {
           try {
             const responseBody = await response.response.json();
-            console.log('Response body:', responseBody);
             if (responseBody.error) {
               errorMessage = responseBody.error;
             }
           } catch (e) {
-            console.error('Could not parse error response:', e);
           }
         }
         
@@ -235,11 +209,8 @@ class PayMongoEdgeFunctionService {
 
       // If the function returned but with an error
       if (data && !data.success) {
-        console.error('PayMongo API error from Edge Function:', data.error);
         throw new Error(data.error || 'Failed to process card payment');
       }
-
-      console.log('Card payment processed:', data.paymentIntent.id);
 
       // Log third-party data sharing
       if (userId) {
@@ -271,7 +242,6 @@ class PayMongoEdgeFunctionService {
       };
 
     } catch (error) {
-      console.error('PayMongo processCardPayment error:', error);
       return {
         success: false,
         error: error.message
@@ -286,24 +256,17 @@ class PayMongoEdgeFunctionService {
    */
   async getSource(sourceId) {
     try {
-      console.log('Calling Edge Function: get-source-status');
-      console.log('Source ID:', sourceId);
-
       const { data, error } = await supabase.functions.invoke('get-source-status', {
         body: { sourceId }
       });
 
       if (error) {
-        console.error('Edge Function error:', error);
         throw new Error(error.message || 'Failed to get source status');
       }
 
       if (!data.success) {
-        console.error('PayMongo API error:', data.error);
         throw new Error(data.error || 'Failed to get source status');
       }
-
-      console.log('Source status:', data.source.attributes.status);
 
       return {
         success: true,
@@ -311,7 +274,6 @@ class PayMongoEdgeFunctionService {
       };
 
     } catch (error) {
-      console.error('PayMongo getSource error:', error);
       return {
         success: false,
         error: error.message
@@ -335,13 +297,11 @@ class PayMongoEdgeFunctionService {
       if (error || !data) {
         // If no consent record, assume consent (backward compatibility)
         // In production, you might want to require explicit consent
-        console.warn('No consent record found for user:', userId);
         return true;
       }
 
       return data.payment_processing === true;
     } catch (error) {
-      console.error('Error verifying payment consent:', error);
       // Fail open for backward compatibility
       return true;
     }

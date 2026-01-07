@@ -30,7 +30,6 @@ export const getImageUrl = (path) => {
 
 // Helper function to handle Supabase errors
 export const handleSupabaseError = (error) => {
-  console.error('Supabase Error:', error)
   return {
     success: false,
     error: error.message || 'An unexpected error occurred'

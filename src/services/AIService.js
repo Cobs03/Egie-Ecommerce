@@ -43,13 +43,11 @@ class AIService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching products:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error in fetchProducts:', error);
       return [];
     }
   }
@@ -63,13 +61,11 @@ class AIService {
         .order('display_order', { ascending: true });
 
       if (error) {
-        console.error('Error fetching product categories:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error in fetchProductCategories:', error);
       return [];
     }
   }
@@ -94,13 +90,11 @@ class AIService {
       const { data, error } = await query;
       
       if (error) {
-        console.error('Error fetching store information:', error);
         return [];
       }
       
       return data || [];
     } catch (error) {
-      console.error('Error in fetchStoreInformation:', error);
       return [];
     }
   }
@@ -118,13 +112,11 @@ class AIService {
         .single();
       
       if (error) {
-        console.error('Error fetching website settings:', error);
         return null;
       }
       
       return data;
     } catch (error) {
-      console.error('Error in fetchWebsiteSettings:', error);
       return null;
     }
   }
@@ -162,7 +154,6 @@ class AIService {
       // If we found matches, return them, otherwise return top 5 general FAQs
       return relevant.length > 0 ? relevant : storeInfo.slice(0, 5);
     } catch (error) {
-      console.error('Error searching store info:', error);
       return [];
     }
   }
@@ -418,15 +409,12 @@ Be flexible with:
       
       try {
         const intent = JSON.parse(cleanedIntent);
-        console.log('🧠 Detected Intent:', intent);
         return intent;
       } catch (parseError) {
-        console.error('Failed to parse intent JSON:', cleanedIntent);
         // Fallback to basic intent with simple keyword extraction
         return this.createFallbackIntent(userMessage);
       }
     } catch (error) {
-      console.error('Error detecting intent:', error);
       // Fallback intent with simple keyword extraction
       return this.createFallbackIntent(userMessage);
     }
@@ -531,8 +519,6 @@ Be flexible with:
    */
   async searchProductsByIntent(intent) {
     try {
-      console.log('🔍 Smart search with intent:', intent);
-      
       const allProducts = await this.fetchProducts();
       
       if (allProducts.length === 0) {
@@ -553,7 +539,6 @@ Be flexible with:
         intent.features.length === 0;
 
       if (isSimpleCategorySearch || isBasicBudgetSearch) {
-        console.log('📋 Simple/basic search detected, using direct filter');
         return this.fallbackSearch(allProducts, intent);
       }
 
@@ -624,7 +609,6 @@ Consider:
       });
 
       if (!response.ok) {
-        console.warn('AI scoring failed, using fallback search');
         return this.fallbackSearch(allProducts, intent);
       }
 
@@ -641,14 +625,11 @@ Consider:
         // Sort by the order AI provided
         matchedProducts.sort((a, b) => matchedIds.indexOf(a.id) - matchedIds.indexOf(b.id));
         
-        console.log('✅ AI matched:', matchedProducts.length, 'products');
         return matchedProducts;
       } catch (parseError) {
-        console.warn('Failed to parse AI results, using fallback');
         return this.fallbackSearch(allProducts, intent);
       }
     } catch (error) {
-      console.error('Error in searchProductsByIntent:', error);
       return this.fallbackSearch(await this.fetchProducts(), intent);
     }
   }
@@ -660,8 +641,6 @@ Consider:
    * @returns {Array} Filtered products
    */
   fallbackSearch(products, intent) {
-    console.log('📋 Using fallback text search for:', intent.category || 'all');
-    
     let filtered = products;
 
     // Filter by category if specified
@@ -687,8 +666,6 @@ Consider:
       };
       
       categoryLower = pluralToSingular[categoryLower] || categoryLower;
-      console.log(`🔄 Normalized category: "${intent.category}" → "${categoryLower}"`);
-      
       // Category-specific matching
       filtered = filtered.filter(p => {
         const name = p.name.toLowerCase();
@@ -746,7 +723,6 @@ Consider:
         return searchText.includes(categoryLower);
       });
       
-      console.log(`✅ Category filter "${categoryLower}" found ${filtered.length} products`);
     }
 
     // Filter by keywords (only if different from category)
@@ -770,7 +746,6 @@ Consider:
           const searchText = `${p.name} ${p.description || ''} ${p.brands?.name || ''}`.toLowerCase();
           return keywordsToSearch.some(kw => searchText.includes(kw.toLowerCase()));
         });
-        console.log(`✅ After keyword filter: ${filtered.length} products`);
       }
     }
 
@@ -845,7 +820,6 @@ Consider:
       return a.price - b.price;
     });
 
-    console.log(`📦 Final results: ${filtered.length} products`);
     if (hasAffordableIntent) {
       console.log(`💡 Sorted by price (affordable intent detected)`);
     }
@@ -884,6 +858,13 @@ Consider:
    * @returns {string} System prompt
    */
   buildIntelligentSystemPrompt(products, userPreferences = null, intent = null, storeInfo = []) {
+    // Special handling for PC build requests
+    const isPCBuildRequest = intent && (
+      intent.intentType === 'build_help' || 
+      intent.category === 'pc_build' ||
+      /build.*pc|custom.*pc|assemble.*pc|pc.*configuration/i.test(intent.originalQuery || '')
+    );
+
     let systemPrompt = `You are a professional AI shopping assistant for Egie GameShop, a computer hardware store in the Philippines. You're trained on how e-commerce AI shopping assistants work and have full knowledge of our store policies.
 
 🎯 DETECTED USER INTENT:
@@ -895,6 +876,120 @@ ${intent ? `
 - Features: ${intent.features.length > 0 ? intent.features.join(', ') : 'Standard'}
 - Use case: ${intent.useCase || 'General'}
 ` : 'General inquiry'}
+
+${isPCBuildRequest ? `
+🖥️ **PC BUILD ASSISTANT MODE ACTIVATED**
+
+The customer wants help building a custom PC. Follow this structure:
+
+**STEP 1: Gather Requirements (if not already provided)**
+Ask these questions ONE at a time (don't ask all at once):
+1. "What will you primarily use this PC for?" (Gaming / Work / Content Creation / General Use)
+2. "What's your total budget for the build?" (₱X,XXX)
+3. "Do you have any specific requirements?" (RGB, Quiet, Small form factor, etc.)
+
+**STEP 2: Recommend Components by Category**
+Present components in this order, explaining WHY each is chosen:
+
+**Essential Components (Required):**
+- CPU (Processor): Match to budget and use case
+  → Gaming: Prioritize high single-core performance
+  → Work: Balance cores and performance
+  → Budget builds: AMD Ryzen 5 or Intel Core i5
+  
+- Motherboard: Must be compatible with CPU socket and RAM type
+  → Match chipset to CPU (AMD B550/X570 or Intel B660/Z690)
+  → Ensure sufficient features (WiFi, M.2 slots)
+  
+- GPU (Graphics Card): Most important for gaming
+  → Gaming: Allocate 40-50% of budget here
+  → Work: Can use integrated graphics or entry-level GPU
+  → List options at different price points
+  
+- RAM (Memory): Minimum 16GB for modern builds
+  → Gaming: 16GB DDR4 (32GB for high-end)
+  → Work: 16GB minimum, 32GB recommended
+  → Speed: 3200MHz or higher for best performance
+  
+- Storage: SSD for OS, HDD optional for mass storage
+  → Minimum: 500GB NVMe SSD
+  → Recommended: 1TB NVMe SSD
+  → Budget: Add 1-2TB HDD for extra storage
+  
+- Power Supply (PSU): Must match total system wattage + 20% headroom
+  → Calculate: CPU wattage + GPU wattage + 100W for other components
+  → Quality matters: 80+ Bronze minimum, Gold preferred
+  
+- Case: Must fit motherboard size and GPU length
+  → ATX case for ATX motherboard
+  → Check GPU clearance (most modern GPUs are 300mm+)
+  → Airflow is important
+
+**Optional Components:**
+- CPU Cooler: Stock cooler usually sufficient for non-overclocking
+  → Budget: Use stock cooler
+  → Mid-range: Tower air cooler (₱1,500-3,000)
+  → High-end: AIO liquid cooler (₱4,000+)
+  
+- Additional Case Fans: Improve airflow and cooling
+
+**STEP 3: Present Build Summary**
+Format your recommendation like this (NO ASTERISKS, use plain text with emojis):
+
+"Great! Based on your [use case] needs and ₱[budget] budget, here's what I recommend:
+
+🎮 YOUR CUSTOM PC BUILD
+
+💻 PROCESSOR (CPU)
+[Name] - ₱XX,XXX
+Why: Great for [reason]
+
+🔧 MOTHERBOARD
+[Name] - ₱XX,XXX  
+Why: Compatible with CPU, has [features]
+
+🎨 GRAPHICS CARD (GPU)
+[Name] - ₱XX,XXX
+Why: Handles [games/tasks] at [settings]
+
+🧠 MEMORY (RAM)
+[Amount] [Type] - ₱XX,XXX
+Why: [Speed] for optimal performance
+
+💾 STORAGE
+[Size] [Type] - ₱XX,XXX
+Why: Fast boot and load times
+
+⚡ POWER SUPPLY
+[Wattage] - ₱XX,XXX
+Why: [Certification], reliable brand
+
+📦 CASE
+[Name] - ₱XX,XXX
+Why: Good airflow, fits all components
+
+━━━━━━━━━━━━━━━━━━━━
+💰 TOTAL: ₱XX,XXX
+━━━━━━━━━━━━━━━━━━━━
+
+✅ Expected Performance: [describe what this build can do]
+
+Would you like me to:
+• Adjust the budget up or down?
+• Swap out any components?
+• Show you our pre-configured PC bundles instead?
+• Add this build to your cart?"
+
+**CRITICAL RULES FOR PC BUILD ASSISTANCE:**
+- NEVER recommend pre-built laptops when asked to "build a PC"
+- A "PC build" means selecting INDIVIDUAL COMPONENTS, not complete systems
+- List components by category (CPU, GPU, RAM, etc.)
+- Ensure all components are COMPATIBLE
+- Explain WHY each component is chosen
+- Stay within stated budget
+- If a component is out of stock, suggest alternative
+- Be honest about limitations ("This GPU won't max out AAA games")
+` : ''}
 
 📚 HOW E-COMMERCE AI SHOPPING ASSISTANTS WORK:
 
@@ -1060,15 +1155,26 @@ CUSTOMER SERVICE SCENARIOS:
 ${userPreferences.otherPurpose ? `\nNote: ${userPreferences.otherPurpose}` : ''}`;
     }
 
-    systemPrompt += `\n\n⚡ RESPONSE FORMAT:
-1. Brief acknowledgment (1 line)
-2. If recommending products:
-   - **Product Name**
-   - Price: ₱X,XXX
-   - Why: [One-line reason it fits their needs]
-   - Stock: Available/Limited/Out of Stock
-3. If asking for clarification: Keep it to ONE short question
+    systemPrompt += `\n\n⚡ RESPONSE FORMAT RULES:
+1. Brief acknowledgment (1 line max)
+2. When recommending products, use this format:
+   
+   [Product Name]
+   Price: ₱X,XXX
+   Why: [One-line reason it fits their needs]
+   Stock: Available/Limited/Out of Stock
+   
+3. When asking for clarification: Keep it to ONE short question
 4. Always be helpful, honest, and conversational
+5. Use emojis for visual appeal (✅ 💰 🎮 ⚡ etc.)
+6. Keep sentences short and easy to read
+
+🚫 FORMATTING RESTRICTIONS:
+- DO NOT use asterisks (*) for emphasis or bullets
+- DO NOT use markdown formatting
+- Use plain text with emojis instead
+- Use line breaks and spacing for readability
+- Example: Instead of "**Budget:** ₱30,000" write "💰 Budget: ₱30,000"
 
 Remember: You're a world-class e-commerce AI trained on shopping psychology, natural language understanding, and customer journey optimization!`;
 
@@ -1123,10 +1229,7 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
       let storeInfo = [];
       
       if (isStoreQuery) {
-        console.log('📋 Detected store policy question - fetching FAQ data...');
         storeInfo = await this.searchStoreInfo(userMessageText);
-        console.log(`✅ Found ${storeInfo.length} relevant store information items`);
-        
         // Check if it's a warranty/broken product question
         const isWarrantyQuestion = /(broke|broken|stopped|not working|malfunction|replace|replacement|repair|damaged|faulty|doa|defect)/i.test(userMessageText);
         if (isWarrantyQuestion && storeInfo.length > 0) {
@@ -1137,7 +1240,6 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
           );
           
           if (warrantyFAQ) {
-            console.log('🛡️ Returning warranty claim information directly');
             return {
               success: true,
               message: warrantyFAQ.answer,
@@ -1154,7 +1256,6 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
           // Check if order number is mentioned
           const orderNumberMatch = userMessageText.match(/\b\d{8,}\b/);
           if (orderNumberMatch) {
-            console.log('🔍 Order number detected, looking up order...');
             const orderResult = await this.getCustomerOrder(orderNumberMatch[0]);
             
             if (orderResult.data) {
@@ -1188,8 +1289,6 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
 
       // Step 1: Detect intent using AI (understand what user wants)
       const intent = await this.detectIntent(userMessageText);
-      console.log('💡 Understanding:', intent);
-
       // Step 2: Fetch relevant products based on intent
       let relevantProducts = [];
       let allProducts = [];
@@ -1203,7 +1302,6 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
         relevantProducts = await this.searchProductsByIntent(intent);
         allProducts = await this.fetchProducts();
         
-        console.log('🎯 Found', relevantProducts.length, 'relevant products for intent');
       } else {
         // For general questions, still load products for context
         allProducts = await this.fetchProducts();
@@ -1244,8 +1342,16 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Groq API error:', errorData);
-        throw new Error(errorData.error?.message || 'API request failed');
+        const errorMessage = errorData.error?.message || 'API request failed';
+        
+        // Include status code in error for better handling
+        if (response.status === 429) {
+          throw new Error('429: Rate limit exceeded. Please wait a moment.');
+        } else if (response.status === 503) {
+          throw new Error('503: Service temporarily unavailable.');
+        } else {
+          throw new Error(`${response.status}: ${errorMessage}`);
+        }
       }
 
       const data = await response.json();
@@ -1278,7 +1384,6 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
       };
 
     } catch (error) {
-      console.error('Error in AI chat:', error);
       return {
         success: false,
         error: error.message,
@@ -1367,7 +1472,6 @@ Calculate and show the total price at the end.`;
       };
 
     } catch (error) {
-      console.error('Error getting build recommendations:', error);
       return {
         success: false,
         error: error.message,
@@ -1443,12 +1547,6 @@ Calculate and show the total price at the end.`;
       }
     });
 
-    console.log('🔍 Product extraction:', {
-      totalAvailable: availableProducts.length,
-      extracted: recommendedProducts.length,
-      products: recommendedProducts.map(p => p.name)
-    });
-
     return recommendedProducts;
   }
 
@@ -1467,13 +1565,11 @@ Calculate and show the total price at the end.`;
 
       if (error || !data) {
         // If no consent record, check if it's a new optional feature
-        console.warn('No AI consent record found for user:', userId);
         return true; // Fail open for backward compatibility
       }
 
       return data.ai_assistant === true;
     } catch (error) {
-      console.error('Error verifying AI consent:', error);
       return true; // Fail open for backward compatibility
     }
   }

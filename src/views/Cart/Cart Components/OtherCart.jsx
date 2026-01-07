@@ -30,7 +30,6 @@ const OtherCart = ({ noBackground = false }) => {
       });
 
       if (!result.success) {
-        console.error('Error loading products:', result.error);
         return;
       }
 
@@ -49,7 +48,6 @@ const OtherCart = ({ noBackground = false }) => {
       }
       setProductRatings(ratings);
     } catch (error) {
-      console.error('Error loading products:', error);
     } finally {
       setLoading(false);
     }

@@ -109,33 +109,24 @@ Important:
         }
         
         if (!jsonString) {
-          console.error('No JSON object found in response:', aiResponse);
           throw new Error('No valid JSON found in AI response');
         }
-        
-        console.log('Attempting to parse JSON string:', jsonString);
         
         // Parse the JSON
         parsedResponse = JSON.parse(jsonString);
         
         // Validate the response structure
         if (typeof parsedResponse.recommendedPosition !== 'number' || !parsedResponse.explanation) {
-          console.error('Invalid response structure:', parsedResponse);
           throw new Error('Missing required fields in AI response');
         }
         
-        console.log('Successfully parsed AI response:', parsedResponse);
       } catch (parseError) {
-        console.error('Failed to parse AI response. Raw response:', aiResponse);
-        console.error('Parse error details:', parseError.message);
-        
         // If JSON parsing fails, try to manually construct the response
         // This is a last-resort fallback
         const positionMatch = aiResponse.match(/"recommendedPosition"\s*:\s*(\d+)/);
         const explanationMatch = aiResponse.match(/"explanation"\s*:\s*"([^"]+)"/);
         
         if (positionMatch && explanationMatch) {
-          console.log('Using fallback manual parsing');
           parsedResponse = {
             recommendedPosition: parseInt(positionMatch[1]),
             explanation: explanationMatch[1]
@@ -150,14 +141,12 @@ Important:
       
       // Check if the recommended position is within bounds
       if (recommendedIndex < 0 || recommendedIndex >= productList.length) {
-        console.error(`Invalid recommended position: ${parsedResponse.recommendedPosition}, product count: ${productList.length}`);
         throw new Error('Invalid product recommendation position');
       }
       
       const recommendedProduct = productList[recommendedIndex];
 
       if (!recommendedProduct) {
-        console.error(`Product not found at index ${recommendedIndex}`);
         throw new Error('Invalid product recommendation');
       }
 
@@ -169,7 +158,6 @@ Important:
       setLoading(false);
 
     } catch (err) {
-      console.error('Error generating AI recommendation:', err);
       setError(err.message);
       // Fallback to basic recommendation
       const fallbackRecommendation = generateFallbackRecommendation(productList);

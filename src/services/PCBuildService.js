@@ -43,11 +43,8 @@ class PCBuildService {
         .order("name");
 
       if (error) {
-        console.error("Supabase error:", error);
         throw error;
       }
-
-      console.log("📦 Fetched products from database:", data?.length || 0);
 
       // Group products by component type
       const grouped = this.groupProductsByComponentType(data || []);
@@ -55,7 +52,6 @@ class PCBuildService {
       
       return grouped;
     } catch (error) {
-      console.error("Error fetching PC build products:", error);
       return {};
     }
   }
@@ -97,9 +93,7 @@ class PCBuildService {
         };
         
         grouped[componentType].push(transformedProduct);
-        console.log(`✅ Matched "${product.name}" to component type: ${componentType}`);
       } else {
-        console.log(`❌ Could not match "${product.name}" to any component type`);
       }
     });
 

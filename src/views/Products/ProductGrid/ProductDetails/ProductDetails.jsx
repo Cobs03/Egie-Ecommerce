@@ -49,7 +49,6 @@ const ProductDetails = () => {
           setError(result.error || "Product not found");
         }
       } catch (err) {
-        console.error("Error fetching product:", err);
         setError(err.message || "Failed to load product");
       } finally {
         setLoading(false);

@@ -57,7 +57,6 @@ const AddressModal = ({
       const cityData = await PhilippineAddressService.getCitiesByProvince(provinceCode);
       setAvailableCities(cityData);
     } catch (error) {
-      console.error('Error loading cities:', error);
       toast.error('Failed to load cities');
     } finally {
       setLoadingLocations(false);
@@ -74,7 +73,6 @@ const AddressModal = ({
       const barangayData = await PhilippineAddressService.getBarangaysByCity(cityCode);
       setAvailableBarangays(barangayData);
     } catch (error) {
-      console.error('Error loading barangays:', error);
       toast.error('Failed to load barangays');
     } finally {
       setLoadingLocations(false);
@@ -106,7 +104,6 @@ const AddressModal = ({
         loadAddresses();
       }
     } catch (error) {
-      console.error('Error saving address:', error);
       toast.error('Failed to save address');
     } finally {
       setLoading(false);

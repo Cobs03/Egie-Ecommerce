@@ -31,7 +31,6 @@ class PhilippineAddressService {
       this.cache.regions = data;
       return data;
     } catch (error) {
-      console.error('Error fetching regions:', error);
       return [];
     }
   }
@@ -46,7 +45,6 @@ class PhilippineAddressService {
       const data = await response.json();
       return data.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
-      console.error('Error fetching provinces:', error);
       return [];
     }
   }
@@ -68,7 +66,6 @@ class PhilippineAddressService {
       this.cache.cities[provinceCode] = sorted;
       return sorted;
     } catch (error) {
-      console.error('Error fetching cities:', error);
       return [];
     }
   }
@@ -90,7 +87,6 @@ class PhilippineAddressService {
       this.cache.barangays[cityCode] = sorted;
       return sorted;
     } catch (error) {
-      console.error('Error fetching barangays:', error);
       return [];
     }
   }

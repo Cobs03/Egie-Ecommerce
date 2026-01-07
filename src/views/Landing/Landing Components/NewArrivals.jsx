@@ -103,7 +103,6 @@ const NewArrivals = () => {
 
         setProducts(productsWithReviews);
       } catch (error) {
-        console.error('Error fetching new arrivals:', error);
       } finally {
         setLoading(false);
       }

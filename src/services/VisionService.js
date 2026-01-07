@@ -64,7 +64,6 @@ class VisionService {
         throw new Error('Invalid vision API provider');
       }
     } catch (error) {
-      console.error('Vision API Error:', error);
       throw error;
     }
   }
@@ -164,7 +163,6 @@ Respond in JSON format:
         };
       }
     } catch (error) {
-      console.error('OpenAI Vision API Error:', error);
       return {
         success: false,
         error: error.response?.data?.error?.message || error.message,
@@ -214,8 +212,6 @@ Return ONLY valid JSON with this EXACT structure:
         ? `${systemPrompt}\n\nUser context: ${userPrompt}\n\nAnalyze this product image and provide the JSON response.`
         : `${systemPrompt}\n\nAnalyze this product image and provide the JSON response.`;
 
-      console.log('🤖 Calling Groq Vision API...');
-      
       const response = await axios.post(
         'https://api.groq.com/openai/v1/chat/completions',
         {
@@ -251,19 +247,15 @@ Return ONLY valid JSON with this EXACT structure:
       );
 
       const result = response.data.choices[0].message.content;
-      console.log('📥 Raw Groq response:', result);
-      
       // Parse JSON response
       try {
         const parsedResult = JSON.parse(result);
-        console.log('✅ Parsed vision data:', parsedResult);
         return {
           success: true,
           data: parsedResult,
           provider: 'groq'
         };
       } catch (parseError) {
-        console.error('❌ JSON parse error:', parseError);
         // If not JSON, extract information from text
         return {
           success: true,
@@ -273,7 +265,6 @@ Return ONLY valid JSON with this EXACT structure:
         };
       }
     } catch (error) {
-      console.error('❌ Groq Vision API Error:', error.response?.data || error.message);
       return {
         success: false,
         error: error.response?.data?.error?.message || error.message,
@@ -328,7 +319,6 @@ Return ONLY valid JSON with this EXACT structure:
         rawResponse: annotations
       };
     } catch (error) {
-      console.error('Google Vision API Error:', error);
       return {
         success: false,
         error: error.response?.data?.error?.message || error.message,
@@ -541,9 +531,6 @@ Return ONLY valid JSON with this EXACT structure:
    * @returns {Array} - Matched products sorted by relevance
    */
   matchProducts(visionData, products) {
-    console.log('🔍 Matching with vision data:', visionData);
-    console.log('📦 Total products to match:', products.length);
-    
     const scores = products.map(product => {
       let score = 0;
       
@@ -580,20 +567,15 @@ Return ONLY valid JSON with this EXACT structure:
           : [categoryName.toLowerCase().trim()]
       };
 
-      console.log(`Checking product: "${productData.name}" | Brand: "${productData.brand}" | Category: "${productData.category}"`);
-
       // Brand match (high weight) - ONLY if both have values
       if (visionData.brand && visionData.brand.toLowerCase() !== 'unknown') {
         const visionBrand = visionData.brand.toLowerCase().trim();
         
         // Skip if product has no brand
         if (!productData.brand || productData.brand === '') {
-          console.log(`  ⚠️  Product has no brand, skipping brand match`);
         } else if (productData.brand.includes(visionBrand) || visionBrand.includes(productData.brand)) {
           score += 40;
-          console.log(`  ✅ Brand match! +40 (${visionBrand} ↔ ${productData.brand})`);
         } else {
-          console.log(`  ❌ Brand MISMATCH! (${visionBrand} ≠ ${productData.brand})`);
         }
       }
 
@@ -602,7 +584,6 @@ Return ONLY valid JSON with this EXACT structure:
         const model = visionData.model.toLowerCase();
         if (productData.name.includes(model) || productData.description.includes(model)) {
           score += 50;
-          console.log(`  ✅ Model match! +50 (${model})`);
         }
       }
 
@@ -646,9 +627,7 @@ Return ONLY valid JSON with this EXACT structure:
 
         if (categoryMatch) {
           score += 35; // Increased weight for category match
-          console.log(`  ✅ Category match! +35 (${visionType} matches ${productData.category || productData.name})`);
         } else {
-          console.log(`  ❌ Category mismatch (${visionType} vs ${productData.category})`);
         }
       }
 
@@ -659,15 +638,12 @@ Return ONLY valid JSON with this EXACT structure:
         
         if (productData.name.includes(kw)) {
           score += 5;
-          console.log(`  ✅ Keyword in name! +5 (${keyword})`);
         }
         if (productData.description.includes(kw)) {
           score += 3;
-          console.log(`  ✅ Keyword in description! +3 (${keyword})`);
         }
         if (productData.categories.some(cat => cat && cat.includes(kw))) {
           score += 4;
-          console.log(`  ✅ Keyword in category! +4 (${keyword})`);
         }
       });
 
@@ -676,11 +652,8 @@ Return ONLY valid JSON with this EXACT structure:
         const specLower = spec.toLowerCase();
         if (productData.name.includes(specLower) || productData.description.includes(specLower)) {
           score += 8;
-          console.log(`  ✅ Spec match! +8 (${spec})`);
         }
       });
-
-      console.log(`  📊 Total score: ${score}`);
 
       return {
         product,
@@ -693,8 +666,6 @@ Return ONLY valid JSON with this EXACT structure:
     const matches = scores
       .filter(item => item.score >= minScore)
       .sort((a, b) => b.score - a.score);
-    
-    console.log('🎯 Top matches:', matches.slice(0, 5).map(m => ({ name: m.product.name || m.product.title, score: m.score })));
     
     return matches
       .map(item => ({
@@ -724,8 +695,6 @@ Return ONLY valid JSON with this EXACT structure:
    * @returns {Array} - Related products
    */
   findRelatedProducts(product, allProducts) {
-    console.log('🔗 Finding related products for:', product.name || product.title);
-    
     const relatedScores = allProducts
       .filter(p => p.id !== product.id) // Exclude the product itself
       .map(p => {
@@ -767,7 +736,6 @@ Return ONLY valid JSON with this EXACT structure:
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score);
     
-    console.log('🎯 Found', relatedScores.length, 'related products');
     return relatedScores.slice(0, 6).map(item => ({
       ...item.product,
       relationScore: item.score
@@ -804,13 +772,11 @@ Return ONLY valid JSON with this EXACT structure:
         .single();
 
       if (error || !data) {
-        console.warn('No AI consent record found for user:', userId);
         return true; // Fail open for backward compatibility
       }
 
       return data.ai_assistant === true;
     } catch (error) {
-      console.error('Error verifying AI consent:', error);
       return true;
     }
   }

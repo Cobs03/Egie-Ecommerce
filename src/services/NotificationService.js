@@ -14,7 +14,6 @@ class NotificationService {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
-        console.error('Auth error in getUserNotifications');
         return { data: [], error: 'User not authenticated' };
       }
 
@@ -86,7 +85,6 @@ class NotificationService {
 
       return { success: data, error: null };
     } catch (error) {
-      console.error('Error marking notification as read:', error);
       return { success: false, error: error.message };
     }
   }
@@ -113,7 +111,6 @@ class NotificationService {
 
       return { count: data || 0, error: null };
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
       return { count: 0, error: error.message };
     }
   }
@@ -175,7 +172,6 @@ class NotificationService {
 
       return { count: data, error: null };
     } catch (error) {
-      console.error('Error sending promotion notification:', error);
       return { count: 0, error: error.message };
     }
   }

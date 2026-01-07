@@ -4,7 +4,50 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import JSZip from 'jszip';
 
 // Your Sketchfab API token
-const SKETCHFAB_API_TOKEN = '48281f7f66154a9d90b8fbe1201336e5';
+const SKETCHFAB_API_TOKEN = '40e432b03bd3443787fd33a830b1eae4';
+
+// ========== RATE LIMITING & QUEUE SYSTEM ==========
+// Prevents hitting API rate limits (429 errors)
+let requestQueue = [];
+let activeRequests = 0;
+const MAX_CONCURRENT_REQUESTS = 1; // Only 1 request at a time (more strict)
+const REQUEST_DELAY = 2000; // 2 seconds between requests (increased)
+
+// Process the request queue
+const processQueue = async () => {
+  if (activeRequests >= MAX_CONCURRENT_REQUESTS || requestQueue.length === 0) {
+    return;
+  }
+
+  const { fn, resolve, reject } = requestQueue.shift();
+  activeRequests++;
+
+  try {
+    const result = await fn();
+    resolve(result);
+  } catch (error) {
+    reject(error);
+  } finally {
+    activeRequests--;
+    // Add delay before next request to avoid rate limiting
+    setTimeout(() => {
+      processQueue();
+    }, REQUEST_DELAY);
+  }
+};
+
+// Queue a request with rate limiting
+const queueRequest = (fn) => {
+  return new Promise((resolve, reject) => {
+    requestQueue.push({ fn, resolve, reject });
+    processQueue();
+  });
+};
+
+// ========== ENHANCED CACHING ==========
+// Cache for model download URLs (lasts 1 hour)
+const downloadUrlCache = new Map();
+const DOWNLOAD_CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 
 // Default configurations for component positioning (no search terms - will use product name)
 const COMPONENT_CONFIGS = {
@@ -120,20 +163,28 @@ const searchCache = new Map();
 
 /**
  * Build search query from product data
- * Strategy: Try multiple search approaches for better accuracy
+ * Strategy: Use FULL PRODUCT NAME first, then fallbacks
  */
 const buildSearchQuery = (productData, componentType) => {
   if (!productData) return null;
   
+  // DEBUG: Log what we're receiving
+  console.log('🔍 buildSearchQuery received:', {
+    componentType,
+    productData,
+    hasName: !!productData.name,
+    hasProductName: !!productData.productName,
+    keys: Object.keys(productData)
+  });
+  
   const productName = productData.name || productData.productName || '';
-  const brand = productData.brand || '';
   
-  // Extract key identifiers (model numbers, series names)
-  // Examples: "RTX 4090", "Ryzen 9 7950X", "H510", "RM850x"
-  const modelPattern = /\b([A-Z]{2,4}[-\s]?\d{3,4}[A-Z]?[Xi]?)\b/gi;
-  const modelMatches = productName.match(modelPattern) || [];
+  if (!productName) {
+    console.warn('⚠️ No product name found in productData:', productData);
+    return null;
+  }
   
-  // Clean product name but keep important identifiers
+  // Clean product name - remove storage sizes, speeds, but keep model identifiers
   let cleanName = productName
     .replace(/\([^)]*\)/g, '') // Remove parentheses content
     .replace(/\d+GB|\d+TB/gi, '') // Remove storage sizes
@@ -143,35 +194,8 @@ const buildSearchQuery = (productData, componentType) => {
     .replace(/\s+/g, ' ')
     .trim();
   
-  // Build prioritized search query
-  let searchQuery = '';
-  
-  // Priority 1: Brand + Model number (most specific)
-  if (brand && modelMatches.length > 0) {
-    searchQuery = brand + ' ' + modelMatches[0];
-  }
-  // Priority 2: Just model number if distinctive
-  else if (modelMatches.length > 0 && modelMatches[0].length >= 4) {
-    searchQuery = modelMatches[0];
-  }
-  // Priority 3: Brand + cleaned product name
-  else if (brand && !cleanName.toLowerCase().includes(brand.toLowerCase())) {
-    searchQuery = brand + ' ' + cleanName;
-  }
-  // Priority 4: Just the cleaned name
-  else {
-    searchQuery = cleanName;
-  }
-  
-  // Limit query length (Sketchfab works better with shorter queries)
-  const words = searchQuery.split(' ').filter(w => w.length > 1);
-  if (words.length > 4) {
-    searchQuery = words.slice(0, 4).join(' ');
-  }
-  
-  console.log('🔍 Built search query: "' + searchQuery + '" from product: ' + productName);
-  
-  return searchQuery;
+  // Don't limit query length - use full product name for exact matches
+  return cleanName;
 };
 
 /**
@@ -179,27 +203,56 @@ const buildSearchQuery = (productData, componentType) => {
  */
 const generateFallbackQueries = (productData, componentType) => {
   const brand = productData?.brand || '';
+  const productName = productData?.name || productData?.productName || '';
   const queries = [];
   
-  // Fallback 1: Brand + component type
+  // Extract model numbers/identifiers from product name
+  const modelPattern = /\b([A-Z]{2,4}[-\s]?\d{3,4}[A-Z]?[Xi]?)\b/gi;
+  const modelMatches = productName.match(modelPattern) || [];
+  
+  // Fallback 1: Model number only (if found)
+  if (modelMatches.length > 0) {
+    queries.push(modelMatches[0]);
+  }
+  
+  // Fallback 2: Brand + component type
   if (brand) {
     queries.push(brand + ' ' + componentType);
   }
   
-  // Fallback 2: Component type + "3D model"
-  queries.push(componentType + ' 3D model');
+  // Fallback 3: Component type + key feature words from product name
+  const keyWords = productName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/gi, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 3 && !['with', 'the', 'for', 'and'].includes(w))
+    .slice(0, 2);
   
-  // Fallback 3: Generic component
+  if (keyWords.length > 0) {
+    queries.push(componentType + ' ' + keyWords.join(' '));
+  }
+  
+  // Fallback 4: Generic component type
   const genericTerms = {
     'Case': 'PC case computer tower',
     'Motherboard': 'motherboard PCB',
     'CPU': 'CPU processor chip',
+    'Processor': 'CPU processor chip',
     'GPU': 'graphics card GPU',
     'RAM': 'RAM memory stick DDR',
     'CPU Cooler': 'CPU cooler heatsink fan',
+    'Cooling': 'CPU cooler heatsink fan',
     'Storage': 'SSD NVMe drive',
+    'SSD': 'SSD drive',
+    'HDD': 'hard drive',
     'PSU': 'power supply unit PSU',
-    'Fans': 'PC case fan RGB'
+    'Fans': 'PC case fan RGB',
+    'Keyboard': 'mechanical keyboard',
+    'Mouse': 'gaming mouse',
+    'Monitor': 'gaming monitor display',
+    'Headset': 'gaming headset',
+    'Speaker': 'speaker audio',
+    'Webcam': 'webcam camera'
   };
   
   if (genericTerms[componentType]) {
@@ -210,7 +263,7 @@ const generateFallbackQueries = (productData, componentType) => {
 };
 
 /**
- * Search Sketchfab for downloadable models
+ * Search Sketchfab for downloadable models (WITH RATE LIMITING)
  */
 export const searchSketchfabModels = async (searchTerm, options = {}) => {
   const { count = 5 } = options;
@@ -218,42 +271,47 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
   // Check search cache first
   const cacheKey = searchTerm.toLowerCase();
   if (searchCache.has(cacheKey)) {
-    console.log('📦 Using cached search results for: "' + searchTerm + '"');
+    console.log('📦 Using cached results for "' + searchTerm + '"');
     return searchCache.get(cacheKey);
   }
 
-  console.log('🔍 Searching Sketchfab for: "' + searchTerm + '"');
+  // Use the request queue to avoid rate limiting
+  return queueRequest(async () => {
+    try {
+      const params = new URLSearchParams({
+        q: searchTerm,
+        type: 'models',
+        downloadable: 'true',
+        count: '30', // Increased to get more results (some may fail to download)
+        sort_by: '-relevance' // Changed from -likeCount to -relevance for better matches
+      });
 
-  try {
-    const params = new URLSearchParams({
-      q: searchTerm,
-      type: 'models',
-      downloadable: 'true',
-      count: '24', // Increased to get more results for better matching
-      sort_by: '-relevance' // Changed from -likeCount to -relevance for better matches
-    });
-
-    const response = await fetch(
-      'https://api.sketchfab.com/v3/search?' + params,
-      {
-        headers: {
-          'Authorization': 'Token ' + SKETCHFAB_API_TOKEN
+      console.log('🔍 Searching Sketchfab API for "' + searchTerm + '"...');
+      const response = await fetch(
+        'https://api.sketchfab.com/v3/search?' + params,
+        {
+          headers: {
+            'Authorization': 'Token ' + SKETCHFAB_API_TOKEN
+          }
         }
+      );
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          console.warn('⚠️ Rate limited, waiting 5 seconds...');
+          // Wait longer before retry
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          throw new Error('Rate limited, please try again');
+        }
+        throw new Error('Sketchfab API error: ' + response.status);
       }
-    );
 
-    if (!response.ok) {
-      throw new Error('Sketchfab API error: ' + response.status);
-    }
-
-    const data = await response.json();
-    console.log('✅ Found ' + (data.results?.length || 0) + ' models for "' + searchTerm + '"');
+      const data = await response.json();
+      console.log('✅ Found ' + (data.results?.length || 0) + ' models for "' + searchTerm + '"');
     
     const downloadableModels = data.results?.filter(function(model) {
       return model.isDownloadable;
     }) || [];
-    
-    console.log('📥 ' + downloadableModels.length + ' are downloadable');
     
     // Score and sort models by name similarity to search term
     const searchTermLower = searchTerm.toLowerCase();
@@ -317,65 +375,84 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
       console.log('🎯 Best match: "' + sortedModels[0].name + '" (score: ' + scoredModels[0].score + ')');
     }
     
-    // Cache the results
+    // Cache the results with timestamp
     searchCache.set(cacheKey, sortedModels);
     
     return sortedModels;
-  } catch (error) {
-    console.error('❌ Sketchfab search failed:', error);
-    return [];
-  }
+    } catch (error) {
+      console.error('❌ Search error:', error);
+      return [];
+    }
+  });
 };
 
 /**
- * Get download URL for a Sketchfab model
+ * Get download URL for a Sketchfab model (WITH RATE LIMITING & CACHING)
  */
 export const getSketchfabDownloadUrl = async (modelUid) => {
-  console.log('📥 Getting download URL for model: ' + modelUid);
-
-  try {
-    const response = await fetch(
-      'https://api.sketchfab.com/v3/models/' + modelUid + '/download',
-      {
-        headers: {
-          'Authorization': 'Token ' + SKETCHFAB_API_TOKEN
-        }
-      }
-    );
-
-    if (!response.ok) {
-      if (response.status === 403) {
-        throw new Error('Model not downloadable');
-      }
-      throw new Error('API error: ' + response.status);
-    }
-
-    const data = await response.json();
-    console.log('📋 Available formats:', Object.keys(data));
-    
-    if (data.gltf?.url) {
-      console.log('✅ Got GLTF download URL');
-      return { url: data.gltf.url, format: 'gltf' };
-    }
-    
-    if (data.glb?.url) {
-      console.log('✅ Got GLB download URL');
-      return { url: data.glb.url, format: 'glb' };
-    }
-    
-    throw new Error('No GLTF/GLB format available');
-  } catch (error) {
-    console.error('❌ Failed to get download URL:', error.message);
-    return null;
+  // Check cache first
+  const cached = downloadUrlCache.get(modelUid);
+  if (cached && (Date.now() - cached.timestamp < DOWNLOAD_CACHE_DURATION)) {
+    console.log('📦 Using cached download URL for', modelUid);
+    return cached.data;
   }
+
+  // Use the request queue to avoid rate limiting
+  return queueRequest(async () => {
+    try {
+      console.log('📥 Fetching download URL for', modelUid);
+      const response = await fetch(
+        'https://api.sketchfab.com/v3/models/' + modelUid + '/download',
+        {
+          headers: {
+            'Authorization': 'Token ' + SKETCHFAB_API_TOKEN
+          }
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          console.warn('⚠️ Model', modelUid, 'claims to be downloadable but returns 403 - trying next model');
+          throw new Error('Model not downloadable');
+        }
+        if (response.status === 429) {
+          console.warn('⚠️ Rate limited on download URL, waiting 5 seconds...');
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          throw new Error('Rate limited');
+        }
+        throw new Error('API error: ' + response.status);
+      }
+
+      const data = await response.json();
+      console.log('📋 Available formats:', Object.keys(data));
+      
+      let result = null;
+      if (data.gltf?.url) {
+        result = { url: data.gltf.url, format: 'gltf' };
+      } else if (data.glb?.url) {
+        result = { url: data.glb.url, format: 'glb' };
+      } else {
+        throw new Error('No GLTF/GLB format available');
+      }
+
+      // Cache the result
+      downloadUrlCache.set(modelUid, {
+        data: result,
+        timestamp: Date.now()
+      });
+
+      return result;
+    } catch (error) {
+      console.error('❌ Download URL error:', error);
+      return null;
+    }
+  });
 };
 
 /**
  * Download and extract ZIP file, then load GLTF
  */
 const loadGLTFFromZip = async (url, onProgress) => {
-  console.log('📥 Downloading ZIP file...');
-  
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to download: ' + response.status);
@@ -404,7 +481,6 @@ const loadGLTFFromZip = async (url, onProgress) => {
     offset += chunk.length;
   }
   
-  console.log('📦 Extracting ZIP file...');
   if (onProgress) onProgress(55);
   
   const zip = await JSZip.loadAsync(arrayBuffer.buffer);
@@ -421,7 +497,6 @@ const loadGLTFFromZip = async (url, onProgress) => {
     if (lowerName.endsWith('.gltf') || lowerName.endsWith('.glb')) {
       gltfFile = file;
       gltfFileName = fileName;
-      console.log('📄 Found model file: ' + fileName);
     }
     
     files[fileName] = file;
@@ -436,7 +511,6 @@ const loadGLTFFromZip = async (url, onProgress) => {
   const isGLB = gltfFileName.toLowerCase().endsWith('.glb');
   
   if (isGLB) {
-    console.log('📦 Loading GLB model...');
     const glbData = await gltfFile.async('arraybuffer');
     if (onProgress) onProgress(80);
     
@@ -445,18 +519,15 @@ const loadGLTFFromZip = async (url, onProgress) => {
         glbData,
         '',
         function(gltf) {
-          console.log('✅ GLB loaded successfully');
           if (onProgress) onProgress(100);
           resolve(gltf.scene);
         },
         function(error) {
-          console.error('❌ GLB parse error:', error);
           reject(error);
         }
       );
     });
   } else {
-    console.log('📦 Loading GLTF model with dependencies...');
     const gltfContent = await gltfFile.async('text');
     const gltfJson = JSON.parse(gltfContent);
     
@@ -510,7 +581,6 @@ const loadGLTFFromZip = async (url, onProgress) => {
         modifiedGltf,
         '',
         function(gltf) {
-          console.log('✅ GLTF loaded successfully');
           Object.values(blobUrls).forEach(function(url) {
             URL.revokeObjectURL(url);
           });
@@ -518,7 +588,6 @@ const loadGLTFFromZip = async (url, onProgress) => {
           resolve(gltf.scene);
         },
         function(error) {
-          console.error('❌ GLTF parse error:', error);
           Object.values(blobUrls).forEach(function(url) {
             URL.revokeObjectURL(url);
           });
@@ -533,10 +602,7 @@ const loadGLTFFromZip = async (url, onProgress) => {
  * Load a model from Sketchfab by UID
  */
 export const loadSketchfabModel = async (modelUid, onProgress) => {
-  console.log('🎮 Loading Sketchfab model: ' + modelUid);
-
   if (modelCache.has(modelUid)) {
-    console.log('📦 Using cached model');
     return modelCache.get(modelUid).clone();
   }
 
@@ -552,7 +618,6 @@ export const loadSketchfabModel = async (modelUid, onProgress) => {
     
     return model;
   } catch (error) {
-    console.error('❌ Failed to load Sketchfab model:', error);
     return null;
   }
 };
@@ -564,17 +629,12 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
   const config = COMPONENT_CONFIGS[componentType];
   
   if (!config) {
-    console.warn('⚠️ No config for: ' + componentType);
     return null;
   }
 
   if (!productData) {
-    console.warn('⚠️ No product data provided for: ' + componentType);
     return null;
   }
-
-  console.log('📦 Loading ' + componentType + ' from Sketchfab...');
-  console.log('📦 Product: ' + productData.productName);
 
   try {
     let model = null;
@@ -593,11 +653,9 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
     for (const query of allQueries) {
       if (model) break; // Already found a model
       
-      console.log('🔍 Searching for: "' + query + '"');
       const results = await searchSketchfabModels(query, { count: 8 });
       
       if (results.length === 0) {
-        console.log('⚠️ No results for: "' + query + '"');
         continue;
       }
       
@@ -605,30 +663,117 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
       const scoredResults = results.map(result => {
         let score = 0;
         const nameLower = result.name.toLowerCase();
-        const productNameLower = (productData.productName || '').toLowerCase();
+        const descriptionLower = (result.description || '').toLowerCase();
+        // FIX: Use same logic as buildSearchQuery - check BOTH .name and .productName
+        const productNameLower = (productData.name || productData.productName || '').toLowerCase();
         const brandLower = (productData.brand || '').toLowerCase();
         
-        // Exact brand match
-        if (brandLower && nameLower.includes(brandLower)) score += 30;
+        // HIGHEST PRIORITY: Exact name match (ignoring case and extra spaces)
+        const cleanProductName = productNameLower.replace(/\s+/g, ' ').trim();
+        const cleanResultName = nameLower.replace(/\s+/g, ' ').trim();
         
-        // Model number match
-        const modelPattern = /\b([A-Z]{2,4}[-\s]?\d{3,4}[A-Z]?[Xi]?)\b/gi;
-        const productModels = productNameLower.match(modelPattern) || [];
-        const resultModels = nameLower.match(modelPattern) || [];
-        if (productModels.some(pm => resultModels.some(rm => rm.toLowerCase().includes(pm.toLowerCase())))) {
+        // Debug logging for exact matches
+        if (nameLower.includes('knob')) {
+          console.log('🔍 Comparing knob model:');
+          console.log('  Result name: "' + cleanResultName + '"');
+          console.log('  Product name: "' + cleanProductName + '"');
+          console.log('  Exact match:', cleanResultName === cleanProductName);
+          console.log('  Raw result: "' + nameLower + '"');
+          console.log('  Raw product: "' + productNameLower + '"');
+        }
+        
+        if (cleanResultName === cleanProductName) {
+          score += 10000; // Massively high score for exact match
+          console.log('✅ EXACT MATCH BONUS +10000:', result.name);
+        }
+        // Check if result name contains the full product name
+        else if (nameLower.includes(cleanProductName)) {
+          score += 5000; // Very high score for containing full product name
+        }
+        // Check if product name contains the result name (reversed)
+        else if (cleanProductName.includes(cleanResultName)) {
+          score += 3000;
+        }
+        
+        // Extract key product words (like "Blackshark", "Kraken", "G2000")
+        const productWords = productNameLower
+          .split(/\s+/)
+          .filter(w => w.length > 3 && !['headset', 'keyboard', 'mouse', 'monitor', 'gaming', 'mechanical'].includes(w));
+        
+        // Count matching key words
+        let matchedWords = 0;
+        productWords.forEach(word => {
+          if (nameLower.includes(word)) {
+            score += 200;
+            matchedWords++;
+          }
+        });
+        
+        // Brand match
+        if (brandLower && nameLower.includes(brandLower)) {
           score += 50;
         }
         
-        // Component type in name
-        if (nameLower.includes(componentType.toLowerCase())) score += 20;
+        // CRITICAL: Exact model number match (G604 must match G604, NOT G603)
+        const modelPattern = /\b([A-Z]+[-]?[0-9]+[A-Z0-9]*)\b/gi;
+        const productModels = productNameLower.match(modelPattern) || [];
+        const resultModels = nameLower.match(modelPattern) || [];
         
-        // Penalize generic terms
-        if (nameLower.includes('low poly')) score -= 10;
-        if (nameLower.includes('cartoon')) score -= 20;
-        if (nameLower.includes('stylized')) score -= 15;
+        let hasExactModelMatch = false;
+        let hasWrongModelNumber = false;
         
-        // Prefer higher quality (like count as proxy)
-        score += Math.min(result.likeCount || 0, 100) / 10;
+        productModels.forEach(productModel => {
+          const productModelClean = productModel.toLowerCase().replace(/[-\s]/g, '');
+          
+          resultModels.forEach(resultModel => {
+            const resultModelClean = resultModel.toLowerCase().replace(/[-\s]/g, '');
+            
+            // Exact match (G604 === G604)
+            if (productModelClean === resultModelClean) {
+              score += 2000; // High bonus for exact model number match
+              hasExactModelMatch = true;
+            }
+            // Similar but different (G604 vs G603) - REJECT
+            else if (productModelClean.length === resultModelClean.length) {
+              score -= 10000; // Massive penalty for wrong but similar model
+              hasWrongModelNumber = true;
+            }
+          });
+        });
+        
+        // If wrong model number found, skip this result entirely
+        if (hasWrongModelNumber && !hasExactModelMatch) {
+          return { ...result, relevanceScore: -99999 };
+        }
+        
+        // CRITICAL FILTERS - Heavily penalize wrong types
+        // For audio headsets, exclude VR/character models
+        if (componentType === 'Headset') {
+          if (nameLower.includes('vr')) score -= 5000;
+          if (nameLower.includes('virtual reality')) score -= 5000;
+          if (nameLower.includes('character')) score -= 3000;
+          if (nameLower.includes('animated')) score -= 3000;
+          if (nameLower.includes('avatar')) score -= 3000;
+          if (descriptionLower.includes('vr')) score -= 2000;
+        }
+        
+        // Penalize stylized/toy versions
+        if (nameLower.includes('cartoon')) score -= 2000;
+        if (nameLower.includes('stylized')) score -= 1000;
+        if (nameLower.includes('color pop')) score -= 2000;
+        if (nameLower.includes('toy')) score -= 1000;
+        if (nameLower.includes('chibi')) score -= 2000;
+        if (nameLower.includes('low poly')) score -= 500;
+        
+        // Prefer realistic/detailed models
+        if (nameLower.includes('realistic')) score += 30;
+        if (nameLower.includes('detailed')) score += 20;
+        if (nameLower.includes('pbr')) score += 20;
+        if (descriptionLower.includes('realistic')) score += 20;
+        
+        // Prefer higher quality (views/likes as proxy, but cap it)
+        score += Math.min(result.likeCount || 0, 50) / 10; // Max 5 points
+        score += Math.min((result.viewCount || 0) / 1000, 30) / 10; // Max 3 points
         
         return { ...result, relevanceScore: score };
       });
@@ -643,20 +788,26 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
       // Try each result until one works
       for (const result of scoredResults) {
         console.log('🎯 Trying model: ' + result.name + ' (score: ' + result.relevanceScore + ')');
-        model = await loadSketchfabModel(result.uid, onProgress);
-        if (model) {
-          console.log('✅ Successfully loaded: ' + result.name);
-          // Store model info including creator
-          modelInfo = {
-            name: result.name,
-            uid: result.uid,
-            creator: result.user?.displayName || result.user?.username || 'Unknown',
-            creatorUrl: result.user?.profileUrl || ('https://sketchfab.com/' + (result.user?.username || '')),
-            modelUrl: 'https://sketchfab.com/3d-models/' + result.uid,
-            source: 'Sketchfab',
-            relevanceScore: result.relevanceScore
-          };
-          break;
+        try {
+          model = await loadSketchfabModel(result.uid, onProgress);
+          if (model) {
+            // Store model info including creator
+            modelInfo = {
+              name: result.name,
+              uid: result.uid,
+              creator: result.user?.displayName || result.user?.username || 'Unknown',
+              creatorUrl: result.user?.profileUrl || ('https://sketchfab.com/' + (result.user?.username || '')),
+              modelUrl: 'https://sketchfab.com/3d-models/' + result.uid,
+              source: 'Sketchfab',
+              relevanceScore: result.relevanceScore
+            };
+            console.log('✅ Successfully loaded: ' + result.name);
+            break;
+          } else {
+            console.log('⚠️ Model failed to load (likely not downloadable), trying next...');
+          }
+        } catch (error) {
+          console.log('⚠️ Model error:', error.message, '- trying next...');
         }
       }
     }
@@ -693,6 +844,28 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
       };
       model.name = 'component_' + componentType;
 
+      // Remove any existing model with the same name (prevent stacking)
+      const existingModel = scene.children.find(child => child.name === model.name);
+      if (existingModel) {
+        console.log('🗑️ Removing existing ' + componentType + ' model');
+        scene.remove(existingModel);
+        // Dispose of old model resources
+        existingModel.traverse(function(child) {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach(m => {
+                if (m.map) m.map.dispose();
+                m.dispose();
+              });
+            } else {
+              if (child.material.map) child.material.map.dispose();
+              child.material.dispose();
+            }
+          }
+        });
+      }
+
       // Enable shadows
       model.traverse(function(child) {
         if (child.isMesh) {
@@ -706,10 +879,8 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
       return { model: model, modelInfo: modelInfo };
     }
 
-    console.warn('⚠️ Could not load ' + componentType + ' from Sketchfab');
     return null;
   } catch (error) {
-    console.error('❌ Failed to load ' + componentType + ' from Sketchfab:', error);
     return null;
   }
 };
@@ -732,5 +903,4 @@ export const clearModelCache = () => {
   });
   modelCache.clear();
   searchCache.clear();
-  console.log('🧹 Model cache cleared');
 };

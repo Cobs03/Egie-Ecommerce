@@ -76,7 +76,6 @@ const ProductDetails = ({ product }) => {
           setSoldCount(0);
         }
       } catch (error) {
-        console.error('Error fetching product stats:', error);
         setRatingSummary(null);
         setSoldCount(0);
       } finally {

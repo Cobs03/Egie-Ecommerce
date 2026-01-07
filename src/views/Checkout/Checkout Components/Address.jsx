@@ -69,7 +69,6 @@ const Address = ({ onAddressSelect }) => {
       const provinceData = await PhilippineAddressService.getProvinces();
       setProvinces(provinceData);
     } catch (error) {
-      console.error('Error loading provinces:', error);
       toast.error('Failed to load provinces');
     }
   };
@@ -88,7 +87,6 @@ const Address = ({ onAddressSelect }) => {
         const cityData = await PhilippineAddressService.getCitiesByProvince(provinceCode);
         setAvailableCities(cityData);
       } catch (error) {
-        console.error('Error loading cities:', error);
         toast.error('Failed to load cities');
       } finally {
         setLoadingLocations(false);
@@ -108,7 +106,6 @@ const Address = ({ onAddressSelect }) => {
         const barangayData = await PhilippineAddressService.getBarangaysByCity(cityCode);
         setAvailableBarangays(barangayData);
       } catch (error) {
-        console.error('Error loading barangays:', error);
         toast.error('Failed to load barangays');
       } finally {
         setLoadingLocations(false);
@@ -130,7 +127,6 @@ const Address = ({ onAddressSelect }) => {
         const cityData = await PhilippineAddressService.getCitiesByProvince(provinceCode);
         setEditAvailableCities(cityData);
       } catch (error) {
-        console.error('Error loading cities:', error);
         toast.error('Failed to load cities');
       } finally {
         setLoadingLocations(false);
@@ -150,7 +146,6 @@ const Address = ({ onAddressSelect }) => {
         const barangayData = await PhilippineAddressService.getBarangaysByCity(cityCode);
         setEditAvailableBarangays(barangayData);
       } catch (error) {
-        console.error('Error loading barangays:', error);
         toast.error('Failed to load barangays');
       } finally {
         setLoadingLocations(false);
@@ -177,7 +172,6 @@ const Address = ({ onAddressSelect }) => {
       const { data, error } = await OrderService.getShippingAddresses();
       
       if (error) {
-        console.error('Error loading addresses:', error);
         toast.error('Failed to load addresses');
         return;
       }
@@ -189,7 +183,6 @@ const Address = ({ onAddressSelect }) => {
         setSelectedAddress(defaultAddr || data[0]);
       }
     } catch (error) {
-      console.error('Error in loadAddresses:', error);
       toast.error('Failed to load addresses');
     } finally {
       setLoading(false);
@@ -210,7 +203,6 @@ const Address = ({ onAddressSelect }) => {
       await loadAddresses();
       toast.success('Default address updated');
     } catch (error) {
-      console.error('Error setting default address:', error);
       toast.error('Failed to set as default');
     }
   };
@@ -248,7 +240,6 @@ const Address = ({ onAddressSelect }) => {
       setShowDeleteConfirmation(false);
       setAddressToDelete(null);
     } catch (error) {
-      console.error('Error deleting address:', error);
       toast.error('Failed to delete address');
     }
   };
@@ -336,7 +327,6 @@ const Address = ({ onAddressSelect }) => {
       setAvailableBarangays([]);
       setShowNewAddressForm(false);
     } catch (error) {
-      console.error('Error adding address:', error);
       toast.error('Failed to add address');
     }
   };
@@ -362,7 +352,6 @@ const Address = ({ onAddressSelect }) => {
       setShowEditForm(false);
       setEditAvailableBarangays([]);
     } catch (error) {
-      console.error('Error updating address:', error);
       toast.error('Failed to update address');
     }
   };

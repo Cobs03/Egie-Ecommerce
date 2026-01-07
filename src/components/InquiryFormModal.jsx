@@ -54,7 +54,6 @@ const InquiryFormModal = ({ product, onClose, onSuccess, isBundle = false, bundl
         });
       }
     } catch (error) {
-      console.error('Error submitting inquiry:', error);
       toast.error('Something went wrong');
     } finally {
       setSubmitting(false);

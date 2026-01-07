@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { useWebsiteSettings } from "../hooks/useWebsiteSettings";
 
 const LoadingSpinner = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const { settings } = useWebsiteSettings();
 
   useEffect(() => {
     // Simulate loading time or wait for actual resources to load
@@ -25,14 +27,14 @@ const LoadingSpinner = () => {
           {/* Logo in center */}
           <div className="absolute inset-0 flex items-center justify-center">
             <img 
-              src="/Logo/Ai.png" 
+              src={settings?.aiLogoUrl || "/Logo/Ai.png"} 
               alt="Loading" 
               className="w-10 h-10 object-contain animate-pulse"
             />
           </div>
         </div>
         <p className="text-gray-700 font-semibold text-lg animate-pulse">
-          Loading EGIE E-Commerce
+          Loading {settings?.storeName || "EGIE E-Commerce"}
         </p>
       </div>
     </div>

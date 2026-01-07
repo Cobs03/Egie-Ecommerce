@@ -44,7 +44,6 @@ const ForgotPassword = () => {
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
-      console.error('Password reset error:', err);
     } finally {
       setLoading(false);
     }

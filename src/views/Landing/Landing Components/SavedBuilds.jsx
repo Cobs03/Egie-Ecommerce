@@ -34,7 +34,6 @@ const SavedBuilds = () => {
       const userBuilds = await BuildService.getUserBuilds();
       setBuilds(userBuilds);
     } catch (error) {
-      console.error('Failed to load builds:', error);
     } finally {
       setLoading(false);
     }

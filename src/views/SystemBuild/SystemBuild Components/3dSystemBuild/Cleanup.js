@@ -1,6 +1,4 @@
 export const cleanupScene = (scene, renderer, controls) => {
-  console.log('🧹 Starting cleanup...');
-
   // Dispose scene objects first
   if (scene) {
     scene.traverse((object) => {
@@ -16,7 +14,6 @@ export const cleanupScene = (scene, renderer, controls) => {
       }
     });
     scene.clear();
-    console.log('✅ Scene objects disposed');
   }
 
   // Dispose controls BEFORE renderer (and check if domElement exists)
@@ -25,12 +22,9 @@ export const cleanupScene = (scene, renderer, controls) => {
       // Check if the DOM element still exists before disposing
       if (controls.domElement && controls.domElement.parentNode) {
         controls.dispose();
-        console.log('✅ Controls disposed');
       } else {
-        console.log('⚠️ Controls DOM element already removed, skipping dispose');
       }
     } catch (error) {
-      console.log('⚠️ Controls already disposed or error:', error.message);
     }
   }
 
@@ -42,11 +36,8 @@ export const cleanupScene = (scene, renderer, controls) => {
         renderer.domElement.parentNode.removeChild(renderer.domElement);
       }
       renderer.dispose();
-      console.log('✅ Renderer disposed');
     } catch (error) {
-      console.log('⚠️ Renderer already disposed or error:', error.message);
     }
   }
 
-  console.log('✅ Cleanup complete');
 };

@@ -50,7 +50,6 @@ const SecurityTab = ({ loading, setLoading }) => {
       setTimeout(() => setMessage(""), 3000);
 
     } catch (error) {
-      console.error('Error updating password:', error);
       setError(error.message || "Failed to update password. Please try again.");
     } finally {
       setLoading(false);

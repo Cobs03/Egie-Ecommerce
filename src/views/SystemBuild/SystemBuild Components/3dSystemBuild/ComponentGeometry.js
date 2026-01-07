@@ -22,7 +22,6 @@ let USE_SKETCHFAB_MODELS = true;
 
 export const setUseSketchfabModels = (value) => {
   USE_SKETCHFAB_MODELS = value;
-  console.log(`🔧 Sketchfab models: ${value ? 'ENABLED' : 'DISABLED'}`);
 };
 
 /**
@@ -36,26 +35,21 @@ const searchCache = new Map();
 const findModelUidForProduct = async (productName) => {
   // Check cache first
   if (searchCache.has(productName)) {
-    console.log(`♻️ Using cached UID for ${productName}`);
     return searchCache.get(productName);
   }
 
   try {
-    console.log(`🔎 Searching Sketchfab for: "${productName}"`);
     const models = await searchSketchfabModels(productName, 1); // Get only 1 result
     
     if (models && models.length > 0) {
       const uid = models[0].uid;
-      console.log(`✅ Found model UID: ${uid} for ${productName}`);
       searchCache.set(productName, uid);
       return uid;
     } else {
-      console.warn(`⚠️ No downloadable models found for: ${productName}`);
       searchCache.set(productName, null);
       return null;
     }
   } catch (error) {
-    console.error(`❌ Error searching for ${productName}:`, error);
     searchCache.set(productName, null);
     return null;
   }
@@ -87,7 +81,6 @@ const createComponentMesh = (componentType, product, mini = false) => {
   const config = componentPositions[componentType];
   
   if (!config) {
-    console.warn(`⚠️ No position config for component type: ${componentType}`);
     return null;
   }
 
@@ -128,7 +121,6 @@ const createComponentMesh = (componentType, product, mini = false) => {
     mesh.add(lineSegments);
   }
 
-  console.log(`✅ Created box mesh for ${componentType}`);
   return mesh;
 };
 
@@ -136,8 +128,6 @@ const createComponentMesh = (componentType, product, mini = false) => {
  * Clears all component meshes from scene
  */
 const clearComponents = (scene) => {
-  console.log('🗑️ Removing all components from scene...');
-  
   const componentsToRemove = [];
   
   scene.traverse((child) => {
@@ -166,7 +156,6 @@ const clearComponents = (scene) => {
     scene.remove(mesh);
   });
 
-  console.log(`✅ Removed ${componentsToRemove.length} components`);
   return componentsToRemove.length;
 };
 
@@ -174,14 +163,10 @@ const clearComponents = (scene) => {
  * Updates the 3D scene with selected components
  */
 export const updateComponents = async (scene, selectedProducts, mini = false) => {
-  console.log('🔄 Updating components...', selectedProducts);
-
   const hasProducts = Object.keys(selectedProducts).length > 0;
 
   if (USE_SKETCHFAB_MODELS && hasProducts) {
     try {
-      console.log('🔍 Searching Sketchfab for models...');
-      
       // Hide test cube immediately when products are being loaded
       toggleTestCube(scene, false);
       
@@ -189,8 +174,6 @@ export const updateComponents = async (scene, selectedProducts, mini = false) =>
       await updateComponentsWithModels(scene, enrichedProducts);
       
     } catch (error) {
-      console.error('❌ Error loading Sketchfab models, falling back to boxes:', error);
-      
       // Hide test cube before fallback
       toggleTestCube(scene, false);
       
@@ -206,7 +189,6 @@ export const updateComponents = async (scene, selectedProducts, mini = false) =>
         }
       });
       
-      console.log(`✅ Added ${addedCount} fallback box components`);
     }
   } else if (hasProducts) {
     // Hide test cube before adding simple boxes
@@ -224,11 +206,9 @@ export const updateComponents = async (scene, selectedProducts, mini = false) =>
       }
     });
     
-    console.log(`✅ Added ${addedCount} box components to scene`);
   } else {
     // No products - show test cube
     clearComponents(scene);
     toggleTestCube(scene, true);
-    console.log('ℹ️ No products selected, showing test cube');
   }
 };

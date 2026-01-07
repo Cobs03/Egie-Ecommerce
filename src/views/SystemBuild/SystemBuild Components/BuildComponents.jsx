@@ -172,7 +172,6 @@ const BuildComponents = ({
                           <select
                             value={selectedVariants?.[type] || ''}
                             onChange={(e) => {
-                              console.log(`🔧 Variant selected for ${type}:`, e.target.value);
                               setSelectedVariants(prev => ({ ...prev, [type]: e.target.value }));
                             }}
                             className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"

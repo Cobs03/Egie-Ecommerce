@@ -41,7 +41,6 @@ export const useProducts = (initialFilters = {}) => {
         setCategories(result.data)
       }
     } catch (err) {
-      console.error('Error loading categories:', err)
     }
   }, [])
 
@@ -54,8 +53,6 @@ export const useProducts = (initialFilters = {}) => {
   // Set up real-time subscription
   useEffect(() => {
     const subscription = ProductService.subscribeToProducts((payload) => {
-      console.log('Real-time product update:', payload)
-      
       // Reload products when there are changes
       loadProducts(initialFilters)
     })

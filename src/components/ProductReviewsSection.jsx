@@ -63,25 +63,20 @@ const ProductReviewsSection = ({ product }) => {
     try {
       // Load rating summary
       const { data: summary, error: summaryError } = await ReviewService.getProductRatingSummary(product.id);
-      console.log('Rating summary:', summary, 'Error:', summaryError);
       setRatingSummary(summary);
 
       // Load reviews
       const { data: reviewsData, error: reviewsError } = await ReviewService.getProductReviews(product.id, 50, 0);
-      console.log('📝 Reviews data:', reviewsData, 'Error:', reviewsError);
-      console.log('📝 Number of reviews:', reviewsData?.length);
       setReviews(reviewsData || []);
 
       // Check if current user has reviewed
       if (user) {
         const { data: userReviewData } = await ReviewService.hasUserReviewed(product.id);
-        console.log('📝 User review check:', userReviewData);
         setUserReview(userReviewData.hasReviewed ? userReviewData.review : null);
       } else {
         setUserReview(null);
       }
     } catch (error) {
-      console.error('Error loading reviews:', error);
     } finally {
       setLoading(false);
     }
@@ -123,7 +118,6 @@ const ProductReviewsSection = ({ product }) => {
         loadReviews(); // Refresh
       }
     } catch (error) {
-      console.error('Error deleting review:', error);
       toast.error('Something went wrong', { description: 'Unable to delete review.' });
     }
   };
@@ -153,10 +147,6 @@ const ProductReviewsSection = ({ product }) => {
   const startIndex = (currentPage - 1) * reviewsPerPage;
   const endIndex = startIndex + reviewsPerPage;
   const currentReviews = reviews.slice(startIndex, endIndex);
-
-  console.log('📊 Total reviews in state:', reviews.length);
-  console.log('📊 Current page reviews:', currentReviews.length);
-  console.log('📊 Reviews array:', reviews);
 
   // Generate page numbers for pagination
   const getPageNumbers = () => {

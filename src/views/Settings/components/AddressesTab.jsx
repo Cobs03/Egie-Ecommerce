@@ -30,7 +30,6 @@ const AddressesTab = ({
         handleDeleteAddress(addressId);
       }
     } catch (error) {
-      console.error('Error deleting address:', error);
       toast.error('Failed to delete address');
     } finally {
       setLoading(false);
@@ -50,7 +49,6 @@ const AddressesTab = ({
         handleSetDefaultAddress(addressId);
       }
     } catch (error) {
-      console.error('Error setting default address:', error);
       toast.error('Failed to set default address');
     } finally {
       setLoading(false);

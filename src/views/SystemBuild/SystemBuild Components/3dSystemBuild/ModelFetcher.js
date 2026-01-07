@@ -12,13 +12,10 @@ import { createPlaceholderModel, hasLocalModel, loadLocalModel } from './Placeho
 
 export const fetchComponentModel = async (scene, componentType, productData, onProgress, onStatusChange) => {
   if (!productData) {
-    console.warn('⚠️ No product data for:', componentType);
     return null;
   }
 
   const productName = productData.name || productData.productName || componentType;
-  console.log('🔄 Fetching model for:', productName);
-
   // Update status callback
   const updateStatus = (status) => {
     if (onStatusChange) {
@@ -30,7 +27,6 @@ export const fetchComponentModel = async (scene, componentType, productData, onP
     // PRIORITY 1: Check for local pre-made model
     updateStatus(`Checking local models for ${componentType}...`);
     if (hasLocalModel(productData, componentType)) {
-      console.log('📦 Found local model for:', productName);
       const localModel = await loadLocalModel(scene, componentType, productData, onProgress);
       if (localModel) {
         updateStatus(`Loaded local model for ${productName}`);
@@ -63,7 +59,6 @@ export const fetchComponentModel = async (scene, componentType, productData, onP
     }
 
     // PRIORITY 3: Create placeholder model
-    console.log('⚠️ No 3D model found, creating placeholder for:', componentType);
     updateStatus(`Creating placeholder for ${componentType}...`);
     if (onProgress) onProgress(90);
     
@@ -79,7 +74,6 @@ export const fetchComponentModel = async (scene, componentType, productData, onP
     };
 
   } catch (error) {
-    console.error('❌ Model fetch failed:', error);
     updateStatus(`Failed to load model for ${componentType}`);
     
     // Return placeholder on error

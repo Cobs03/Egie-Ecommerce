@@ -36,7 +36,6 @@ class InquiryService {
 
       return { data, error: null };
     } catch (error) {
-      console.error('Error creating inquiry:', error);
       return { data: null, error: error.message };
     }
   }
@@ -114,7 +113,6 @@ class InquiryService {
 
       return { data: inquiries || [], error: null };
     } catch (error) {
-      console.error('Error fetching inquiries:', error);
       return { data: [], error: error.message };
     }
   }
@@ -183,7 +181,6 @@ class InquiryService {
 
       return { data: inquiry, error: null };
     } catch (error) {
-      console.error('Error fetching inquiry with replies:', error);
       return { data: null, error: error.message };
     }
   }
@@ -219,7 +216,6 @@ class InquiryService {
 
       return { data: reply, error: null };
     } catch (error) {
-      console.error('Error adding reply:', error);
       return { data: null, error: error.message };
     }
   }
@@ -234,7 +230,6 @@ class InquiryService {
       // No need to update anything, just for potential future use
       return { error: null };
     } catch (error) {
-      console.error('Error marking as read:', error);
       return { error: error.message };
     }
   }
@@ -257,7 +252,6 @@ class InquiryService {
 
       return { error: null };
     } catch (error) {
-      console.error('Error marking replies as read by customer:', error);
       return { error: error.message };
     }
   }
@@ -301,7 +295,6 @@ class InquiryService {
 
       return { count: count || 0, error: null };
     } catch (error) {
-      console.error('Error getting unread count:', error);
       return { count: 0, error: error.message };
     }
   }

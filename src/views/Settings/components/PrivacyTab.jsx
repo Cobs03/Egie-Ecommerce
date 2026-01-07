@@ -129,7 +129,6 @@ const PrivacyTab = ({ loading, setLoading }) => {
       setTimeout(() => setMessage(""), 5000);
 
     } catch (error) {
-      console.error('Error downloading data:', error);
       setError("Failed to download your data. Please try again.");
     } finally {
       setDownloadingData(false);
@@ -159,7 +158,6 @@ const PrivacyTab = ({ loading, setLoading }) => {
 
       if (requestError) {
         // If table doesn't exist, we'll still proceed with soft delete
-        console.warn('Deletion request table not found, proceeding with account deactivation');
       }
 
       // Soft delete: Update profile status to 'deleted'
@@ -186,7 +184,6 @@ const PrivacyTab = ({ loading, setLoading }) => {
       }, 5000);
 
     } catch (error) {
-      console.error('Error deleting account:', error);
       setError("Failed to submit deletion request. Please contact support.");
     } finally {
       setLoading(false);
@@ -209,7 +206,6 @@ const PrivacyTab = ({ loading, setLoading }) => {
         .eq('id', user.id);
 
       if (updateError) {
-        console.log('Objections column not found, logging objections');
       }
 
       // Log objection in objections table
@@ -224,14 +220,12 @@ const PrivacyTab = ({ loading, setLoading }) => {
             status: 'pending'
           });
       } catch (objError) {
-        console.log('Objections table not found');
       }
 
       setMessage("Your objections have been recorded. We'll apply these preferences to your account immediately.");
       setTimeout(() => setMessage(""), 5000);
 
     } catch (error) {
-      console.error('Error submitting objections:', error);
       setError("Failed to save your objections. Please try again.");
     } finally {
       setLoading(false);

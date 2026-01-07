@@ -65,7 +65,6 @@ const SystemBuilder3D = ({ selectedProducts, mini = false }) => {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    console.log('🔧 Initializing 3D scene...');
     setIsLoading(true);
     setLoadingStatus('Initializing 3D scene...');
     setLoadingProgress(0);
@@ -96,8 +95,6 @@ const SystemBuilder3D = ({ selectedProducts, mini = false }) => {
     // Start animation loop
     animationIdRef.current = startAnimationLoop(renderer, scene, camera, controls);
 
-    console.log('✅ 3D INITIALIZATION COMPLETE');
-
     // Hide loading after scene is ready
     setTimeout(() => {
       setIsLoading(false);
@@ -106,7 +103,6 @@ const SystemBuilder3D = ({ selectedProducts, mini = false }) => {
 
     // Cleanup on unmount
     return () => {
-      console.log('🧹 STARTING CLEANUP');
       removeKeyboardControls();
       detachMouseDebugListeners(renderer.domElement);
       detachControlsEventListeners(controls);
@@ -114,7 +110,6 @@ const SystemBuilder3D = ({ selectedProducts, mini = false }) => {
       clearModelCache();
       stopAnimationLoop(animationIdRef.current);
       cleanupScene(scene, renderer, controls, containerRef.current);
-      console.log('✅ CLEANUP COMPLETE');
     };
   }, [mini]);
 
@@ -123,8 +118,6 @@ const SystemBuilder3D = ({ selectedProducts, mini = false }) => {
     if (!sceneRef.current) return;
 
     const componentCount = selectedProducts ? Object.keys(selectedProducts).length : 0;
-    console.log('🔄 Updating 3D components:', selectedProducts);
-
     if (componentCount > 0) {
       setIsLoading(true);
       setLoadingProgress(0);
@@ -158,7 +151,6 @@ const SystemBuilder3D = ({ selectedProducts, mini = false }) => {
         }
       })
       .catch((error) => {
-        console.error('Error loading components:', error);
         setIsLoading(false);
         setLoadingStatus('Error loading models');
       });

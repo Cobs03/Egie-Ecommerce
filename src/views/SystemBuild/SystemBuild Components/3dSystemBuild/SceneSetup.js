@@ -4,8 +4,6 @@ import * as THREE from 'three';
  * Initialize Scene, Camera, and Renderer
  */
 export const initializeScene = (container, mini = false) => {
-  console.log('🎬 Initializing scene, camera, and renderer...');
-
   // Create Scene
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xffffff); // White background
@@ -61,7 +59,6 @@ export const initializeScene = (container, mini = false) => {
   scene.environment = envMap; // This illuminates PBR materials!
   pmremGenerator.dispose();
 
-  console.log('✅ Scene, camera, and renderer initialized');
   return { scene, camera, renderer };
 };
 
@@ -69,8 +66,6 @@ export const initializeScene = (container, mini = false) => {
  * Setup Lighting - VERY BRIGHT for dark Sketchfab models
  */
 export const setupLighting = (scene, camera, mini = false) => {
-  console.log('💡 Setting up camera-following lighting...');
-
   // ============================================
   // AMBIENT LIGHT - Very high for overall brightness
   // ============================================
@@ -103,15 +98,11 @@ export const setupLighting = (scene, camera, mini = false) => {
   directionalLight.shadow.camera.top = 10;
   directionalLight.shadow.camera.bottom = -10;
   camera.add(directionalLight);
-  console.log('💡 Directional light attached to camera');
-
   // Light target
   const lightTarget = new THREE.Object3D();
   lightTarget.position.set(0, 0, 0);
   camera.add(lightTarget);
   directionalLight.target = lightTarget;
-  console.log('🎯 Light target attached to camera');
-
   // ============================================
   // FILL LIGHTS - Multiple to eliminate dark spots
   // ============================================
@@ -140,8 +131,6 @@ export const setupLighting = (scene, camera, mini = false) => {
   fillLight5.position.set(0, 2, 8);
   camera.add(fillLight5);
 
-  console.log('💡 Fill lights attached to camera');
-
   // ============================================
   // GROUND PLANE for shadows
   // ============================================
@@ -153,8 +142,6 @@ export const setupLighting = (scene, camera, mini = false) => {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  console.log('✅ Camera-following lighting setup complete');
-  
   return { 
     directionalLight, 
     fillLight1, 
@@ -171,7 +158,6 @@ export const setupLighting = (scene, camera, mini = false) => {
  * Add Grid Helper - Gray lines on white background
  */
 export const addGridHelper = (scene, mini = false) => {
-  console.log('📐 Adding grid helper...');
   const gridHelper = new THREE.GridHelper(
     20,       // Size
     20,       // Divisions
@@ -180,7 +166,6 @@ export const addGridHelper = (scene, mini = false) => {
   );
   gridHelper.position.y = -0.49;
   scene.add(gridHelper);
-  console.log('✅ Grid helper added');
   return gridHelper;
 };
 
@@ -188,10 +173,8 @@ export const addGridHelper = (scene, mini = false) => {
  * Add Axes Helper (for debugging)
  */
 export const addAxesHelper = (scene, size = 5) => {
-  console.log('🧭 Adding axes helper...');
   const axesHelper = new THREE.AxesHelper(size);
   scene.add(axesHelper);
-  console.log('✅ Axes helper added (Red=X, Green=Y, Blue=Z)');
   return axesHelper;
 };
 
@@ -199,8 +182,6 @@ export const addAxesHelper = (scene, size = 5) => {
  * Add Test Cube (purple cube for testing)
  */
 export const addTestCube = (scene) => {
-  console.log('🟪 Adding test cube...');
-  
   const geometry = new THREE.BoxGeometry(1, 1, 1);
   const material = new THREE.MeshStandardMaterial({ 
     color: 0x9333ea,
@@ -215,7 +196,6 @@ export const addTestCube = (scene) => {
   testCube.userData = { componentType: 'testCube' };
   
   scene.add(testCube);
-  console.log('✅ Test cube added with userData');
   return testCube;
 };
 
@@ -223,7 +203,6 @@ export const addTestCube = (scene) => {
  * Legacy function for backward compatibility
  */
 export const setupScene = () => {
-  console.warn('⚠️ setupScene() is deprecated. Use initializeScene() instead.');
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xffffff);
   

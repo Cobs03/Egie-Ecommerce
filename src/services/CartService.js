@@ -50,7 +50,6 @@ class CartService {
 
       return { data: { cart_id: newCart.id }, error: null };
     } catch (error) {
-      console.error('Error in getOrCreateCart:', error);
       return { data: null, error: error.message };
     }
   }
@@ -115,7 +114,6 @@ class CartService {
       if (error) return { data: null, error: error.message };
       return { data, error: null };
     } catch (error) {
-      console.error('Error in addToCart:', error);
       return { data: null, error: error.message };
     }
   }
@@ -205,7 +203,6 @@ class CartService {
         totalPrice 
       };
     } catch (error) {
-      console.error('Error in getCartItems:', error);
       return { data: [], error: error.message, totalItems: 0, totalPrice: 0 };
     }
   }
@@ -235,7 +232,6 @@ class CartService {
       if (error) return { data: null, error: error.message };
       return { data, error: null };
     } catch (error) {
-      console.error('Error in updateQuantity:', error);
       return { data: null, error: error.message };
     }
   }
@@ -247,8 +243,6 @@ class CartService {
    */
   async removeFromCart(cart_item_id) {
     try {
-      console.log('Removing cart item with ID:', cart_item_id);
-      
       const { data, error } = await supabase
         .from('cart_items')
         .delete()
@@ -256,14 +250,11 @@ class CartService {
         .select();
 
       if (error) {
-        console.error('Error deleting cart item:', error);
         return { data: null, error: error.message };
       }
       
-      console.log('Successfully deleted cart item:', data);
       return { data, error: null };
     } catch (error) {
-      console.error('Error in removeFromCart:', error);
       return { data: null, error: error.message };
     }
   }
@@ -301,7 +292,6 @@ class CartService {
       if (error) return { data: null, error: error.message };
       return { data, error: null };
     } catch (error) {
-      console.error('Error in clearCart:', error);
       return { data: null, error: error.message };
     }
   }
@@ -317,8 +307,6 @@ class CartService {
         return { data: null, error: 'No items to remove' };
       }
 
-      console.log('Removing multiple cart items:', cart_item_ids);
-      
       const { data, error } = await supabase
         .from('cart_items')
         .delete()
@@ -326,14 +314,11 @@ class CartService {
         .select();
 
       if (error) {
-        console.error('Error deleting multiple cart items:', error);
         return { data: null, error: error.message };
       }
       
-      console.log('Successfully deleted cart items:', data);
       return { data, error: null };
     } catch (error) {
-      console.error('Error in removeMultipleItems:', error);
       return { data: null, error: error.message };
     }
   }
@@ -371,7 +356,6 @@ class CartService {
 
       return { data: { count: count || 0 }, error: null };
     } catch (error) {
-      console.error('Error in getCartCount:', error);
       return { data: { count: 0 }, error: error.message };
     }
   }

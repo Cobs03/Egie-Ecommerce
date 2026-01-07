@@ -77,16 +77,12 @@ const TopSeller = () => {
           .rpc('get_top_selling_products', { limit_count: 5 });
 
         if (sellersError) {
-          console.error('Error fetching top sellers:', sellersError);
           throw sellersError;
         }
-        
-        console.log('Top Sellers data:', topSellersData);
         
         const topProductIds = (topSellersData || []).map(item => item.product_id);
         
         if (topProductIds.length === 0) {
-          console.log('No order data found. Using fallback: newest products');
           // Fallback to newest products if no orders
           const { data: fallbackProducts, error: fallbackError } = await supabase
             .from('products')
@@ -155,7 +151,6 @@ const TopSeller = () => {
 
         setProducts(sortedProducts);
       } catch (error) {
-        console.error('Error fetching top sellers:', error);
       } finally {
         setLoading(false);
       }

@@ -181,7 +181,6 @@ const BuildLaps = ({ set }) => {
           setProducts(productsWithReviews);
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
         setProducts([]);
         setBuilds([]);
       } finally {
@@ -234,7 +233,6 @@ const BuildLaps = ({ set }) => {
         toast.success('Build liked!');
       }
     } catch (error) {
-      console.error('Error toggling like:', error);
       toast.error('Failed to like build');
     }
   };

@@ -80,7 +80,6 @@ const ReviewModal = ({ product, onClose, existingReview = null, user }) => {
         }
       }
     } catch (error) {
-      console.error('Error submitting review:', error);
       toast.error('Something went wrong', {
         description: 'Please try again later.'
       });
