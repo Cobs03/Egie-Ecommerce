@@ -656,30 +656,63 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
       const scoredResults = results.map(result => {
         let score = 0;
         const nameLower = result.name.toLowerCase();
+        const descriptionLower = (result.description || '').toLowerCase();
         const productNameLower = (productData.productName || '').toLowerCase();
         const brandLower = (productData.brand || '').toLowerCase();
         
-        // Exact brand match
-        if (brandLower && nameLower.includes(brandLower)) score += 30;
+        // Extract key product words (like "Blackshark", "Kraken", "G2000")
+        const productWords = productNameLower
+          .split(/\s+/)
+          .filter(w => w.length > 3 && !['headset', 'keyboard', 'mouse', 'monitor', 'razer'].includes(w));
         
-        // Model number match
+        // HIGH PRIORITY: Exact product model name match (e.g., "Blackshark" in name)
+        let hasExactModelMatch = false;
+        productWords.forEach(word => {
+          if (nameLower.includes(word)) {
+            score += 200; // High score for matching specific model
+            hasExactModelMatch = true;
+          }
+        });
+        
+        // Brand match (but only if we also have model match)
+        if (brandLower && nameLower.includes(brandLower)) {
+          score += hasExactModelMatch ? 50 : 20; // Higher if also has model match
+        }
+        
+        // Model number match (RTX, G2000, etc.)
         const modelPattern = /\b([A-Z]{2,4}[-\s]?\d{3,4}[A-Z]?[Xi]?)\b/gi;
         const productModels = productNameLower.match(modelPattern) || [];
         const resultModels = nameLower.match(modelPattern) || [];
         if (productModels.some(pm => resultModels.some(rm => rm.toLowerCase().includes(pm.toLowerCase())))) {
-          score += 50;
+          score += 100;
         }
         
         // Component type in name
-        if (nameLower.includes(componentType.toLowerCase())) score += 20;
+        if (nameLower.includes(componentType.toLowerCase())) score += 10;
         
-        // Penalize generic terms
-        if (nameLower.includes('low poly')) score -= 10;
-        if (nameLower.includes('cartoon')) score -= 20;
-        if (nameLower.includes('stylized')) score -= 15;
+        // HEAVILY PENALIZE stylized/toy versions
+        if (nameLower.includes('low poly')) score -= 50;
+        if (nameLower.includes('cartoon')) score -= 100;
+        if (nameLower.includes('stylized')) score -= 80;
+        if (nameLower.includes('color pop')) score -= 100; // Specifically penalize color pop
+        if (nameLower.includes('toy')) score -= 80;
+        if (nameLower.includes('cute')) score -= 60;
+        if (nameLower.includes('chibi')) score -= 100;
+        if (nameLower.includes('simple')) score -= 30;
         
-        // Prefer higher quality (like count as proxy)
-        score += Math.min(result.likeCount || 0, 100) / 10;
+        // Penalize generic descriptions
+        if (descriptionLower.includes('stylized')) score -= 40;
+        if (descriptionLower.includes('cartoon')) score -= 50;
+        
+        // Prefer realistic/detailed models
+        if (nameLower.includes('realistic')) score += 30;
+        if (nameLower.includes('detailed')) score += 20;
+        if (nameLower.includes('pbr')) score += 20;
+        if (descriptionLower.includes('realistic')) score += 20;
+        
+        // Prefer higher quality (views/likes as proxy, but cap it)
+        score += Math.min(result.likeCount || 0, 50) / 10; // Max 5 points
+        score += Math.min((result.viewCount || 0) / 1000, 30) / 10; // Max 3 points
         
         return { ...result, relevanceScore: score };
       });
