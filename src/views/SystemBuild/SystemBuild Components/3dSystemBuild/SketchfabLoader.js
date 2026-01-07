@@ -661,11 +661,12 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
         
         // Debug logging for exact matches
         if (nameLower.includes('knob')) {
-          console.log('🔍 Comparing:', {
-            result: cleanResultName,
-            product: cleanProductName,
-            exactMatch: cleanResultName === cleanProductName
-          });
+          console.log('🔍 Comparing knob model:');
+          console.log('  Result name: "' + cleanResultName + '"');
+          console.log('  Product name: "' + cleanProductName + '"');
+          console.log('  Exact match:', cleanResultName === cleanProductName);
+          console.log('  Raw result: "' + nameLower + '"');
+          console.log('  Raw product: "' + productNameLower + '"');
         }
         
         if (cleanResultName === cleanProductName) {
