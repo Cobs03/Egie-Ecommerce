@@ -5,7 +5,6 @@ import { supabase } from "../../../lib/supabase";
 import ReviewService from "../../../services/ReviewService";
 import { ProductService } from "../../../services/ProductService";
 import BuildService from "../../../services/BuildService";
-import { useScrollAnimation } from "../../../hooks/useScrollAnimation";
 import { useCart } from "../../../context/CartContext";
 import {
   Carousel,
@@ -26,7 +25,6 @@ const BuildLaps = ({ set }) => {
   const [loading, setLoading] = useState(true);
   const [likedBuilds, setLikedBuilds] = useState(new Set());
   const [addingToCart, setAddingToCart] = useState(null);
-  const { ref, isVisible } = useScrollAnimation({ threshold: 0.1 });
   const { addToCart, user } = useCart();
   const navigate = useNavigate();
 
@@ -248,14 +246,7 @@ const BuildLaps = ({ set }) => {
       : "https://i.ibb.co/R4YSKSL4/b310a539380948d9611d50da5dae969b.jpg";
 
   return (
-    <div 
-      ref={ref}
-      className={`product-display flex flex-col lg:flex-row p-4 sm:p-6 lg:p-8 transition-all duration-1000 ${
-        isVisible 
-          ? 'opacity-100 translate-y-0' 
-          : 'opacity-0 translate-y-10'
-      }`}
-    >
+    <div className="product-display flex flex-col lg:flex-row p-4 sm:p-6 lg:p-8">
       {/* Custom Build Section */}
       <div
         className="mb-6 lg:mb-0 lg:mr-8 w-full lg:w-64 h-48 lg:h-auto mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center justify-center bg-amber-800 rounded-lg p-4 sm:p-6 bg-cover bg-center flex-shrink-0"

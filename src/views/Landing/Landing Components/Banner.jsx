@@ -2,26 +2,36 @@ import { Link } from "react-router-dom";
 import React from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
-import { useScrollAnimation } from "../../../hooks/useScrollAnimation";
 
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 const LandingBanner = () => {
-  const { ref, isVisible } = useScrollAnimation({ threshold: 0.2 });
-
   return (
-    <div 
-      ref={ref}
-      className={`transition-all duration-1000 ${
-        isVisible 
-          ? 'opacity-100 translate-y-0' 
-          : 'opacity-0 translate-y-10'
-      }`}
-    >
+    <div className="w-full">
       <style>
         {`
+          /* Ensure Swiper has proper height on all devices */
+          .landing-banner-swiper {
+            width: 100%;
+            min-height: 300px;
+            height: auto;
+          }
+          
+          .landing-banner-swiper .swiper-slide {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          
+          .landing-banner-swiper img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: cover;
+          }
+
           /* Custom styles for Swiper navigation buttons */
           @media (max-width: 768px) {
             .swiper-button-prev,
@@ -60,6 +70,7 @@ const LandingBanner = () => {
         `}
       </style>
       <Swiper
+        className="landing-banner-swiper"
         pagination={{
           dynamicBullets: true,
           clickable: true,
