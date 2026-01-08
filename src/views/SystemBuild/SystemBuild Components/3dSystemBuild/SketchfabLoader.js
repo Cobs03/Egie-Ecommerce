@@ -830,12 +830,17 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
     }
 
     if (model) {
+      // Apply rotation first (important for correct positioning)
+      if (config.rotation) {
+        model.rotation.set(config.rotation[0], config.rotation[1], config.rotation[2]);
+      }
+      
       // Center the model first at origin
       const box = new THREE.Box3().setFromObject(model);
       const center = box.getCenter(new THREE.Vector3());
       model.position.x = -center.x;
       model.position.z = -center.z;
-      model.position.y = -box.min.y;
+      model.position.y = -box.min.y; // Place on floor
       
       // Auto-scale model to fit scene
       box.setFromObject(model);
@@ -846,6 +851,10 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
       
       model.scale.setScalar(autoScale);
       
+      // Recalculate box after scaling to get accurate floor position
+      box.setFromObject(model);
+      model.position.y = -box.min.y; // Ensure on floor after scaling
+      
       // Now apply the configured position offset
       const offsetX = config.position[0];
       const offsetY = config.position[1];
@@ -854,10 +863,6 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
       model.position.x += offsetX;
       model.position.y += offsetY;
       model.position.z += offsetZ;
-      
-      if (config.rotation) {
-        model.rotation.set(config.rotation[0], config.rotation[1], config.rotation[2]);
-      }
       
       // Add metadata
       model.userData = {
