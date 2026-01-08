@@ -2,9 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import JSZip from 'jszip';
-
-// Sketchfab API token from environment variable
-const SKETCHFAB_API_TOKEN = import.meta.env.VITE_SKETCHFAB_API_TOKEN || '40e432b03bd3443787fd33a830b1eae4';
+import sketchfabTokenManager from '../../../../utils/sketchfabKeyManager';
 
 // ========== RATE LIMITING & QUEUE SYSTEM ==========
 // Prevents hitting API rate limits (429 errors)
@@ -310,21 +308,32 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
       });
 
       console.log('🔍 Searching Sketchfab API for "' + searchTerm + '"...');
+      
+      // Get token from rotation manager
+      const token = sketchfabTokenManager.getNextToken();
+      
       const response = await fetch(
         'https://api.sketchfab.com/v3/search?' + params,
         {
           headers: {
-            'Authorization': 'Token ' + SKETCHFAB_API_TOKEN
+            'Authorization': 'Token ' + token
           }
         }
       );
 
       if (!response.ok) {
         if (response.status === 429) {
+          // Block this token for 60 seconds
+          sketchfabTokenManager.blockToken(token, 60000);
           console.warn('⚠️ Rate limited, waiting 5 seconds...');
           // Wait longer before retry
           await new Promise(resolve => setTimeout(resolve, 5000));
           throw new Error('Rate limited, please try again');
+        }
+        if (response.status === 401) {
+          // Token is invalid, block it permanently
+          sketchfabTokenManager.blockToken(token, 3600000); // 1 hour
+          throw new Error('Invalid Sketchfab token');
         }
         throw new Error('Sketchfab API error: ' + response.status);
       }
@@ -440,11 +449,15 @@ export const getSketchfabDownloadUrl = async (modelUid) => {
   return queueRequest(async () => {
     try {
       console.log('📥 Fetching download URL for', modelUid);
+      
+      // Get token from rotation manager
+      const token = sketchfabTokenManager.getNextToken();
+      
       const response = await fetch(
         'https://api.sketchfab.com/v3/models/' + modelUid + '/download',
         {
           headers: {
-            'Authorization': 'Token ' + SKETCHFAB_API_TOKEN
+            'Authorization': 'Token ' + token
           }
         }
       );
@@ -455,9 +468,16 @@ export const getSketchfabDownloadUrl = async (modelUid) => {
           throw new Error('Model not downloadable');
         }
         if (response.status === 429) {
+          // Block this token for 60 seconds
+          sketchfabTokenManager.blockToken(token, 60000);
           console.warn('⚠️ Rate limited on download URL, waiting 5 seconds...');
           await new Promise(resolve => setTimeout(resolve, 5000));
           throw new Error('Rate limited');
+        }
+        if (response.status === 401) {
+          // Token is invalid, block it permanently
+          sketchfabTokenManager.blockToken(token, 3600000); // 1 hour
+          throw new Error('Invalid Sketchfab token');
         }
         throw new Error('API error: ' + response.status);
       }
