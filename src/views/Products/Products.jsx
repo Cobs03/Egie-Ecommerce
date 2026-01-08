@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import SearchFill from "./Product Components/SearchFill";
 import ProductGrid from "./ProductGrid/ProductGrid";
 import Category from "./Product Components/Category";
@@ -7,6 +8,10 @@ const Products = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const sidebarRef = useRef(null);
+  
+  // Get search query from URL params
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get('search') || '';
 
   const [filters, setFilters] = useState({
     minPrice: null,
@@ -14,6 +19,7 @@ const Products = () => {
     brands: [],
     rating: null,
     discounts: [],
+    searchQuery: searchQuery, // Add search query to filters
   });
 
   const handleFilterChange = (updatedFilters) => {
@@ -22,6 +28,15 @@ const Products = () => {
       ...updatedFilters,
     }));
   };
+
+  // Update search query when URL params change
+  useEffect(() => {
+    const newSearchQuery = searchParams.get('search') || '';
+    setFilters((prev) => ({
+      ...prev,
+      searchQuery: newSearchQuery,
+    }));
+  }, [searchParams]);
 
   // Close sidebar when clicking outside
   useEffect(() => {
@@ -133,6 +148,28 @@ const Products = () => {
         {/* Main Content - White background */}
         <div className="w-full lg:flex-1 bg-white">
           <div className="p-6">
+            {/* Search Query Banner */}
+            {searchQuery && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <span className="text-gray-700">
+                      Search results for: <strong className="text-green-700 font-semibold">"{searchQuery}"</strong>
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => window.location.href = '/products'}
+                    className="text-sm text-green-600 hover:text-green-700 font-medium hover:underline"
+                  >
+                    Clear search
+                  </button>
+                </div>
+              </div>
+            )}
+            
             <Category
               selectedCategory={selectedCategory}
               setSelectedCategory={setSelectedCategory}

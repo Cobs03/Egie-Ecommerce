@@ -53,31 +53,31 @@ const DOWNLOAD_CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 const COMPONENT_CONFIGS = {
   Case: {
     scale: 0.01,
-    position: [0, 0, 0],
+    position: [0, 0, 0],  // Center
     rotation: [0, 0, 0],
     fallbackSearch: 'pc case computer'
   },
   Motherboard: {
     scale: 0.01,
-    position: [0, 1, 0],
+    position: [3, 1, 0],  // Right side - spread out more
     rotation: [-Math.PI / 2, 0, 0],
     fallbackSearch: 'motherboard'
   },
   Processor: {
     scale: 0.01,
-    position: [0, 1.2, 0],
+    position: [0, 1.2, 3],  // Back - spread out more
     rotation: [0, 0, 0],
     fallbackSearch: 'cpu processor intel amd'
   },
   CPU: {
     scale: 0.01,
-    position: [0, 1.2, 0],
+    position: [0, 3.5, 0],  // Top - spread out more
     rotation: [0, 0, 0],
     fallbackSearch: 'cpu processor'
   },
   GPU: {
     scale: 0.01,
-    position: [0, 0.8, 0.5],
+    position: [-3, 0.8, 0.5],  // Left side - spread out more
     rotation: [0, 0, 0],
     fallbackSearch: 'graphics card'
   },
@@ -436,9 +436,6 @@ export const getSketchfabDownloadUrl = async (modelUid) => {
     return cached.data;
   }
 
-  // Use the request queue to avoid rate limiting
-  return queueRequest(async () => {
-    try {
       console.log('📥 Fetching download URL for', modelUid);
       const response = await fetch(
         'https://api.sketchfab.com/v3/models/' + modelUid + '/download',
@@ -447,6 +444,9 @@ export const getSketchfabDownloadUrl = async (modelUid) => {
             'Authorization': 'Token ' + SKETCHFAB_API_TOKEN
           }
         }
+      ); Use backend API instead of direct Sketchfab API call
+      const response = await fetch(
+        BACKEND_API_URL + '/api/sketchfab/model/' + modelUid
       );
 
       if (!response.ok) {
