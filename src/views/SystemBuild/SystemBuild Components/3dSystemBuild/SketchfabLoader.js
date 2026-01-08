@@ -51,97 +51,97 @@ const DOWNLOAD_CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 const COMPONENT_CONFIGS = {
   Case: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [0, 0, 0],
     rotation: [0, 0, 0],
     fallbackSearch: 'pc case computer'
   },
   Motherboard: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [0, 1, 0],
     rotation: [-Math.PI / 2, 0, 0],
     fallbackSearch: 'motherboard'
   },
   Processor: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [0, 1.2, 0],
     rotation: [0, 0, 0],
     fallbackSearch: 'cpu processor intel amd'
   },
   CPU: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [0, 1.2, 0],
     rotation: [0, 0, 0],
     fallbackSearch: 'cpu processor'
   },
   GPU: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [0, 0.8, 0],
     rotation: [0, 0, 0],
     fallbackSearch: 'graphics card'
   },
   RAM: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [0.3, 1.1, 0],
     rotation: [0, 0, 0],
     fallbackSearch: 'ram memory'
   },
   SSD: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [0, 0.5, 0.5],
     rotation: [0, 0, 0],
     fallbackSearch: 'ssd solid state drive'
   },
   HDD: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [0, 0.3, 0.5],
     rotation: [0, 0, 0],
     fallbackSearch: 'hard disk drive hdd'
   },
   Cooling: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [0, 1.3, 0],
     rotation: [0, 0, 0],
     fallbackSearch: 'cpu cooler cooling fan'
   },
   PSU: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [0, 0, -0.8],
     rotation: [0, 0, 0],
     fallbackSearch: 'power supply'
   },
   Keyboard: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [-1.5, 0, 1],
     rotation: [0, 0, 0],
     fallbackSearch: 'gaming keyboard mechanical'
   },
   Mouse: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [1.5, 0, 1],
     rotation: [0, 0, 0],
     fallbackSearch: 'gaming mouse'
   },
   Monitor: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [0, 1.8, -1.5],
     rotation: [0, 0, 0],
     fallbackSearch: 'gaming monitor display'
   },
   Headset: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [0, 0, 1.5],
     rotation: [0, 0, 0],
     fallbackSearch: 'gaming headset headphones'
   },
   Speaker: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [-1, 0, -1],
     rotation: [0, 0, 0],
     fallbackSearch: 'speaker audio'
   },
   Webcam: {
     scale: 0.01,
-    position: [0, 0, 0],  // Center on floor
+    position: [0, 2.2, -1.5],
     rotation: [0, 0, 0],
     fallbackSearch: 'webcam camera'
   }
