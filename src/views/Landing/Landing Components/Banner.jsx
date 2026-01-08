@@ -67,7 +67,7 @@ const LandingBanner = () => {
         navigation={true}
         loop={true}
         autoplay={{
-          delay: 1000,
+          delay: 5000,
           disableOnInteraction: false,
           pauseOnMouseEnter: true,
         }}
@@ -82,6 +82,8 @@ const LandingBanner = () => {
               src="https://i.ibb.co/nT6ymQq/1.png"
               className="w-full h-full object-cover"
               alt="Find-the"
+              loading="eager"
+              fetchpriority="high"
             />
             <div className="absolute top-2/3 left-1/4 transform -translate-y-1/2 -translate-x-1/2 max-md:translate-x-[-20%] flex gap-2 md:gap-4 z-10">
               <Link
@@ -104,6 +106,7 @@ const LandingBanner = () => {
               src="https://i.ibb.co/99cmMKgC/2.png"
               className="w-full h-full object-cover"
               alt="2"
+              loading="lazy"
             />
             <div className="absolute top-3/4 left-1/2 transform -translate-y-1/2 -translate-x-1/2">
               <Link
@@ -115,7 +118,6 @@ const LandingBanner = () => {
             </div>
           </div>
         </SwiperSlide>
-
         {/* Slide 3 */}
         <SwiperSlide className="">
           <div >
@@ -123,8 +125,10 @@ const LandingBanner = () => {
               src="https://i.ibb.co/pHfPqxq/3.png"
               className="w-full h-full object-cover"
               alt="3"
+              loading="lazy"
             />
           </div>
+        </SwiperSlide>
         </SwiperSlide>
       </Swiper>
     </div>
