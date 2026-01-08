@@ -20,8 +20,8 @@ const Footer = ({ isAuth }) => {
             {/* Logo */}
             <div className="mb-6 w-full sm:w-auto">
               <img
-                src={settings?.logoUrl || "/Logo/Nameless Logo.png"}
-                alt={settings?.brandName || "EGIE Game Shop"}
+                src={settings?.logoUrl}
+                alt={settings?.brandName}
                 className="w-[280px] sm:w-[350px] mx-auto sm:mx-0"
               />
             </div>

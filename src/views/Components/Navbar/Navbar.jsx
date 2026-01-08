@@ -312,8 +312,8 @@ const Navbar = ({ isAuth }) => {
               <div className="flex-1 flex justify-center md:flex-1 max-md:justify-start">
                 <Link to="/">
                   <img
-                    src={settings?.logoUrl || "/Logo/Nameless Logo.png"}
-                    alt={settings?.brandName || "EGIE logo"}
+                    src={settings?.logoUrl}
+                    alt={settings?.brandName}
                     className="h-12 md:h-16"
                   />
                 </Link>
