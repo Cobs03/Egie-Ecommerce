@@ -865,7 +865,7 @@ Consider:
       /build.*pc|custom.*pc|assemble.*pc|pc.*configuration/i.test(intent.originalQuery || '')
     );
 
-    let systemPrompt = `You are a professional AI shopping assistant for Egie GameShop, a computer hardware store in the Philippines. You're trained on how e-commerce AI shopping assistants work and have full knowledge of our store policies.
+    let systemPrompt = `You are a professional AI shopping assistant for NovaTech PC Store, a computer hardware store in the Philippines. You're trained on how e-commerce AI shopping assistants work and have full knowledge of our store policies.
 
 🎯 DETECTED USER INTENT:
 ${intent ? `
