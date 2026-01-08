@@ -155,6 +155,13 @@ const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
 gltfLoader.setDRACOLoader(dracoLoader);
 
+// Suppress the KHR_materials_pbrSpecularGlossiness warning (it's deprecated but models still load)
+const originalWarn = console.warn;
+console.warn = function(...args) {
+  if (args[0]?.includes('KHR_materials_pbrSpecularGlossiness')) return;
+  originalWarn.apply(console, args);
+};
+
 // Cache for loaded models (keyed by product name)
 const modelCache = new Map();
 
@@ -194,7 +201,12 @@ const buildSearchQuery = (productData, componentType) => {
     .replace(/\s+/g, ' ')
     .trim();
   
-  // Don't limit query length - use full product name for exact matches
+  // For monitors, try removing generic suffixes that might not match Sketchfab titles
+  // "Samsung Odyssey G9 Curved Monitor" -> "Samsung Odyssey G9 Curved"
+  if (componentType === 'Monitor') {
+    cleanName = cleanName.replace(/\s+(Monitor|Display|Screen|LCD|LED)$/i, '').trim();
+  }
+  
   return cleanName;
 };
 
@@ -207,29 +219,40 @@ const generateFallbackQueries = (productData, componentType) => {
   const queries = [];
   
   // Extract model numbers/identifiers from product name
-  const modelPattern = /\b([A-Z]{2,4}[-\s]?\d{3,4}[A-Z]?[Xi]?)\b/gi;
+  const modelPattern = /\b([A-Z]{1,4}[-\s]?\d{1,4}[A-Z]?[Xi]?)\b/gi;
   const modelMatches = productName.match(modelPattern) || [];
   
-  // Fallback 1: Model number only (if found)
+  // Extract key product identifiers (Odyssey, Kraken, etc.)
+  const importantWords = productName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/gi, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 4 && 
+      !['gaming', 'wireless', 'wired', 'mechanical', 'edition', 'series', 'ultra'].includes(w));
+  
+  // Fallback 1: Brand + key identifiers (without "Monitor", "Keyboard" etc suffixes)
+  // Example: "Samsung Odyssey G9" instead of "Samsung Odyssey G9 Curved Monitor"
+  if (brand && importantWords.length > 0) {
+    const keyTerms = importantWords.slice(0, 2).join(' ');
+    if (modelMatches.length > 0) {
+      queries.push(brand + ' ' + keyTerms + ' ' + modelMatches[0]);
+    }
+    queries.push(brand + ' ' + keyTerms); // Try without model number too
+  }
+  
+  // Fallback 2: Brand + model number only
+  if (brand && modelMatches.length > 0) {
+    queries.push(brand + ' ' + modelMatches[0]);
+  }
+  
+  // Fallback 3: Model number only (if found)
   if (modelMatches.length > 0) {
     queries.push(modelMatches[0]);
   }
   
-  // Fallback 2: Brand + component type
+  // Fallback 4: Brand + component type (LAST RESORT - very generic)
   if (brand) {
     queries.push(brand + ' ' + componentType);
-  }
-  
-  // Fallback 3: Component type + key feature words from product name
-  const keyWords = productName
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/gi, ' ')
-    .split(/\s+/)
-    .filter(w => w.length > 3 && !['with', 'the', 'for', 'and'].includes(w))
-    .slice(0, 2);
-  
-  if (keyWords.length > 0) {
-    queries.push(componentType + ' ' + keyWords.join(' '));
   }
   
   // Fallback 4: Generic component type
@@ -315,49 +338,65 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
     
     // Score and sort models by name similarity to search term
     const searchTermLower = searchTerm.toLowerCase();
-    const searchWords = searchTermLower.split(/\s+/);
+    const searchWords = searchTermLower.split(/\s+/).filter(w => w.length > 1);
     
     const scoredModels = downloadableModels.map(function(model) {
       const nameLower = model.name.toLowerCase();
       const descriptionLower = (model.description || '').toLowerCase();
       let score = 0;
       
-      // NAME SCORING (Primary)
-      // Exact match gets highest score
+      // NAME SCORING (Primary) - Heavily prioritize name matches
+      // Exact match gets MASSIVE score
       if (nameLower === searchTermLower) {
-        score = 1000;
+        score = 100000;
       }
-      // Contains full search term
+      // Contains full search term in name
       else if (nameLower.includes(searchTermLower)) {
-        score = 500;
+        score = 50000;
       }
-      // Count matching words in name
+      // Check for partial matches with high weight
       else {
+        let nameMatchCount = 0;
+        let totalWords = searchWords.length;
+        
         searchWords.forEach(function(word) {
           if (word.length > 2 && nameLower.includes(word)) {
-            score += 100;
+            nameMatchCount++;
+            score += 5000; // High value for each word match
           }
         });
-      }
-      
-      // DESCRIPTION SCORING (Secondary - worth less than name but still valuable)
-      if (descriptionLower) {
-        // Full search term in description
-        if (descriptionLower.includes(searchTermLower)) {
-          score += 300; // Good match, but less than name
-        }
         
-        // Count matching words in description
-        searchWords.forEach(function(word) {
-          if (word.length > 2 && descriptionLower.includes(word)) {
-            score += 50; // Half value of name matches
-          }
-        });
+        // Bonus if most search words appear in name
+        if (nameMatchCount >= Math.floor(totalWords * 0.6)) {
+          score += 10000; // Good partial match bonus
+        }
       }
       
-      // Bonus for models with more views/likes (quality indicator)
-      score += Math.min(model.likeCount || 0, 50);
-      score += Math.min((model.viewCount || 0) / 100, 50);
+      // BRAND/MODEL NUMBER DETECTION - Critical for tech products
+      // Extract potential model numbers and brand names
+      const modelNumbers = searchTermLower.match(/[a-z0-9]+-?[0-9]+[a-z]?|g[0-9]+|z[0-9]+|i[0-9]+|rtx[0-9]+/gi) || [];
+      const brandNames = ['samsung', 'asus', 'corsair', 'aula', 'intel', 'amd', 'nvidia', 'logitech', 'razer'];
+      
+      modelNumbers.forEach(function(modelNum) {
+        if (nameLower.includes(modelNum.toLowerCase())) {
+          score += 20000; // Model numbers are VERY important
+        }
+      });
+      
+      brandNames.forEach(function(brand) {
+        if (searchTermLower.includes(brand) && nameLower.includes(brand)) {
+          score += 15000; // Brand match is crucial
+        }
+      });
+      
+      // DESCRIPTION SCORING (Tertiary - minimal impact)
+      if (descriptionLower && descriptionLower.includes(searchTermLower)) {
+        score += 500; // Much less than name matches
+      }
+      
+      // Popularity bonus - VERY small impact (only for tie-breaking)
+      score += Math.min(model.likeCount || 0, 10);
+      score += Math.min((model.viewCount || 0) / 1000, 10);
       
       return { model: model, score: score };
     });
@@ -659,135 +698,15 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
         continue;
       }
       
-      // Score and sort results by relevance
-      const scoredResults = results.map(result => {
-        let score = 0;
-        const nameLower = result.name.toLowerCase();
-        const descriptionLower = (result.description || '').toLowerCase();
-        // FIX: Use same logic as buildSearchQuery - check BOTH .name and .productName
-        const productNameLower = (productData.name || productData.productName || '').toLowerCase();
-        const brandLower = (productData.brand || '').toLowerCase();
-        
-        // HIGHEST PRIORITY: Exact name match (ignoring case and extra spaces)
-        const cleanProductName = productNameLower.replace(/\s+/g, ' ').trim();
-        const cleanResultName = nameLower.replace(/\s+/g, ' ').trim();
-        
-        // Debug logging for exact matches
-        if (nameLower.includes('knob')) {
-          console.log('🔍 Comparing knob model:');
-          console.log('  Result name: "' + cleanResultName + '"');
-          console.log('  Product name: "' + cleanProductName + '"');
-          console.log('  Exact match:', cleanResultName === cleanProductName);
-          console.log('  Raw result: "' + nameLower + '"');
-          console.log('  Raw product: "' + productNameLower + '"');
-        }
-        
-        if (cleanResultName === cleanProductName) {
-          score += 10000; // Massively high score for exact match
-          console.log('✅ EXACT MATCH BONUS +10000:', result.name);
-        }
-        // Check if result name contains the full product name
-        else if (nameLower.includes(cleanProductName)) {
-          score += 5000; // Very high score for containing full product name
-        }
-        // Check if product name contains the result name (reversed)
-        else if (cleanProductName.includes(cleanResultName)) {
-          score += 3000;
-        }
-        
-        // Extract key product words (like "Blackshark", "Kraken", "G2000")
-        const productWords = productNameLower
-          .split(/\s+/)
-          .filter(w => w.length > 3 && !['headset', 'keyboard', 'mouse', 'monitor', 'gaming', 'mechanical'].includes(w));
-        
-        // Count matching key words
-        let matchedWords = 0;
-        productWords.forEach(word => {
-          if (nameLower.includes(word)) {
-            score += 200;
-            matchedWords++;
-          }
-        });
-        
-        // Brand match
-        if (brandLower && nameLower.includes(brandLower)) {
-          score += 50;
-        }
-        
-        // CRITICAL: Exact model number match (G604 must match G604, NOT G603)
-        const modelPattern = /\b([A-Z]+[-]?[0-9]+[A-Z0-9]*)\b/gi;
-        const productModels = productNameLower.match(modelPattern) || [];
-        const resultModels = nameLower.match(modelPattern) || [];
-        
-        let hasExactModelMatch = false;
-        let hasWrongModelNumber = false;
-        
-        productModels.forEach(productModel => {
-          const productModelClean = productModel.toLowerCase().replace(/[-\s]/g, '');
-          
-          resultModels.forEach(resultModel => {
-            const resultModelClean = resultModel.toLowerCase().replace(/[-\s]/g, '');
-            
-            // Exact match (G604 === G604)
-            if (productModelClean === resultModelClean) {
-              score += 2000; // High bonus for exact model number match
-              hasExactModelMatch = true;
-            }
-            // Similar but different (G604 vs G603) - REJECT
-            else if (productModelClean.length === resultModelClean.length) {
-              score -= 10000; // Massive penalty for wrong but similar model
-              hasWrongModelNumber = true;
-            }
-          });
-        });
-        
-        // If wrong model number found, skip this result entirely
-        if (hasWrongModelNumber && !hasExactModelMatch) {
-          return { ...result, relevanceScore: -99999 };
-        }
-        
-        // CRITICAL FILTERS - Heavily penalize wrong types
-        // For audio headsets, exclude VR/character models
-        if (componentType === 'Headset') {
-          if (nameLower.includes('vr')) score -= 5000;
-          if (nameLower.includes('virtual reality')) score -= 5000;
-          if (nameLower.includes('character')) score -= 3000;
-          if (nameLower.includes('animated')) score -= 3000;
-          if (nameLower.includes('avatar')) score -= 3000;
-          if (descriptionLower.includes('vr')) score -= 2000;
-        }
-        
-        // Penalize stylized/toy versions
-        if (nameLower.includes('cartoon')) score -= 2000;
-        if (nameLower.includes('stylized')) score -= 1000;
-        if (nameLower.includes('color pop')) score -= 2000;
-        if (nameLower.includes('toy')) score -= 1000;
-        if (nameLower.includes('chibi')) score -= 2000;
-        if (nameLower.includes('low poly')) score -= 500;
-        
-        // Prefer realistic/detailed models
-        if (nameLower.includes('realistic')) score += 30;
-        if (nameLower.includes('detailed')) score += 20;
-        if (nameLower.includes('pbr')) score += 20;
-        if (descriptionLower.includes('realistic')) score += 20;
-        
-        // Prefer higher quality (views/likes as proxy, but cap it)
-        score += Math.min(result.likeCount || 0, 50) / 10; // Max 5 points
-        score += Math.min((result.viewCount || 0) / 1000, 30) / 10; // Max 3 points
-        
-        return { ...result, relevanceScore: score };
-      });
-      
-      // Sort by relevance score
-      scoredResults.sort((a, b) => b.relevanceScore - a.relevanceScore);
-      
-      console.log('📊 Top results:', scoredResults.slice(0, 3).map(r => 
-        r.name + ' (score: ' + r.relevanceScore + ')'
+      // Results are already sorted by relevance from searchSketchfabModels
+      // Just log the top results and try them in order
+      console.log('📊 Top results:', results.slice(0, 3).map(r => 
+        r.name + ' (from search scoring)'
       ));
       
       // Try each result until one works
-      for (const result of scoredResults) {
-        console.log('🎯 Trying model: ' + result.name + ' (score: ' + result.relevanceScore + ')');
+      for (const result of results) {
+        console.log('🎯 Trying model: ' + result.name);
         try {
           model = await loadSketchfabModel(result.uid, onProgress);
           if (model) {
@@ -798,8 +717,7 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
               creator: result.user?.displayName || result.user?.username || 'Unknown',
               creatorUrl: result.user?.profileUrl || ('https://sketchfab.com/' + (result.user?.username || '')),
               modelUrl: 'https://sketchfab.com/3d-models/' + result.uid,
-              source: 'Sketchfab',
-              relevanceScore: result.relevanceScore
+              source: 'Sketchfab'
             };
             console.log('✅ Successfully loaded: ' + result.name);
             break;

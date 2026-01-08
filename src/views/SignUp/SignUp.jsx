@@ -254,7 +254,7 @@ const SignUp = () => {
           {/* Turnstile CAPTCHA */}
           <div className="flex justify-center mb-4">
             <Turnstile
-              siteKey="0x4AAAAAACLTFMvYoxZ2HCN_"
+              siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA"}
               onSuccess={(token) => setTurnstileToken(token)}
               onError={() => setError("Security verification failed. Please refresh the page.")}
               onExpire={() => setTurnstileToken("")}
