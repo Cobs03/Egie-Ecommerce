@@ -62,12 +62,12 @@ const ProductDetails = ({ product }) => {
           setRatingSummary(null);
         }
 
-        // Fetch sold count from order_items (completed orders only)
+        // Fetch sold count from order_items (match Top Sellers criteria)
         const { data: soldData, error: soldError } = await supabase
           .from('order_items')
           .select('quantity, orders!inner(status)')
           .eq('product_id', product.id)
-          .in('orders.status', ['completed', 'delivered']);
+          .in('orders.status', ['confirmed', 'processing', 'shipped', 'ready_for_pickup', 'delivered']);
         
         if (!soldError && soldData) {
           const totalSold = soldData.reduce((sum, item) => sum + (item.quantity || 0), 0);

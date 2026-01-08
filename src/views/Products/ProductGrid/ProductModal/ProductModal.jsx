@@ -19,10 +19,16 @@ import { FaXTwitter } from "react-icons/fa6";
 
 import { toast } from "sonner";
 import { useCart } from "../../../../context/CartContext";
+import { supabase } from "../../../../lib/supabase";
 
 const ProductModal = ({ product, onClose, noBackground = false }) => {
   const { addToCart, user } = useCart();
   const navigate = useNavigate();
+  
+  // Rating and sold count states
+  const [ratingSummary, setRatingSummary] = useState(null);
+  const [soldCount, setSoldCount] = useState(0);
+  const [loadingStats, setLoadingStats] = useState(true);
   
   // Parse product images from database
   const productImages = product?.images || [];
@@ -44,6 +50,49 @@ const ProductModal = ({ product, onClose, noBackground = false }) => {
   const [nav2, setNav2] = useState(null);
   let sliderRef1 = useRef(null);
   let sliderRef2 = useRef(null);
+
+  // Fetch rating summary and sold count
+  useEffect(() => {
+    const fetchProductStats = async () => {
+      if (!product?.id) return;
+      
+      setLoadingStats(true);
+      
+      try {
+        // Fetch rating summary
+        const { data: ratingData, error: ratingError } = await supabase
+          .rpc('get_product_rating_summary', { p_product_id: product.id });
+        
+        if (!ratingError && ratingData && ratingData.length > 0) {
+          setRatingSummary(ratingData[0]);
+        } else {
+          setRatingSummary(null);
+        }
+
+        // Fetch sold count from order_items (match Top Sellers criteria)
+        const { data: soldData, error: soldError } = await supabase
+          .from('order_items')
+          .select('quantity, orders!inner(status)')
+          .eq('product_id', product.id)
+          .in('orders.status', ['confirmed', 'processing', 'shipped', 'ready_for_pickup', 'delivered']);
+        
+        if (!soldError && soldData) {
+          const totalSold = soldData.reduce((sum, item) => sum + (item.quantity || 0), 0);
+          setSoldCount(totalSold);
+        } else {
+          setSoldCount(0);
+        }
+      } catch (error) {
+        console.error('Error fetching product stats:', error);
+        setRatingSummary(null);
+        setSoldCount(0);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchProductStats();
+  }, [product?.id]);
 
   useEffect(() => {
     setNav1(sliderRef1.current);
@@ -189,7 +238,20 @@ const ProductModal = ({ product, onClose, noBackground = false }) => {
 
             <div className="flex justify-between text-sm text-gray-400 mb-4" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               <div>
-                <span>No Ratings Yet</span> · <span>0 Sold</span>
+                {loadingStats ? (
+                  <span>Loading...</span>
+                ) : ratingSummary && ratingSummary.total_reviews > 0 ? (
+                  <>
+                    <span className="text-yellow-500">★ {ratingSummary.average_rating}</span>
+                    <span className="text-gray-400"> ({ratingSummary.total_reviews} {ratingSummary.total_reviews === 1 ? 'review' : 'reviews'})</span>
+                    <span> · </span>
+                    <span>{soldCount.toLocaleString()} Sold</span>
+                  </>
+                ) : (
+                  <>
+                    <span>No Ratings Yet</span> · <span>{soldCount.toLocaleString()} Sold</span>
+                  </>
+                )}
               </div>
             </div>
 

@@ -21,6 +21,11 @@ const BundleModal = ({ bundle, onClose }) => {
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
   const { loadCart, user } = useCart();
+  
+  // Rating and sold count states
+  const [ratingSummary, setRatingSummary] = useState(null);
+  const [soldCount, setSoldCount] = useState(0);
+  const [loadingStats, setLoadingStats] = useState(true);
 
   const [nav1, setNav1] = useState(null);
   const [nav2, setNav2] = useState(null);
@@ -34,7 +39,34 @@ const BundleModal = ({ bundle, onClose }) => {
 
   useEffect(() => {
     fetchBundleDetails();
+    fetchBundleStats();
   }, [bundle.id]);
+
+  const fetchBundleStats = async () => {
+    try {
+      setLoadingStats(true);
+      
+      // Fetch bundle rating summary
+      const { data: ratingData, error: ratingError } = await supabase
+        .rpc('get_bundle_rating_summary', { p_bundle_id: bundle.id });
+      
+      if (!ratingError && ratingData && ratingData.length > 0) {
+        setRatingSummary(ratingData[0]);
+      } else {
+        setRatingSummary(null);
+      }
+
+      // Note: Bundles don't have sold count in order_items, would need separate tracking
+      // For now, set to 0
+      setSoldCount(0);
+    } catch (error) {
+      console.error('Error fetching bundle stats:', error);
+      setRatingSummary(null);
+      setSoldCount(0);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   const fetchBundleDetails = async () => {
     try {
@@ -257,7 +289,20 @@ const BundleModal = ({ bundle, onClose }) => {
 
             <div className="flex justify-between text-sm text-gray-400 mb-4" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               <div>
-                <span>No Ratings Yet</span> · <span>0 Sold</span>
+                {loadingStats ? (
+                  <span>Loading...</span>
+                ) : ratingSummary && ratingSummary.total_reviews > 0 ? (
+                  <>
+                    <span className="text-yellow-500">★ {ratingSummary.average_rating}</span>
+                    <span className="text-gray-400"> ({ratingSummary.total_reviews} {ratingSummary.total_reviews === 1 ? 'review' : 'reviews'})</span>
+                    <span> · </span>
+                    <span>{soldCount.toLocaleString()} Sold</span>
+                  </>
+                ) : (
+                  <>
+                    <span>No Ratings Yet</span> · <span>{soldCount.toLocaleString()} Sold</span>
+                  </>
+                )}
               </div>
             </div>
 
