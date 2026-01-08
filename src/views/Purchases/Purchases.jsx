@@ -180,9 +180,44 @@ const Purchases = () => {
   if (loading) {
     return (
       <div className="w-full py-6 flex justify-center items-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-          <div className="text-xl text-gray-600">Loading orders...</div>
+        <div className="flex flex-col items-center gap-6">
+          {/* Enhanced loader with pulsing logo */}
+          <div className="relative w-32 h-32">
+            {/* Outer glow ring */}
+            <div className="absolute inset-0 border-4 border-green-100 rounded-full animate-pulse"></div>
+            
+            {/* Spinning gradient ring */}
+            <div className="absolute inset-0 border-4 border-transparent border-t-green-500 border-r-green-400 rounded-full animate-spin"></div>
+            
+            {/* Inner spinning ring */}
+            <div className="absolute inset-2 border-4 border-transparent border-b-green-300 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+            
+            {/* Logo in center with white background */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="bg-white rounded-full p-3 shadow-lg">
+                <img 
+                  src={settings?.logoUrl || "https://i.ibb.co/Cpx2BBt5/egie-removebg-preview-1.png"} 
+                  alt="Logo" 
+                  className="w-14 h-14 object-contain animate-pulse"
+                  onError={(e) => {
+                    e.target.src = "https://i.ibb.co/Cpx2BBt5/egie-removebg-preview-1.png";
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Loading text with dots animation */}
+          <div className="flex items-center gap-2">
+            <p className="text-gray-700 font-semibold text-xl">
+              Loading orders
+            </p>
+            <div className="flex gap-1">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+            </div>
+          </div>
         </div>
       </div>
     );
