@@ -436,6 +436,9 @@ export const getSketchfabDownloadUrl = async (modelUid) => {
     return cached.data;
   }
 
+  // Use the request queue to avoid rate limiting
+  return queueRequest(async () => {
+    try {
       console.log('📥 Fetching download URL for', modelUid);
       const response = await fetch(
         'https://api.sketchfab.com/v3/models/' + modelUid + '/download',
@@ -444,9 +447,6 @@ export const getSketchfabDownloadUrl = async (modelUid) => {
             'Authorization': 'Token ' + SKETCHFAB_API_TOKEN
           }
         }
-      ); Use backend API instead of direct Sketchfab API call
-      const response = await fetch(
-        BACKEND_API_URL + '/api/sketchfab/model/' + modelUid
       );
 
       if (!response.ok) {
