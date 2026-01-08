@@ -13,6 +13,41 @@ import { useCart } from "../context/CartContext";
 import { useWebsiteSettings } from "../hooks/useWebsiteSettings";
 import { supabase } from "../lib/supabase";
 import Fuse from "fuse.js"; // Fuzzy search for typo-tolerant product matching
+import { getNextApiKey, reportRateLimit, reportSuccess } from "../utils/apiKeyManager"; // API Key rotation
+
+// ===== API CALL HELPER WITH KEY ROTATION ===== 🔄
+async function makeGroqRequest(endpoint, body) {
+  const apiKey = getNextApiKey();
+  
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (response.status === 429) {
+      reportRateLimit(apiKey);
+      throw new Error('Rate limit exceeded. Switching to next API key...');
+    }
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.statusText}`);
+    }
+
+    reportSuccess(apiKey);
+    return response;
+  } catch (error) {
+    // If it's a rate limit error, report it
+    if (error.message.includes('rate limit') || error.message.includes('429')) {
+      reportRateLimit(apiKey);
+    }
+    throw error;
+  }
+}
 
 // ===== DOMAIN KNOWLEDGE HELPERS FOR A MORE PROFESSIONAL ASSISTANT =====
 const CATEGORY_LIBRARY = [
@@ -1271,18 +1306,11 @@ Write a helpful, conversational response (2-3 sentences) that:
 
 IMPORTANT: Write naturally like a helpful salesperson. NO asterisks, NO markdown formatting. Just plain conversational text.`;
 
-      const aiExplanation = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: cheaperExplanationPrompt }],
-          temperature: 0.7,
-          max_tokens: 300
-        })
+      const aiExplanation = await makeGroqRequest('https://api.groq.com/openai/v1/chat/completions', {
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: cheaperExplanationPrompt }],
+        temperature: 0.7,
+        max_tokens: 300
       });
 
       const aiData = await aiExplanation.json();
@@ -1438,18 +1466,11 @@ IMPORTANT RULES:
 - Keep it conversational (3-5 short paragraphs)
 - Make sure to mention ALL products by name at least once`;
 
-      const aiComparison = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: comparisonPrompt }],
-          temperature: 0.7,
-          max_tokens: 500
-        })
+      const aiComparison = await makeGroqRequest('https://api.groq.com/openai/v1/chat/completions', {
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: comparisonPrompt }],
+        temperature: 0.7,
+        max_tokens: 500
       });
 
       const aiData = await aiComparison.json();
@@ -1528,18 +1549,11 @@ IMPORTANT:
 - Consider the customer's budget based on their current selection
 - If it's a laptop, suggest accessories (not internal components)`;
 
-      const aiResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: compatibilityPrompt }],
-          temperature: 0.7,
-          max_tokens: 500
-        })
+      const aiResponse = await makeGroqRequest('https://api.groq.com/openai/v1/chat/completions', {
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: compatibilityPrompt }],
+        temperature: 0.7,
+        max_tokens: 500
       });
 
       const aiData = await aiResponse.json();
@@ -2512,19 +2526,12 @@ Examples:
 - "I mean all ram" → {"isCommand": false, "action": "none", "productReference": null, "confidence": 0.9}
 - "display all processors" → {"isCommand": false, "action": "none", "productReference": null, "confidence": 0.9}`;
 
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: intentPrompt }],
-          response_format: { type: 'json_object' },
-          temperature: 0.3, // Low temperature for consistent intent detection
-          max_tokens: 200,
-        }),
+      const response = await makeGroqRequest('https://api.groq.com/openai/v1/chat/completions', {
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: intentPrompt }],
+        response_format: { type: 'json_object' },
+        temperature: 0.3, // Low temperature for consistent intent detection
+        max_tokens: 200,
       });
 
       const data = await response.json();
@@ -2716,21 +2723,14 @@ Examples:
 
 Your response:`;
 
-          const aiResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
-            },
-            body: JSON.stringify({
-              model: 'llama-3.3-70b-versatile',
-              messages: [
-                // Send only current prompt, no history to avoid context mixing
-                { role: 'user', content: noResultsPrompt }
-              ],
-              temperature: 0.7,
-              max_tokens: 150,
-            }),
+          const aiResponse = await makeGroqRequest('https://api.groq.com/openai/v1/chat/completions', {
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              // Send only current prompt, no history to avoid context mixing
+              { role: 'user', content: noResultsPrompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 150,
           });
 
           const data = await aiResponse.json();
@@ -2918,22 +2918,15 @@ Style Guidelines:
 
 Your response:`;
 
-        const aiResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [
-              // ONLY send current query context, not full history
-              // This prevents mixing laptop context when asking about RAM
-              { role: 'user', content: introPrompt }
-            ],
-            temperature: 0.7,
-            max_tokens: 150,
-          }),
+        const aiResponse = await makeGroqRequest('https://api.groq.com/openai/v1/chat/completions', {
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            // ONLY send current query context, not full history
+            // This prevents mixing laptop context when asking about RAM
+            { role: 'user', content: introPrompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 150,
         });
 
         const data = await aiResponse.json();
@@ -2969,18 +2962,11 @@ ${selectedLanguage === 'tl'
 
 Your response (${languageName}):`;
 
-        const closingResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [{ role: 'user', content: closingPrompt }],
-            temperature: 0.7,
-            max_tokens: 80,
-          }),
+        const closingResponse = await makeGroqRequest('https://api.groq.com/openai/v1/chat/completions', {
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: closingPrompt }],
+          temperature: 0.7,
+          max_tokens: 80,
         });
 
         const closingData = await closingResponse.json();
@@ -3104,18 +3090,11 @@ Examples:
 
 Your response:`;
 
-        const aiResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [{ role: 'user', content: noBudgetPrompt }],
-            temperature: 0.7,
-            max_tokens: 100,
-          }),
+        const aiResponse = await makeGroqRequest('https://api.groq.com/openai/v1/chat/completions', {
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: noBudgetPrompt }],
+          temperature: 0.7,
+          max_tokens: 100,
         });
 
         const data = await aiResponse.json();
@@ -3246,28 +3225,21 @@ Rules:
 - Return hasBudget: false if no budget is mentioned
 - High confidence (>0.8) only if clear budget statement`;
 
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a budget extraction assistant. Always respond with valid JSON only.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: 0.1,
-          max_tokens: 200,
-          response_format: { type: 'json_object' }
-        }),
+      const response = await makeGroqRequest('https://api.groq.com/openai/v1/chat/completions', {
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a budget extraction assistant. Always respond with valid JSON only.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 200,
+        response_format: { type: 'json_object' }
       });
 
       if (!response.ok) {
