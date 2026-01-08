@@ -731,26 +731,34 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
     }
 
     if (model) {
-      // Auto-scale model to fit scene
+      // Center the model first at origin
       const box = new THREE.Box3().setFromObject(model);
+      const center = box.getCenter(new THREE.Vector3());
+      model.position.x = -center.x;
+      model.position.z = -center.z;
+      model.position.y = -box.min.y;
+      
+      // Auto-scale model to fit scene
+      box.setFromObject(model);
       const size = box.getSize(new THREE.Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
       const targetSize = 3;
       const autoScale = targetSize / maxDim;
       
       model.scale.setScalar(autoScale);
-      model.position.set(config.position[0], config.position[1], config.position[2]);
+      
+      // Now apply the configured position offset
+      const offsetX = config.position[0];
+      const offsetY = config.position[1];
+      const offsetZ = config.position[2];
+      
+      model.position.x += offsetX;
+      model.position.y += offsetY;
+      model.position.z += offsetZ;
       
       if (config.rotation) {
         model.rotation.set(config.rotation[0], config.rotation[1], config.rotation[2]);
       }
-      
-      // Center the model
-      box.setFromObject(model);
-      const center = box.getCenter(new THREE.Vector3());
-      model.position.x -= center.x;
-      model.position.z -= center.z;
-      model.position.y -= box.min.y;
       
       // Add metadata
       model.userData = {
