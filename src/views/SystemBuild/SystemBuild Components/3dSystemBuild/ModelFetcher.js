@@ -35,7 +35,7 @@ export const fetchComponentModel = async (scene, componentType, productData, onP
     }
 
     // PRIORITY 2: Try Sketchfab with product name
-    updateStatus(`Searching Sketchfab for "${productName}"...`);
+    updateStatus(`Loading ${productName}...`);
     if (onProgress) onProgress(10);
     
     const sketchfabResult = await loadComponentFromSketchfab(
