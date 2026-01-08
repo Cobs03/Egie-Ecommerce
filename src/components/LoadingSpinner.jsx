@@ -27,14 +27,14 @@ const LoadingSpinner = () => {
           {/* Logo in center */}
           <div className="absolute inset-0 flex items-center justify-center">
             <img 
-              src={settings?.aiLogoUrl || "/Logo/Ai.png"} 
+              src={settings?.logoUrl || "/Logo/Novatech.png"} 
               alt="Loading" 
               className="w-10 h-10 object-contain animate-pulse"
             />
           </div>
         </div>
         <p className="text-gray-700 font-semibold text-lg animate-pulse">
-          Loading {settings?.storeName || "EGIE E-Commerce"}
+          Loading {settings?.storeName || "Novatech"}
         </p>
       </div>
     </div>
