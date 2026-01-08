@@ -3,8 +3,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import JSZip from 'jszip';
 
-// Your Sketchfab API token
-const SKETCHFAB_API_TOKEN = '40e432b03bd3443787fd33a830b1eae4';
+// Sketchfab API token from environment variable
+const SKETCHFAB_API_TOKEN = import.meta.env.VITE_SKETCHFAB_API_TOKEN || '40e432b03bd3443787fd33a830b1eae4';
 
 // ========== RATE LIMITING & QUEUE SYSTEM ==========
 // Prevents hitting API rate limits (429 errors)
