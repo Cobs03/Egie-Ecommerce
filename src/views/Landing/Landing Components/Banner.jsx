@@ -129,7 +129,6 @@ const LandingBanner = () => {
             />
           </div>
         </SwiperSlide>
-        </SwiperSlide>
       </Swiper>
     </div>
   );
