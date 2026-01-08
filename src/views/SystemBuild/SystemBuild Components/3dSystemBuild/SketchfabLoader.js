@@ -357,7 +357,7 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
       },
       'Case': {
         include: ['case', 'tower', 'chassis', 'enclosure', 'pc case'],
-        exclude: ['keyboard', 'mouse', 'monitor', 'motherboard', 'cooler']
+        exclude: ['keyboard', 'mouse', 'monitor', 'motherboard', 'cooler', 'duct', 'airflow duct', 'fan duct', 'shroud', 'bracket', 'mount', 'adapter', 'cable']
       },
       'GPU': {
         include: ['gpu', 'graphics', 'video card', 'rtx', 'gtx', 'radeon', 'geforce'],
