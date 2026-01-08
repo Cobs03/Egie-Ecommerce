@@ -57,7 +57,7 @@ const COMPONENT_CONFIGS = {
   },
   Motherboard: {
     scale: 0.01,
-    position: [3, 1, 0],  // Right side - spread out more
+    position: [0, 0, 0],  // Center - same as case
     rotation: [-Math.PI / 2, 0, 0],
     fallbackSearch: 'motherboard'
   },
@@ -287,10 +287,10 @@ const generateFallbackQueries = (productData, componentType) => {
  * Search Sketchfab for downloadable models (WITH RATE LIMITING)
  */
 export const searchSketchfabModels = async (searchTerm, options = {}) => {
-  const { count = 5 } = options;
+  const { count = 5, componentType = null } = options;
 
   // Check search cache first
-  const cacheKey = searchTerm.toLowerCase();
+  const cacheKey = searchTerm.toLowerCase() + (componentType ? '_' + componentType : '');
   if (searchCache.has(cacheKey)) {
     console.log('📦 Using cached results for "' + searchTerm + '"');
     return searchCache.get(cacheKey);
@@ -349,19 +349,93 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
     const searchTermLower = searchTerm.toLowerCase();
     const searchWords = searchTermLower.split(/\s+/).filter(w => w.length > 1);
     
+    // Component type keywords to filter out wrong types
+    const componentTypeKeywords = {
+      'Motherboard': { 
+        include: ['motherboard', 'mobo', 'mainboard', 'pcb', 'socket', 'chipset'],
+        exclude: ['keyboard', 'mouse', 'monitor', 'case', 'cooler', 'fan', 'psu', 'headset', 'speaker']
+      },
+      'Case': {
+        include: ['case', 'tower', 'chassis', 'enclosure', 'pc case'],
+        exclude: ['keyboard', 'mouse', 'monitor', 'motherboard', 'cooler']
+      },
+      'GPU': {
+        include: ['gpu', 'graphics', 'video card', 'rtx', 'gtx', 'radeon', 'geforce'],
+        exclude: ['cpu', 'processor', 'motherboard', 'keyboard', 'mouse']
+      },
+      'CPU': {
+        include: ['cpu', 'processor', 'ryzen', 'intel', 'core i', 'threadripper'],
+        exclude: ['gpu', 'graphics', 'motherboard', 'cooler', 'keyboard']
+      },
+      'RAM': {
+        include: ['ram', 'memory', 'ddr', 'dimm', 'memory stick'],
+        exclude: ['ssd', 'storage', 'motherboard', 'gpu']
+      },
+      'CPU Cooler': {
+        include: ['cooler', 'heatsink', 'radiator', 'aio', 'cooling'],
+        exclude: ['case', 'fan', 'motherboard']
+      },
+      'PSU': {
+        include: ['psu', 'power supply', 'power unit'],
+        exclude: ['ups', 'battery', 'cable']
+      },
+      'Monitor': {
+        include: ['monitor', 'display', 'screen', 'lcd', 'led'],
+        exclude: ['tv', 'television', 'keyboard', 'mouse']
+      },
+      'Keyboard': {
+        include: ['keyboard', 'keeb'],
+        exclude: ['mouse', 'mousepad', 'monitor', 'headset']
+      },
+      'Mouse': {
+        include: ['mouse', 'mice'],
+        exclude: ['keyboard', 'mousepad', 'monitor', 'headset']
+      }
+    };
+    
     const scoredModels = downloadableModels.map(function(model) {
       const nameLower = model.name.toLowerCase();
       const descriptionLower = (model.description || '').toLowerCase();
       let score = 0;
       
+      // COMPONENT TYPE FILTERING (Critical - prevents wrong type matches)
+      if (componentType && componentTypeKeywords[componentType]) {
+        const keywords = componentTypeKeywords[componentType];
+        const combinedText = nameLower + ' ' + descriptionLower;
+        
+        // Check if model name contains excluded keywords (STRICT - auto-reject)
+        const hasExcludedKeyword = keywords.exclude.some(kw => combinedText.includes(kw));
+        
+        // If excluded keyword found, COMPLETELY reject this model
+        if (hasExcludedKeyword) {
+          score = -999999; // Complete rejection - will be filtered out
+          return { model: model, score: score }; // Skip further scoring
+        }
+        
+        // Check if model name contains included keywords (REQUIRED for motherboards/specific types)
+        const hasIncludedKeyword = keywords.include.some(kw => combinedText.includes(kw));
+        
+        // For critical component types, REQUIRE the component keyword to be present
+        const strictTypes = ['Motherboard', 'GPU', 'CPU', 'RAM', 'PSU'];
+        if (strictTypes.includes(componentType) && !hasIncludedKeyword) {
+          score = -999999; // Reject if component keyword not present
+          return { model: model, score: score };
+        }
+        
+        // Bonus for correct component type keywords
+        if (hasIncludedKeyword) {
+          score += 30000; // Big bonus for matching component type
+        }
+      }
+      
       // NAME SCORING (Primary) - Heavily prioritize name matches
       // Exact match gets MASSIVE score
       if (nameLower === searchTermLower) {
-        score = 100000;
+        score += 100000;
       }
       // Contains full search term in name
       else if (nameLower.includes(searchTermLower)) {
-        score = 50000;
+        score += 50000;
       }
       // Check for partial matches with high weight
       else {
@@ -410,12 +484,17 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
       return { model: model, score: score };
     });
     
-    // Sort by score (highest first)
+    // Sort by score (highest first) and filter out rejected models
     scoredModels.sort(function(a, b) {
       return b.score - a.score;
     });
     
-    const sortedModels = scoredModels.map(function(item) {
+    // Filter out models with negative scores (rejected by component type filtering)
+    const validModels = scoredModels.filter(function(item) {
+      return item.score > 0;
+    });
+    
+    const sortedModels = validModels.map(function(item) {
       return item.model;
     });
     
@@ -712,7 +791,7 @@ export const loadComponentFromSketchfab = async (scene, componentType, productDa
     for (const query of allQueries) {
       if (model) break; // Already found a model
       
-      const results = await searchSketchfabModels(query, { count: 8 });
+      const results = await searchSketchfabModels(query, { count: 8, componentType: componentType });
       
       if (results.length === 0) {
         continue;
