@@ -252,84 +252,7 @@ const SystemBuilder3D = ({ selectedProducts, mini = false }) => {
         </div>
       )}
 
-      {/* Model Creator Info Panel - Top Left */}
-      {!isLoading && !mini && window.innerWidth >= 768 && (
-        <div
-          style={{
-            position: "absolute",
-            top: "12px",
-            left: "12px",
-            backgroundColor: "rgba(0, 0, 0, 0.75)",
-            border: "1px solid #d1d5db",
-            borderRadius: "8px",
-            padding: "12px 16px",
-            fontSize: "12px",
-            lineHeight: "1.5",
-            minWidth: "180px",
-            maxWidth: "220px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          }}
-        >
-          <div
-            style={{
-              fontWeight: "600",
-              color: "#84cc16",
-              marginBottom: "8px",
-              fontSize: "13px",
-            }}
-          >
-            3D Model Info:
-          </div>
-          {currentModelInfo ? (
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "6px" }}
-            >
-              <div>
-                <span style={{ color: "#84cc16" }}>Creator: </span>
-                <a
-                  href={currentModelInfo.creatorUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    color: "white",
-                    fontWeight: "500",
-                    textDecoration: "none",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.target.style.textDecoration = "underline")
-                  }
-                  onMouseLeave={(e) => (e.target.style.textDecoration = "none")}
-                >
-                  {currentModelInfo.creator}
-                </a>
-              </div>
-              <div>
-                <span style={{ color: "#84cc16" }}>Source: </span>
-                <a
-                  href={currentModelInfo.modelUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    color: "white",
-                    fontWeight: "500",
-                    textDecoration: "none",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.target.style.textDecoration = "underline")
-                  }
-                  onMouseLeave={(e) => (e.target.style.textDecoration = "none")}
-                >
-                  {currentModelInfo.source}
-                </a>
-              </div>
-            </div>
-          ) : (
-            <div style={{ color: "#9ca3af", fontStyle: "italic" }}>
-              {totalModels > 0 ? "Placeholder model" : "No model selected"}
-            </div>
-          )}
-        </div>
-      )}
+
 
       {/* Model Pagination Navigation - Top Center */}
       {!isLoading && !mini && totalModels > 0 && (
@@ -400,6 +323,7 @@ const SystemBuilder3D = ({ selectedProducts, mini = false }) => {
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 maxWidth: "200px",
+                marginBottom: "4px",
               }}
             >
               {currentComponent || "No Components"}
@@ -408,7 +332,8 @@ const SystemBuilder3D = ({ selectedProducts, mini = false }) => {
               style={{
                 fontSize: "11px",
                 color: "#6b7280",
-                marginTop: "2px",
+                marginTop: "4px",
+                letterSpacing: "0.5px",
               }}
             >
               {totalModels > 0
@@ -520,30 +445,7 @@ const SystemBuilder3D = ({ selectedProducts, mini = false }) => {
         </div>
       )}
 
-      {/* Model Summary Badge */}
-      {!isLoading && modelSummary && modelSummary.placeholders > 0 && !mini && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: "12px",
-            left: "12px",
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-            color: "#fff",
-            padding: "8px 12px",
-            borderRadius: "6px",
-            fontSize: "12px",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <span style={{ color: "#fbbf24" }}>⚠️</span>
-          <span>
-            {modelSummary.placeholders} of {modelSummary.total} models
-            unavailable
-          </span>
-        </div>
-      )}
+
 
       {/* CSS Animation for Spinner */}
       <style>

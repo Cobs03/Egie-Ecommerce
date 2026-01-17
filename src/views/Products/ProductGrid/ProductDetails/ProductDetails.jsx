@@ -42,9 +42,9 @@ const ProductDetails = () => {
         if (result.success && result.data) {
           setProduct(result.data);
           
-          // Track product view for analytics
-          const { data: { user } } = await supabase.auth.getUser();
-          await ProductAnalyticsService.trackProductView(id, user?.id);
+          // NOTE: Product view tracking removed from here
+          // Tracking now only happens in ProductModal when user first clicks product
+          // This prevents double-counting (modal open + view details = 2 counts)
         } else {
           setError(result.error || "Product not found");
         }

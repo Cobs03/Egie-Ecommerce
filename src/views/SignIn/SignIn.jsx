@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { FaEye } from "react-icons/fa";
 import { IoMdEyeOff } from "react-icons/io";
 import { FaGoogle } from "react-icons/fa";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { supabase } from "../../lib/supabase";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import { useWebsiteSettings } from "../../hooks/useWebsiteSettings";
@@ -13,6 +14,7 @@ const SignIn = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const navigate = useNavigate();
   const { settings } = useWebsiteSettings();
 
@@ -24,6 +26,12 @@ const SignIn = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    if (!turnstileToken) {
+      setError("Please complete the security verification");
+      setLoading(false);
+      return;
+    }
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -181,6 +189,17 @@ const SignIn = () => {
             </Link>
             .
           </p>
+
+          {/* Turnstile CAPTCHA */}
+          <div className="flex justify-center mb-4">
+            <Turnstile
+              siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA"}
+              onSuccess={(token) => setTurnstileToken(token)}
+              onError={() => setError("Security verification failed. Please refresh the page.")}
+              onExpire={() => setTurnstileToken("")}
+              theme="light"
+            />
+          </div>
 
           {/* Login Button */}
           <div className="flex justify-center">

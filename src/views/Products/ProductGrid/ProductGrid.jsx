@@ -8,6 +8,7 @@ import { ShoppingCart } from "lucide-react";
 import ReviewService from "../../../services/ReviewService";
 import StarRating from "../../../components/StarRating";
 import { SectionLoader } from "../../../components/ui/LoadingIndicator";
+import ProductSearchService from "../../../services/ProductSearchService";
 
 import {
   Pagination,
@@ -132,6 +133,19 @@ const ProductGrid = ({ selectedCategory, filters }) => {
   const allProducts = products || [];
   let filteredProducts = allProducts;
 
+  // Apply search filtering using ProductSearchService
+  if (filters.searchQuery && filters.searchQuery.trim().length > 0) {
+    filteredProducts = ProductSearchService.searchProducts(
+      filteredProducts,
+      filters.searchQuery,
+      {
+        threshold: 0.4,
+        minScore: 0.3,
+        includeScore: true,
+      }
+    );
+  }
+
   // Apply additional client-side filters if needed (for filters not handled by Supabase)
   if (filters.rating != null) {
     filteredProducts = filteredProducts.filter(
@@ -189,9 +203,42 @@ const ProductGrid = ({ selectedCategory, filters }) => {
   return (
     <>
       <div className="flex flex-col w-full">
+        {/* No Results Message for Search */}
+        {filters.searchQuery && filteredProducts.length === 0 && !loading && (
+          <div className="flex flex-col items-center justify-center py-16 px-4">
+            <div className="bg-gray-50 rounded-full p-6 mb-6">
+              <svg 
+                className="w-20 h-20 text-gray-300" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={1.5} 
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+                />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">No products found</h3>
+            <p className="text-gray-600 text-center max-w-md mb-6">
+              We couldn't find any products matching <strong>"{filters.searchQuery}"</strong>. 
+              Try adjusting your search or browse our categories.
+            </p>
+            <button
+              onClick={() => window.location.href = '/products'}
+              className="px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors shadow-md hover:shadow-lg"
+            >
+              Browse All Products
+            </button>
+          </div>
+        )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {paginatedItems.map((product, index) => (
+        {/* Product Grid */}
+        {filteredProducts.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {paginatedItems.map((product, index) => (
             <div
               key={index}
               onClick={() => setSelectedProduct(product)}
@@ -243,11 +290,13 @@ const ProductGrid = ({ selectedCategory, filters }) => {
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <p className="text-lg font-bold text-green-600 select-none">
-                    ₱{product.price.toLocaleString()}
+                    ₱{(product.metadata?.officialPrice || product.price)?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
-                  <p className="text-sm text-gray-400 line-through select-none">
-                    ₱{product.oldPrice.toLocaleString()}
-                  </p>
+                  {product.metadata?.initialPrice && product.metadata.initialPrice > (product.metadata?.officialPrice || product.price) && (
+                    <p className="text-sm text-gray-400 line-through select-none">
+                      ₱{product.metadata.initialPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  )}
                 </div>
                 {/* Stock Status Display */}
                 <p
@@ -260,10 +309,11 @@ const ProductGrid = ({ selectedCategory, filters }) => {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {totalPages > 1 && filteredProducts.length > 0 && (
           <div className="mt-8 mb-6 flex justify-center">
             <Pagination className="flex flex-wrap justify-center gap-1 sm:gap-2">
               <PaginationContent className="flex flex-wrap justify-center">

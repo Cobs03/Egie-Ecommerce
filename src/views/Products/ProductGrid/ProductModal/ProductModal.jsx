@@ -19,10 +19,37 @@ import { FaXTwitter } from "react-icons/fa6";
 
 import { toast } from "sonner";
 import { useCart } from "../../../../context/CartContext";
+import { supabase } from "../../../../lib/supabase";
+import ProductAnalyticsService from "../../../../services/ProductAnalyticsService";
 
 const ProductModal = ({ product, onClose, noBackground = false }) => {
   const { addToCart, user } = useCart();
   const navigate = useNavigate();
+  
+  // Rating and sold count states
+  const [ratingSummary, setRatingSummary] = useState(null);
+  const [soldCount, setSoldCount] = useState(0);
+  const [loadingStats, setLoadingStats] = useState(true);
+  
+  // Track product view when modal opens
+  useEffect(() => {
+    const trackView = async () => {
+      if (product?.id) {
+        try {
+          const { data: { user: currentUser } } = await supabase.auth.getUser();
+          const result = await ProductAnalyticsService.trackProductView(product.id, currentUser?.id);
+          
+          if (!result.success) {
+            console.warn('Failed to track product view:', result.error);
+          }
+        } catch (error) {
+          console.error('Error tracking product view:', error);
+        }
+      }
+    };
+    
+    trackView();
+  }, [product?.id]);
   
   // Parse product images from database
   const productImages = product?.images || [];
@@ -44,6 +71,49 @@ const ProductModal = ({ product, onClose, noBackground = false }) => {
   const [nav2, setNav2] = useState(null);
   let sliderRef1 = useRef(null);
   let sliderRef2 = useRef(null);
+
+  // Fetch rating summary and sold count
+  useEffect(() => {
+    const fetchProductStats = async () => {
+      if (!product?.id) return;
+      
+      setLoadingStats(true);
+      
+      try {
+        // Fetch rating summary
+        const { data: ratingData, error: ratingError } = await supabase
+          .rpc('get_product_rating_summary', { p_product_id: product.id });
+        
+        if (!ratingError && ratingData && ratingData.length > 0) {
+          setRatingSummary(ratingData[0]);
+        } else {
+          setRatingSummary(null);
+        }
+
+        // Fetch sold count from order_items (match Top Sellers criteria)
+        const { data: soldData, error: soldError } = await supabase
+          .from('order_items')
+          .select('quantity, orders!inner(status)')
+          .eq('product_id', product.id)
+          .in('orders.status', ['confirmed', 'processing', 'shipped', 'ready_for_pickup', 'delivered']);
+        
+        if (!soldError && soldData) {
+          const totalSold = soldData.reduce((sum, item) => sum + (item.quantity || 0), 0);
+          setSoldCount(totalSold);
+        } else {
+          setSoldCount(0);
+        }
+      } catch (error) {
+        console.error('Error fetching product stats:', error);
+        setRatingSummary(null);
+        setSoldCount(0);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchProductStats();
+  }, [product?.id]);
 
   useEffect(() => {
     setNav1(sliderRef1.current);
@@ -75,8 +145,10 @@ const ProductModal = ({ product, onClose, noBackground = false }) => {
 
   // Calculate stock and pricing
   const stock = currentVariant?.stock || product?.stock_quantity || product?.stock || 0;
-  const price = currentVariant?.price || product?.price || 0;
-  const oldPrice = currentVariant?.comparePrice || product?.metadata?.officialPrice || product?.oldPrice || price;
+  // Use officialPrice (discounted) as the main price, fallback to variant/product price
+  const price = product?.metadata?.officialPrice || currentVariant?.price || product?.price || 0;
+  // Use initialPrice (original) as the old price
+  const oldPrice = product?.metadata?.initialPrice || currentVariant?.comparePrice || 0;
   
   // Calculate price range if multiple variants
   const priceRange = productVariants.length > 1 ? {
@@ -189,21 +261,34 @@ const ProductModal = ({ product, onClose, noBackground = false }) => {
 
             <div className="flex justify-between text-sm text-gray-400 mb-4" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               <div>
-                <span>No Ratings Yet</span> · <span>0 Sold</span>
+                {loadingStats ? (
+                  <span>Loading...</span>
+                ) : ratingSummary && ratingSummary.total_reviews > 0 ? (
+                  <>
+                    <span className="text-yellow-500">★ {ratingSummary.average_rating}</span>
+                    <span className="text-gray-400"> ({ratingSummary.total_reviews} {ratingSummary.total_reviews === 1 ? 'review' : 'reviews'})</span>
+                    <span> · </span>
+                    <span>{soldCount.toLocaleString()} Sold</span>
+                  </>
+                ) : (
+                  <>
+                    <span>No Ratings Yet</span> · <span>{soldCount.toLocaleString()} Sold</span>
+                  </>
+                )}
               </div>
             </div>
 
             <div className="text-3xl font-normal text-green-500 mb-2" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               {priceRange && priceRange.min !== priceRange.max ? (
-                `₱${priceRange.min.toLocaleString()} - ₱${priceRange.max.toLocaleString()}`
+                `₱${priceRange.min.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - ₱${priceRange.max.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               ) : (
-                `₱${price.toLocaleString()}`
+                `₱${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               )}
             </div>
 
-            {oldPrice > price && (
+            {oldPrice && oldPrice > price && (
               <div className="text-base text-gray-500 line-through mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                ₱{oldPrice.toLocaleString()}
+                Original Price: ₱{oldPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             )}
 

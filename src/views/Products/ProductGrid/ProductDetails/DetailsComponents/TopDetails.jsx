@@ -62,12 +62,12 @@ const ProductDetails = ({ product }) => {
           setRatingSummary(null);
         }
 
-        // Fetch sold count from order_items (completed orders only)
+        // Fetch sold count from order_items (match Top Sellers criteria)
         const { data: soldData, error: soldError } = await supabase
           .from('order_items')
           .select('quantity, orders!inner(status)')
           .eq('product_id', product.id)
-          .in('orders.status', ['completed', 'delivered']);
+          .in('orders.status', ['confirmed', 'processing', 'shipped', 'ready_for_pickup', 'delivered']);
         
         if (!soldError && soldData) {
           const totalSold = soldData.reduce((sum, item) => sum + (item.quantity || 0), 0);
@@ -93,8 +93,10 @@ const ProductDetails = ({ product }) => {
 
   // Calculate stock and pricing
   const stock = currentVariant?.stock || product?.stock_quantity || 0;
-  const price = currentVariant?.price || product?.price || 0;
-  const oldPrice = currentVariant?.comparePrice || product?.metadata?.officialPrice || price;
+  // Use officialPrice (discounted) as the main price, fallback to regular price
+  const price = product?.metadata?.officialPrice || currentVariant?.price || product?.price || 0;
+  // Use initialPrice (original) as the old price
+  const oldPrice = product?.metadata?.initialPrice || currentVariant?.comparePrice || 0;
   
   // Calculate price range if multiple variants
   const priceRange = productVariants.length > 1 ? {
@@ -228,15 +230,15 @@ const ProductDetails = ({ product }) => {
 
           <div className="text-3xl font-bold text-green-500 mb-4">
             {priceRange && priceRange.min !== priceRange.max ? (
-              `₱${priceRange.min.toLocaleString()} - ₱${priceRange.max.toLocaleString()}`
+              `₱${priceRange.min.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - ₱${priceRange.max.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             ) : (
-              `₱${price.toLocaleString()}`
+              `₱${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             )}
           </div>
 
-          {oldPrice > price && (
+          {oldPrice && oldPrice > price && (
             <div className="text-lg text-gray-400 line-through mb-2">
-              Original Price: ₱{oldPrice.toLocaleString()}
+              Original Price: ₱{oldPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           )}
 

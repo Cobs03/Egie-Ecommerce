@@ -101,12 +101,17 @@ const TopSeller = () => {
               // Get review summary
               const { data: summary } = await ReviewService.getProductRatingSummary(product.id);
               
+              // Use officialPrice (discounted) as main price, initialPrice (original) as old price
+              const mainPrice = transformedProduct.metadata?.officialPrice || transformedProduct.price || 0;
+              const originalPrice = transformedProduct.metadata?.initialPrice || 0;
+              
               return {
                 ...transformedProduct,
                 reviews: summary?.total_reviews || 0,
                 averageRating: summary?.average_rating || 0,
-                displayPrice: `₱${transformedProduct.price.toLocaleString()}`,
-                displayOldPrice: transformedProduct.oldPrice ? `₱${transformedProduct.oldPrice.toLocaleString()}` : null,
+                price: mainPrice, // Update price to discounted price for cart
+                displayPrice: `₱${parseFloat(mainPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                displayOldPrice: (originalPrice && originalPrice > mainPrice) ? `₱${parseFloat(originalPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null,
                 image: transformedProduct.imageUrl,
               };
             })
@@ -138,12 +143,17 @@ const TopSeller = () => {
               // Get review summary
               const { data: summary } = await ReviewService.getProductRatingSummary(product.id);
               
+              // Use officialPrice (discounted) as main price, initialPrice (original) as old price
+              const mainPrice = transformedProduct.metadata?.officialPrice || transformedProduct.price || 0;
+              const originalPrice = transformedProduct.metadata?.initialPrice || 0;
+              
               return {
                 ...transformedProduct,
                 reviews: summary?.total_reviews || 0,
                 averageRating: summary?.average_rating || 0,
-                displayPrice: `₱${transformedProduct.price.toLocaleString()}`,
-                displayOldPrice: transformedProduct.oldPrice ? `₱${transformedProduct.oldPrice.toLocaleString()}` : null,
+                price: mainPrice, // Update price to discounted price for cart
+                displayPrice: `₱${parseFloat(mainPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                displayOldPrice: (originalPrice && originalPrice > mainPrice) ? `₱${parseFloat(originalPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null,
                 image: transformedProduct.imageUrl,
               };
             })
