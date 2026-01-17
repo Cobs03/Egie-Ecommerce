@@ -290,11 +290,13 @@ const ProductGrid = ({ selectedCategory, filters }) => {
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <p className="text-lg font-bold text-green-600 select-none">
-                    ₱{product.price.toLocaleString()}
+                    ₱{(product.metadata?.officialPrice || product.price)?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
-                  <p className="text-sm text-gray-400 line-through select-none">
-                    ₱{product.oldPrice.toLocaleString()}
-                  </p>
+                  {product.metadata?.initialPrice && product.metadata.initialPrice > (product.metadata?.officialPrice || product.price) && (
+                    <p className="text-sm text-gray-400 line-through select-none">
+                      ₱{product.metadata.initialPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  )}
                 </div>
                 {/* Stock Status Display */}
                 <p

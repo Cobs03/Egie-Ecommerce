@@ -240,6 +240,18 @@ const SystemBuild = () => {
       return;
     }
 
+    // Check if all required components are selected
+    const requiredComponents = ['Case', 'Motherboard', 'Processor', 'GPU', 'RAM', 'SSD', 'PSU'];
+    const missingComponents = requiredComponents.filter(comp => !selectedProducts[comp]);
+    
+    if (missingComponents.length > 0) {
+      toast.error('Incomplete PC Build', {
+        description: `Please add the following required components: ${missingComponents.join(', ')}`,
+        duration: 5000,
+      });
+      return;
+    }
+
     if (!user) {
       toast.error('Please login', {
         description: 'You need to be logged in to add items to cart.'
@@ -323,6 +335,18 @@ const SystemBuild = () => {
     if (selectedCount === 0) {
       toast.error('No components selected', {
         description: 'Please add at least one component before saving.'
+      });
+      return;
+    }
+
+    // Check if all required components are selected
+    const requiredComponents = ['Case', 'Motherboard', 'Processor', 'GPU', 'RAM', 'SSD', 'PSU'];
+    const missingComponents = requiredComponents.filter(comp => !selectedProducts[comp]);
+    
+    if (missingComponents.length > 0) {
+      toast.error('Incomplete PC Build', {
+        description: `Please add the following required components before saving: ${missingComponents.join(', ')}`,
+        duration: 5000,
       });
       return;
     }

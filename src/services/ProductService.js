@@ -230,8 +230,13 @@ export class ProductService {
       variants: metadata.variants || product.variants || [],
       newArrival: this.isNewArrival(product.created_at),
       sku: product.sku || product.id,
-      // Add metadata for advanced features
-      metadata: metadata,
+      // Add metadata for advanced features - parse price fields as numbers
+      metadata: {
+        ...metadata,
+        officialPrice: metadata.officialPrice ? parseFloat(metadata.officialPrice) : undefined,
+        initialPrice: metadata.initialPrice ? parseFloat(metadata.initialPrice) : undefined,
+        discount: metadata.discount ? parseFloat(metadata.discount) : undefined
+      },
       components: metadata.components || [],
       warranty: metadata.warranty,
       status: product.status

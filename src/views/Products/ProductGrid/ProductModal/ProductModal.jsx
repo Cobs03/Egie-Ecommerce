@@ -20,6 +20,7 @@ import { FaXTwitter } from "react-icons/fa6";
 import { toast } from "sonner";
 import { useCart } from "../../../../context/CartContext";
 import { supabase } from "../../../../lib/supabase";
+import ProductAnalyticsService from "../../../../services/ProductAnalyticsService";
 
 const ProductModal = ({ product, onClose, noBackground = false }) => {
   const { addToCart, user } = useCart();
@@ -29,6 +30,26 @@ const ProductModal = ({ product, onClose, noBackground = false }) => {
   const [ratingSummary, setRatingSummary] = useState(null);
   const [soldCount, setSoldCount] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
+  
+  // Track product view when modal opens
+  useEffect(() => {
+    const trackView = async () => {
+      if (product?.id) {
+        try {
+          const { data: { user: currentUser } } = await supabase.auth.getUser();
+          const result = await ProductAnalyticsService.trackProductView(product.id, currentUser?.id);
+          
+          if (!result.success) {
+            console.warn('Failed to track product view:', result.error);
+          }
+        } catch (error) {
+          console.error('Error tracking product view:', error);
+        }
+      }
+    };
+    
+    trackView();
+  }, [product?.id]);
   
   // Parse product images from database
   const productImages = product?.images || [];
@@ -124,8 +145,10 @@ const ProductModal = ({ product, onClose, noBackground = false }) => {
 
   // Calculate stock and pricing
   const stock = currentVariant?.stock || product?.stock_quantity || product?.stock || 0;
-  const price = currentVariant?.price || product?.price || 0;
-  const oldPrice = currentVariant?.comparePrice || product?.metadata?.officialPrice || product?.oldPrice || price;
+  // Use officialPrice (discounted) as the main price, fallback to variant/product price
+  const price = product?.metadata?.officialPrice || currentVariant?.price || product?.price || 0;
+  // Use initialPrice (original) as the old price
+  const oldPrice = product?.metadata?.initialPrice || currentVariant?.comparePrice || 0;
   
   // Calculate price range if multiple variants
   const priceRange = productVariants.length > 1 ? {
@@ -257,15 +280,15 @@ const ProductModal = ({ product, onClose, noBackground = false }) => {
 
             <div className="text-3xl font-normal text-green-500 mb-2" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
               {priceRange && priceRange.min !== priceRange.max ? (
-                `₱${priceRange.min.toLocaleString()} - ₱${priceRange.max.toLocaleString()}`
+                `₱${priceRange.min.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - ₱${priceRange.max.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               ) : (
-                `₱${price.toLocaleString()}`
+                `₱${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               )}
             </div>
 
-            {oldPrice > price && (
+            {oldPrice && oldPrice > price && (
               <div className="text-base text-gray-500 line-through mb-3" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                ₱{oldPrice.toLocaleString()}
+                Original Price: ₱{oldPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             )}
 
