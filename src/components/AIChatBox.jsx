@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { MessageCircle, X, Send, Bot, Maximize2, Minimize2, ShoppingCart, Mic, MicOff, Image as ImageIcon, Globe } from "lucide-react";
+import { MessageCircle, X, Send, Bot, Maximize2, Minimize2, ShoppingCart, Mic, MicOff, Image as ImageIcon, Globe, Package, HelpCircle, Phone, MapPin } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
 import { DotsLoader } from "./ui/LoadingIndicator";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -9,6 +9,7 @@ import CartService from "../services/CartService";
 import CompatibilityService from "../services/CompatibilityService";
 import ChatHistoryService from "../services/ChatHistoryService";
 import BundleService from "../services/BundleService";
+import AICustomerService from "../services/AICustomerService"; // 🆕 Customer Service Integration
 import { useCart } from "../context/CartContext";
 import { useWebsiteSettings } from "../hooks/useWebsiteSettings";
 import { supabase } from "../lib/supabase";
@@ -506,7 +507,7 @@ const AIChatBox = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: `Hi! I'm ${aiName}, your shopping assistant! 👋\n\nI'm here to help you with:\n✅ Finding and comparing products\n✅ Checking stock availability & warranties\n✅ Answering shipping & return questions\n✅ Tracking your orders\n✅ Building custom PC configurations\n\nHow may I assist you today?`,
+      text: `Hi! I'm ${aiName}, your shopping & customer service assistant! 👋\n\nI can help you with:\n\n🛒 **Shopping**\n• Finding and comparing products\n• Checking stock & building PCs\n\n📦 **Orders & Tracking**\n• View your order history\n• Track delivery status\n• Cancel pending orders\n\n📋 **Policies & Info**\n• Shipping & delivery info\n• Returns & refunds\n• Warranty coverage\n• Payment methods\n• Store location & hours\n\n👤 **Support**\n• Connect to live agent\n\nHow can I help you today?`,
       sender: "ai",
       timestamp: new Date(),
       showQuickActions: true // 🆕 Flag to show quick action buttons
@@ -573,7 +574,7 @@ const AIChatBox = () => {
         if (prevMessages.length === 1 && prevMessages[0].id === 1) {
           return [{
             id: 1,
-            text: `Hi! I'm ${aiName}, your shopping assistant! 👋\n\nI'm here to help you with:\n✅ Finding and comparing products\n✅ Checking stock availability & warranties\n✅ Answering shipping & return questions\n✅ Tracking your orders\n✅ Building custom PC configurations\n\nHow may I assist you today?`,
+            text: `Hi! I'm ${aiName}, your shopping & customer service assistant! 👋\n\nI can help you with:\n\n🛒 **Shopping**\n• Finding and comparing products\n• Checking stock & building PCs\n\n📦 **Orders & Tracking**\n• View your order history\n• Track delivery status\n• Cancel pending orders\n\n📋 **Policies & Info**\n• Shipping & delivery info\n• Returns & refunds\n• Warranty coverage\n• Payment methods\n• Store location & hours\n\n👤 **Support**\n• Connect to live agent\n\nHow can I help you today?`,
             sender: "ai",
             timestamp: new Date(),
             showQuickActions: true
@@ -984,6 +985,76 @@ const AIChatBox = () => {
       } finally {
         setIsTyping(false);
       }
+  };
+
+  // ===== 🆕 CUSTOMER SERVICE QUERY HANDLER ===== 🛎️
+  /**
+   * Handle customer service queries like order tracking, policies, complaints
+   * Returns true if query was handled, false otherwise
+   */
+  const handleCustomerServiceQuery = async (userInput) => {
+    // Detect if this is a customer service query
+    const csIntent = AICustomerService.detectCustomerServiceIntent(userInput);
+    
+    // detectCustomerServiceIntent returns null or a string (intent name)
+    if (!csIntent) {
+      return false; // Not a customer service query
+    }
+
+    setIsTyping(true);
+    
+    try {
+      // Get user ID if logged in
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || null;
+      
+      // Handle the query using AICustomerService
+      const response = await AICustomerService.handleQuery(csIntent, userInput, userId);
+      
+      if (!response) {
+        setIsTyping(false);
+        return false;
+      }
+
+      // Check if response is structured data (orders with images) or plain text
+      const isStructuredData = typeof response === 'object' && response.type;
+      
+      // Build the AI message
+      const aiMessage = {
+        id: Date.now(),
+        text: isStructuredData ? null : response,
+        sender: "ai",
+        timestamp: new Date(),
+        isCustomerService: true,
+        csType: csIntent,
+        // Add structured data for special rendering
+        orderData: isStructuredData ? response : null,
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+      saveMessageToHistory(aiMessage);
+      
+      // Update conversation context
+      updateContext({
+        lastAction: `customer_service_${csIntent}`,
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error handling customer service query:', error);
+      
+      // Fallback message
+      const errorMsg = {
+        id: Date.now(),
+        text: `I apologize, but I'm having trouble processing your request right now. You can:\n\n• Try again in a moment\n• Contact our support team directly\n• Visit the "My Purchases" page for order info\n\nHow else can I help you?`,
+        sender: "ai",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMsg]);
+      return true;
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   // ===== HELPER FUNCTIONS FOR ADVANCED AI COMMANDS ===== 🚀
@@ -4055,6 +4126,12 @@ Rules:
       return;
     }
 
+    // ===== 🆕 CUSTOMER SERVICE QUERIES (HIGHEST PRIORITY) =====
+    const customerServiceResult = await handleCustomerServiceQuery(userInput);
+    if (customerServiceResult) {
+      return;
+    }
+
     // ===== DEFINITION & EDUCATIONAL QUESTIONS (HIGH PRIORITY) =====
     const definitionHandled = await handleComponentQuestion(userInput);
     if (definitionHandled) {
@@ -4525,6 +4602,88 @@ Rules:
                         </div>
                         <span className="text-sm font-medium text-red-600">Listening...</span>
                       </div>
+                    ) : message.orderData ? (
+                      // Render order data with images
+                      <div>
+                        {message.orderData.type === 'orders_list' && (
+                          <div>
+                            <p className="text-sm font-semibold mb-3">YOUR ORDERS</p>
+                            {message.orderData.orders.map((order, i) => (
+                              <div key={i} className="mb-4 pb-3 border-b border-gray-200 last:border-0">
+                                <p className="text-sm font-medium">{i + 1}. Order {order.orderNumber}</p>
+                                <p className="text-xs text-gray-600 mt-1">Status: {order.status}</p>
+                                <p className="text-xs text-gray-600">Total: ₱{order.total?.toLocaleString() || '0'}</p>
+                                <p className="text-xs text-gray-600">Date: {new Date(order.date).toLocaleDateString('en-PH')}</p>
+                                {order.items.length > 0 && (
+                                  <div className="mt-2">
+                                    <p className="text-xs text-gray-700 mb-1">Products:</p>
+                                    {order.items.map((item, idx) => (
+                                      <div key={idx} className="flex items-center gap-2 mb-1">
+                                        {item.product_image && (
+                                          <img 
+                                            src={item.product_image} 
+                                            alt={item.product_name}
+                                            className="w-10 h-10 object-cover rounded border"
+                                          />
+                                        )}
+                                        <div className="flex-1">
+                                          <p className="text-xs">{item.product_name}</p>
+                                          <p className="text-xs text-gray-500">x{item.quantity} - ₱{item.unit_price?.toLocaleString() || '0'}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                            {message.orderData.hasMore && (
+                              <p className="text-xs text-gray-500 mt-2">...and {message.orderData.moreCount} more orders</p>
+                            )}
+                          </div>
+                        )}
+                        {message.orderData.type === 'order_tracking' && (
+                          <div>
+                            <p className="text-sm font-semibold mb-2">ORDER TRACKING: {message.orderData.orderNumber}</p>
+                            <p className="text-sm font-medium text-blue-600">{message.orderData.status}</p>
+                            <p className="text-xs text-gray-600 mt-1">{message.orderData.description}</p>
+                            <p className="text-xs text-gray-700 mt-2">What's Next: {message.orderData.nextStep}</p>
+                            <div className="mt-3 pt-2 border-t border-gray-200">
+                              <p className="text-xs font-medium mb-1">Order Details:</p>
+                              <p className="text-xs text-gray-600">Placed: {new Date(message.orderData.placedDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                              <p className="text-xs text-gray-600">Total: ₱{message.orderData.total?.toLocaleString() || '0'}</p>
+                              <p className="text-xs text-gray-600">Items: {message.orderData.items?.length || 0} product(s)</p>
+                            </div>
+                            {message.orderData.items.length > 0 && (
+                              <div className="mt-2">
+                                <p className="text-xs font-medium mb-1">Products Ordered:</p>
+                                {message.orderData.items.map((item, idx) => (
+                                  <div key={idx} className="flex items-center gap-2 mb-1">
+                                    {item.product_image && (
+                                      <img 
+                                        src={item.product_image} 
+                                        alt={item.product_name}
+                                        className="w-10 h-10 object-cover rounded border"
+                                      />
+                                    )}
+                                    <div className="flex-1">
+                                      <p className="text-xs">{item.product_name}</p>
+                                      <p className="text-xs text-gray-500">x{item.quantity} - ₱{item.unit_price?.toLocaleString() || '0'}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {message.orderData.trackingNumber && (
+                              <div className="mt-2 pt-2 border-t border-gray-200">
+                                <p className="text-xs font-medium">Tracking Number: {message.orderData.trackingNumber}</p>
+                                {message.orderData.courier && (
+                                  <p className="text-xs text-gray-600">Courier: {message.orderData.courier}</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                     )}
@@ -4545,8 +4704,15 @@ Rules:
                 {message.showQuickActions && message.sender === "ai" && (
                   <div className="mt-3 flex flex-wrap gap-2 justify-start px-2">
                     <button
-                      onClick={() => handleQuickQuestion("Track my order")}
+                      onClick={() => handleQuickQuestion("Show my orders")}
                       className="bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-medium py-2 px-3 rounded-lg border border-orange-200 transition-colors flex items-center gap-1"
+                    >
+                      <span>📦</span>
+                      <span>My Orders</span>
+                    </button>
+                    <button
+                      onClick={() => handleQuickQuestion("Track my order")}
+                      className="bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-medium py-2 px-3 rounded-lg border border-amber-200 transition-colors flex items-center gap-1"
                     >
                       <span>📍</span>
                       <span>Track Order</span>
@@ -4555,22 +4721,43 @@ Rules:
                       onClick={() => handleQuickQuestion("What's your return policy?")}
                       className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium py-2 px-3 rounded-lg border border-blue-200 transition-colors flex items-center gap-1"
                     >
-                      <span>📦</span>
-                      <span>Return/Refund</span>
+                      <span>🔄</span>
+                      <span>Returns</span>
+                    </button>
+                    <button
+                      onClick={() => handleQuickQuestion("What payment methods do you accept?")}
+                      className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-medium py-2 px-3 rounded-lg border border-emerald-200 transition-colors flex items-center gap-1"
+                    >
+                      <span>💳</span>
+                      <span>Payment</span>
+                    </button>
+                    <button
+                      onClick={() => handleQuickQuestion("What's your warranty policy?")}
+                      className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-medium py-2 px-3 rounded-lg border border-indigo-200 transition-colors flex items-center gap-1"
+                    >
+                      <span>🛡️</span>
+                      <span>Warranty</span>
+                    </button>
+                    <button
+                      onClick={() => handleQuickQuestion("Where is your store located?")}
+                      className="bg-cyan-50 hover:bg-cyan-100 text-cyan-700 text-xs font-medium py-2 px-3 rounded-lg border border-cyan-200 transition-colors flex items-center gap-1"
+                    >
+                      <span>📍</span>
+                      <span>Store Info</span>
                     </button>
                     <button
                       onClick={() => handleQuickQuestion("Help me build a PC")}
                       className="bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-medium py-2 px-3 rounded-lg border border-purple-200 transition-colors flex items-center gap-1"
                     >
                       <span>💻</span>
-                      <span>Build a PC</span>
+                      <span>Build PC</span>
                     </button>
                     <button
-                      onClick={() => handleQuickQuestion("Show me special deals and promotions")}
-                      className="bg-green-50 hover:bg-green-100 text-green-700 text-xs font-medium py-2 px-3 rounded-lg border border-green-200 transition-colors flex items-center gap-1"
+                      onClick={() => handleQuickQuestion("I want to speak to a human agent")}
+                      className="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-medium py-2 px-3 rounded-lg border border-rose-200 transition-colors flex items-center gap-1"
                     >
-                      <span>🎁</span>
-                      <span>View Deals</span>
+                      <span>👤</span>
+                      <span>Live Agent</span>
                     </button>
                   </div>
                 )}
