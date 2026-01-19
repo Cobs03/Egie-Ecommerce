@@ -1,16 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaCheckCircle, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
+import { FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import PayMongoService from '../../services/PayMongoEdgeFunctionService';
 import OrderService from '../../services/OrderService';
 import { supabase } from '../../lib/supabase';
+import Receipt from '../Checkout/Checkout Components/Receipt';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isVerifying, setIsVerifying] = useState(true);
   const [paymentVerified, setPaymentVerified] = useState(false);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [orderData, setOrderData] = useState(null);
   
   const orderId = searchParams.get('order_id');
   const sourceId = searchParams.get('source_id');
@@ -48,6 +52,13 @@ const PaymentSuccess = () => {
         navigate('/');
         return;
       }
+
+      // Store order data for receipt
+      setOrderData({
+        id: orders.id,
+        orderNumber: orders.order_number,
+        transactionId: orders.payments?.[0]?.transaction_id,
+      });
 
       const payment = orders.payments[0];
 
@@ -167,6 +178,15 @@ const PaymentSuccess = () => {
         </div>
 
         <div className="space-y-3">
+          {orderData?.id && (
+            <button
+              onClick={() => setIsReceiptOpen(true)}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors active:scale-95 transition-transform duration-150 flex items-center justify-center gap-2"
+            >
+              <FileText className="w-5 h-5" />
+              View Receipt
+            </button>
+          )}
           <button
             onClick={handleViewOrders}
             className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors active:scale-95 transition-transform duration-150"
@@ -181,6 +201,16 @@ const PaymentSuccess = () => {
           </button>
         </div>
       </div>
+
+      {/* Receipt Modal */}
+      {orderData?.id && (
+        <Receipt
+          orderId={orderData.id}
+          orderNumber={orderData.orderNumber}
+          isOpen={isReceiptOpen}
+          onClose={() => setIsReceiptOpen(false)}
+        />
+      )}
     </div>
   );
 };
