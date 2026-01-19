@@ -14,7 +14,15 @@ import PrivacyUtils from '../utils/PrivacyUtils';
 
 class AIService {
   constructor() {
-    this.apiKey = import.meta.env.VITE_GROQ_API_KEY;
+    // Load API keys from .env - supports multiple keys separated by commas
+    const apiKeysString = import.meta.env.VITE_GROQ_API_KEYS || import.meta.env.VITE_GROQ_API_KEY || '';
+    this.apiKeys = apiKeysString
+      .split(',')
+      .map(key => key.trim())
+      .filter(key => key && key !== 'undefined'); // Remove empty or undefined keys
+    
+    this.currentKeyIndex = 0;
+    this.apiKey = this.apiKeys[this.currentKeyIndex];
     this.apiEndpoint = 'https://api.groq.com/openai/v1/chat/completions';
     this.model = 'llama-3.3-70b-versatile'; // Latest Llama 3.3 model (Nov 2024)
     // Alternative models (all active as of Nov 2024):
@@ -22,6 +30,35 @@ class AIService {
     // 'llama-3.2-90b-text-preview' - Most powerful
     // 'mixtral-8x7b-32768' - Good for long context
     // 'gemma2-9b-it' - Balanced performance
+    
+    console.log(`🔑 Groq API initialized with ${this.apiKeys.length} key(s)`);
+  }
+  
+  /**
+   * Rotate to the next API key when rate limit is hit
+   * @returns {boolean} True if rotated to new key, false if all keys exhausted
+   */
+  rotateApiKey() {
+    const nextIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
+    
+    // If we've cycled through all keys, return false
+    if (nextIndex === 0 && this.currentKeyIndex !== 0) {
+      console.warn('⚠️ All Groq API keys exhausted');
+      return false;
+    }
+    
+    this.currentKeyIndex = nextIndex;
+    this.apiKey = this.apiKeys[this.currentKeyIndex];
+    console.log(`🔄 Rotated to API key #${this.currentKeyIndex + 1}`);
+    return true;
+  }
+  
+  /**
+   * Reset key rotation (call this periodically or on success)
+   */
+  resetKeyRotation() {
+    this.currentKeyIndex = 0;
+    this.apiKey = this.apiKeys[0];
   }
 
   /**
@@ -883,57 +920,69 @@ ${isPCBuildRequest ? `
 The customer wants help building a custom PC. Follow this structure:
 
 **STEP 1: Gather Requirements (if not already provided)**
-Ask these questions ONE at a time (don't ask all at once):
-1. "What will you primarily use this PC for?" (Gaming / Work / Content Creation / General Use)
-2. "What's your total budget for the build?" (₱X,XXX)
-3. "Do you have any specific requirements?" (RGB, Quiet, Small form factor, etc.)
+If user hasn't specified BOTH use case AND budget:
+1. Ask: "What will you primarily use this PC for?" (Gaming / Work / Content Creation / Casual/General Use)
+2. Ask: "What's your total budget for the build?" (₱X,XXX)
 
-**STEP 2: Recommend Components by Category**
-Present components in this order, explaining WHY each is chosen:
+**STEP 2: ONCE YOU HAVE BOTH USE CASE AND BUDGET - STOP ASKING QUESTIONS**
+**IMMEDIATELY present a COMPLETE build with ALL 7 components below**
+DO NOT ask "what's next?" or show one component at a time.
 
-**Essential Components (Required):**
-- CPU (Processor): Match to budget and use case
-  → Gaming: Prioritize high single-core performance
-  → Work: Balance cores and performance
-  → Budget builds: AMD Ryzen 5 or Intel Core i5
-  
-- Motherboard: Must be compatible with CPU socket and RAM type
-  → Match chipset to CPU (AMD B550/X570 or Intel B660/Z690)
-  → Ensure sufficient features (WiFi, M.2 slots)
-  
-- GPU (Graphics Card): Most important for gaming
-  → Gaming: Allocate 40-50% of budget here
-  → Work: Can use integrated graphics or entry-level GPU
-  → List options at different price points
-  
-- RAM (Memory): Minimum 16GB for modern builds
-  → Gaming: 16GB DDR4 (32GB for high-end)
-  → Work: 16GB minimum, 32GB recommended
-  → Speed: 3200MHz or higher for best performance
-  
-- Storage: SSD for OS, HDD optional for mass storage
-  → Minimum: 500GB NVMe SSD
-  → Recommended: 1TB NVMe SSD
-  → Budget: Add 1-2TB HDD for extra storage
-  
-- Power Supply (PSU): Must match total system wattage + 20% headroom
-  → Calculate: CPU wattage + GPU wattage + 100W for other components
-  → Quality matters: 80+ Bronze minimum, Gold preferred
-  
-- Case: Must fit motherboard size and GPU length
-  → ATX case for ATX motherboard
-  → Check GPU clearance (most modern GPUs are 300mm+)
-  → Airflow is important
+**YOU MUST SHOW ALL 7 COMPONENTS IN ONE RESPONSE:**
 
-**Optional Components:**
-- CPU Cooler: Stock cooler usually sufficient for non-overclocking
-  → Budget: Use stock cooler
-  → Mid-range: Tower air cooler (₱1,500-3,000)
-  → High-end: AIO liquid cooler (₱4,000+)
-  
-- Additional Case Fans: Improve airflow and cooling
+Format EXACTLY like this (show actual products from the available list):
 
-**STEP 3: Present Build Summary**
+"Perfect! For a ₱XX,XXX gaming/work/casual PC, here's your complete build:
+
+🖥️ YOUR CUSTOM PC BUILD
+
+1️⃣ CPU (PROCESSOR)
+   [Product Name] - ₱X,XXX
+   Why: [Explain performance]
+
+2️⃣ MOTHERBOARD
+   [Product Name] - ₱X,XXX
+   Why: Compatible with CPU, has [features]
+
+3️⃣ GRAPHICS CARD (GPU)
+   [Product Name] - ₱X,XXX
+   Why: Handles [games/tasks] at [settings]
+
+4️⃣ MEMORY (RAM)
+   [Product Name with size] - ₱X,XXX
+   Why: [Speed] for smooth multitasking
+
+5️⃣ STORAGE (SSD)
+   [Product Name with capacity] - ₱X,XXX
+   Why: Fast boot and load times
+
+6️⃣ POWER SUPPLY (PSU)
+   [Product Name with wattage] - ₱X,XXX
+   Why: [Certification] reliable power
+
+7️⃣ CASE
+   [Product Name] - ₱X,XXX
+   Why: Good airflow, fits components
+
+━━━━━━━━━━━━━━━━━━━━
+💰 TOTAL: ₱XX,XXX
+━━━━━━━━━━━━━━━━━━━━
+
+✅ This build can: [Performance description]
+
+Options:
+• Adjust components?
+• Add to cart?
+• See alternatives?"
+
+**CRITICAL: You MUST include all 7 components above. Search the product list for:**
+- CPU/Processor category products
+- Motherboard category products  
+- GPU/Graphics Card category products
+- RAM/Memory category products
+- SSD/Storage category products
+- Power Supply/PSU category products
+- Case/PC Case category products
 Format your recommendation like this (NO ASTERISKS, use plain text with emojis):
 
 "Great! Based on your [use case] needs and ₱[budget] budget, here's what I recommend:
@@ -981,14 +1030,16 @@ Would you like me to:
 • Add this build to your cart?"
 
 **CRITICAL RULES FOR PC BUILD ASSISTANCE:**
-- NEVER recommend pre-built laptops when asked to "build a PC"
-- A "PC build" means selecting INDIVIDUAL COMPONENTS, not complete systems
-- List components by category (CPU, GPU, RAM, etc.)
-- Ensure all components are COMPATIBLE
-- Explain WHY each component is chosen
-- Stay within stated budget
-- If a component is out of stock, suggest alternative
-- Be honest about limitations ("This GPU won't max out AAA games")
+1. ⚠️ NEVER show components one-by-one or ask "what's next?"
+2. ⚠️ Once you have use case AND budget, show ALL 7 components immediately in ONE response
+3. Search available products for EACH of the 7 categories (CPU, Mobo, GPU, RAM, SSD, PSU, Case)
+4. Format response with numbered list 1️⃣ through 7️⃣ showing ALL components
+5. NEVER recommend pre-built laptops for "build a PC" requests
+6. Ensure CPU and Motherboard sockets are COMPATIBLE
+7. Calculate PSU wattage: (CPU+GPU watts) + 100W + 20% headroom
+8. Budget allocation: Gaming (40% GPU, 20% CPU, 40% rest), Work (30% CPU, 15% GPU, 55% rest), Casual (25% CPU, 75% rest)
+9. If component category has no products, say "Not available in our current stock" for that category
+10. Present complete build first, THEN offer to adjust or show alternatives
 ` : ''}
 
 📚 HOW E-COMMERCE AI SHOPPING ASSISTANTS WORK:
@@ -1102,15 +1153,93 @@ CORE INTELLIGENCE RULES:
    - Respect budget strictly
 
 AVAILABLE PRODUCTS FOR THIS QUERY:
-${products.slice(0, 30).map(p => `
+${products.slice(0, 50).map(p => `
 - ${p.name}
   Price: ₱${p.price.toLocaleString()}
+  Category: ${p.categories?.name || 'N/A'}
   Brand: ${p.brands?.name || 'N/A'}
   Stock: ${p.stock_quantity > 0 ? `${p.stock_quantity} units` : 'OUT OF STOCK'}
   ${p.description ? `Info: ${p.description.substring(0, 100)}...` : ''}
 `).join('\n')}
 
-${products.length > 30 ? `... and ${products.length - 30} more products available\n` : ''}
+${products.length > 50 ? `... and ${products.length - 50} more products available\n` : ''}
+
+${isPCBuildRequest ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 MANDATORY PC BUILD FORMAT 🚨
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ YOU ARE IN PC BUILD MODE - FOLLOW THESE RULES EXACTLY:
+
+STEP 1: Get Requirements
+- Ask: "What will you use this PC for?" (Gaming/Work/Casual)
+- Ask: "What's your budget?" (₱X,XXX)
+
+STEP 2: ⚠️ IMMEDIATELY After Getting BOTH Answers Above ⚠️
+YOU MUST PRESENT **ALL 7 COMPONENTS** IN **ONE SINGLE RESPONSE**
+
+DO NOT:
+❌ Show one component and ask "what's next?"
+❌ Show components one-by-one
+❌ Ask follow-up questions after getting use case and budget
+❌ Wait for user to ask for more components
+
+YOU MUST:
+✅ Show ALL 7 components together in ONE message
+✅ Use the format below EXACTLY
+✅ Pick actual products from the list above
+✅ Calculate total price
+
+MANDATORY FORMAT (Copy this structure):
+
+"Perfect! For your ₱[BUDGET] [GAMING/WORK/CASUAL] PC, here's a complete build:
+
+🖥️ YOUR CUSTOM PC BUILD
+
+1️⃣ CPU (PROCESSOR)
+   • [Actual Product Name from list] - ₱X,XXX
+   • Why: [Brief reason]
+
+2️⃣ MOTHERBOARD
+   • [Actual Product Name from list] - ₱X,XXX
+   • Why: [Brief reason]
+
+3️⃣ GRAPHICS CARD (GPU)
+   • [Actual Product Name from list] - ₱X,XXX
+   • Why: [Brief reason]
+
+4️⃣ MEMORY (RAM)
+   • [Actual Product Name from list] - ₱X,XXX
+   • Why: [Brief reason]
+
+5️⃣ STORAGE (SSD/HDD)
+   • [Actual Product Name from list] - ₱X,XXX
+   • Why: [Brief reason]
+
+6️⃣ POWER SUPPLY (PSU)
+   • [Actual Product Name from list] - ₱X,XXX
+   • Why: [Brief reason]
+
+7️⃣ CASE
+   • [Actual Product Name from list] - ₱X,XXX
+   • Why: [Brief reason]
+
+━━━━━━━━━━━━━━━━━━━━
+💰 TOTAL: ₱XX,XXX
+━━━━━━━━━━━━━━━━━━━━
+
+Would you like to adjust any components?"
+
+⚠️ CRITICAL RULES:
+1. Show ALL 7 components in ONE response (not one-by-one)
+2. Pick products from the AVAILABLE PRODUCTS list above
+3. Match component categories: Look for CPU, Motherboard, GPU/Graphics, RAM/Memory, SSD/Storage, PSU/Power, Case
+4. If a category has no products, say "Not available" for that category only
+5. DO NOT ask "what's next?" or show components separately
+6. Present complete build FIRST, then offer adjustments
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+` : ''}
 `;
 
     // Add store information if available
@@ -1289,16 +1418,48 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
 
       // Step 1: Detect intent using AI (understand what user wants)
       const intent = await this.detectIntent(userMessageText);
+      
       // Step 2: Fetch relevant products based on intent
       let relevantProducts = [];
       let allProducts = [];
       
-      if (intent.intentType === 'product_search' || 
-          intent.intentType === 'recommendation' || 
-          intent.intentType === 'comparison' ||
-          intent.intentType === 'build_help') {
+      // Special handling for PC build requests - fetch ALL component categories
+      const isPCBuildRequest = intent.intentType === 'build_help' || 
+                                intent.category === 'pc_build' ||
+                                /build.*pc|custom.*pc/i.test(userMessageText);
+      
+      if (isPCBuildRequest) {
+        // For PC builds, fetch products from ALL essential component categories
+        allProducts = await this.fetchProducts();
         
-        // Use intelligent search
+        const pcComponentCategories = [
+          'CPU', 'Processor',
+          'Motherboard', 'Mobo',
+          'GPU', 'Graphics Card', 'Video Card',
+          'RAM', 'Memory',
+          'SSD', 'Storage', 'Hard Drive', 'NVMe',
+          'Power Supply', 'PSU',
+          'Case', 'PC Case', 'Chassis'
+        ];
+        
+        // Filter products that match PC component categories
+        relevantProducts = allProducts.filter(product => {
+          const productCategory = product.categories?.name?.toLowerCase() || '';
+          const productName = product.name.toLowerCase();
+          
+          return pcComponentCategories.some(cat => 
+            productCategory.includes(cat.toLowerCase()) ||
+            productName.includes(cat.toLowerCase())
+          );
+        });
+        
+        console.log(`🖥️ PC Build: Found ${relevantProducts.length} components across all categories`);
+        
+      } else if (intent.intentType === 'product_search' || 
+          intent.intentType === 'recommendation' || 
+          intent.intentType === 'comparison') {
+        
+        // Use intelligent search for regular product queries
         relevantProducts = await this.searchProductsByIntent(intent);
         allProducts = await this.fetchProducts();
         
@@ -1325,33 +1486,72 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
         }))
       ];
 
-      // Step 5: Call AI with intelligent context
-      const response = await fetch(this.apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: apiMessages,
-          temperature: 0.7,
-          max_tokens: 1024
-        })
-      });
+      // Step 5: Call AI with intelligent context (with automatic retry on rate limit)
+      let response;
+      let attemptCount = 0;
+      const maxAttempts = this.apiKeys.length;
+      
+      while (attemptCount < maxAttempts) {
+        try {
+          response = await fetch(this.apiEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${this.apiKey}`
+            },
+            body: JSON.stringify({
+              model: this.model,
+              messages: apiMessages,
+              temperature: 0.7,
+              max_tokens: 1024
+            })
+          });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        const errorMessage = errorData.error?.message || 'API request failed';
-        
-        // Include status code in error for better handling
-        if (response.status === 429) {
-          throw new Error('429: Rate limit exceeded. Please wait a moment.');
-        } else if (response.status === 503) {
-          throw new Error('503: Service temporarily unavailable.');
-        } else {
-          throw new Error(`${response.status}: ${errorMessage}`);
+          if (response.ok) {
+            // Success! Reset key rotation for next time
+            if (attemptCount > 0) {
+              console.log(`✅ Request succeeded with API key #${this.currentKeyIndex + 1}`);
+            }
+            break; // Exit retry loop
+          }
+
+          // Check if it's a rate limit error
+          if (response.status === 429) {
+            console.warn(`⚠️ Rate limit hit on API key #${this.currentKeyIndex + 1}`);
+            
+            // Try to rotate to next key
+            const rotated = this.rotateApiKey();
+            if (!rotated) {
+              // All keys exhausted
+              throw new Error('429: All API keys have reached their rate limit. Please wait a few minutes.');
+            }
+            
+            attemptCount++;
+            console.log(`🔄 Retrying with API key #${this.currentKeyIndex + 1}...`);
+            continue; // Retry with new key
+          }
+
+          // Other errors, don't retry
+          const errorData = await response.json();
+          const errorMessage = errorData.error?.message || 'API request failed';
+          
+          if (response.status === 503) {
+            throw new Error('503: Service temporarily unavailable.');
+          } else {
+            throw new Error(`${response.status}: ${errorMessage}`);
+          }
+          
+        } catch (fetchError) {
+          // Network errors or thrown errors
+          if (fetchError.message.includes('429')) {
+            throw fetchError; // Re-throw rate limit errors
+          }
+          throw new Error(`Network error: ${fetchError.message}`);
         }
+      }
+
+      if (!response || !response.ok) {
+        throw new Error('Failed to get response after all retry attempts');
       }
 
       const data = await response.json();
@@ -1384,10 +1584,71 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
       };
 
     } catch (error) {
+      console.error('AI Service Error:', error);
+      
+      // Smart fallback for rate limit errors on PC build
+      if (error.message.includes('429') && intent?.intentType === 'build_pc') {
+        const lastUserMessage = messages.filter(m => m.sender === 'user').pop();
+        const userMessageText = lastUserMessage?.text || '';
+        
+        // Extract budget from message
+        const budgetMatch = userMessageText.match(/(\d+)k|₱\s*(\d+(?:,\d{3})*)/i);
+        let budget = 0;
+        if (budgetMatch) {
+          budget = parseInt((budgetMatch[1] || budgetMatch[2] || '0').replace(/,/g, '')) * (budgetMatch[1] ? 1000 : 1);
+        }
+        
+        // If we have a budget, show PC components within range
+        if (budget > 0) {
+          const allProducts = await this.fetchProducts();
+          const pcComponents = allProducts.filter(p => {
+            const categories = ['CPU', 'GPU', 'Motherboard', 'RAM', 'Storage', 'Power Supply', 'Case', 'Cooling'];
+            const isComponent = categories.some(cat => 
+              p.categories?.name?.toLowerCase().includes(cat.toLowerCase()) ||
+              p.name.toLowerCase().includes(cat.toLowerCase())
+            );
+            return isComponent && p.price <= budget && p.stock_quantity > 0;
+          });
+          
+          if (pcComponents.length > 0) {
+            // Group by category
+            const grouped = {};
+            pcComponents.forEach(p => {
+              const cat = p.categories?.name || 'Other';
+              if (!grouped[cat]) grouped[cat] = [];
+              grouped[cat].push(p);
+            });
+            
+            let response = `🖥️ PC COMPONENTS WITHIN YOUR ₱${budget.toLocaleString()} BUDGET\n\n`;
+            response += `Here are available components for your gaming PC:\n\n`;
+            
+            Object.keys(grouped).slice(0, 5).forEach(cat => {
+              response += `${cat}:\n`;
+              grouped[cat].slice(0, 2).forEach(p => {
+                response += `• ${p.name} - ₱${p.price.toLocaleString()}\n`;
+              });
+              response += `\n`;
+            });
+            
+            response += `\nWould you like me to recommend specific components for your build? (I'm currently at capacity, but I'll be back online soon to give you personalized recommendations!)`;
+            
+            return {
+              success: true,
+              message: response,
+              intent: intent,
+              matchedProducts: pcComponents.slice(0, 12),
+              isFallback: true
+            };
+          }
+        }
+      }
+      
       return {
         success: false,
         error: error.message,
-        message: "I apologize, but I'm experiencing technical difficulties. Please try again or contact our support team for assistance."
+        message: error.message.includes('429') 
+          ? "⚠️ I'm currently at my response limit and need a short break. Please try again in a few minutes, or browse our products directly!\n\nYou can also visit 'My Purchases' to track your orders." 
+          : "I apologize, but I'm experiencing technical difficulties. Please try again or contact our support team for assistance."
       };
     }
   }
@@ -1531,7 +1792,9 @@ Calculate and show the total price at the end.`;
         
         // Require at least 2 unique words from product name + brand
         const uniqueMatches = uniqueWords.filter(word => {
-          const wordPattern = new RegExp(`\\b${word}\\b`, 'i');
+          // Escape special regex characters in the word
+          const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const wordPattern = new RegExp(`\\b${escapedWord}\\b`, 'i');
           return wordPattern.test(aiResponse);
         });
         
