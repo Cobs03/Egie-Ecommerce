@@ -16,12 +16,12 @@ class ProductAnalyticsService {
         localStorage.setItem('analytics_session_id', sessionId);
       }
 
-      // Pseudonymize user ID for privacy
-      const anonymousUserId = userId ? pseudonymizeUserId(userId) : null;
-
+      // Don't pseudonymize - user_id column expects UUID format, not hashed string
+      // For privacy: we rely on session_id for anonymous tracking
+      // and user_id is nullable (can be null for anonymous users)
       const viewData = {
         product_id: productId,
-        user_id: anonymousUserId, // Store pseudonymized ID instead of real ID
+        user_id: userId || null, // Store actual UUID or null (not pseudonymized string)
         session_id: sessionId
       };
 
@@ -31,11 +31,14 @@ class ProductAnalyticsService {
         .select();
 
       if (error) {
+        console.error('❌ Failed to track product view:', error);
         throw error;
       }
       
+      console.log('✅ Product view tracked:', { productId, viewCount: data?.length });
       return { success: true, data };
     } catch (error) {
+      console.error('❌ Product tracking error:', error.message);
       return { success: false, error: error.message };
     }
   }

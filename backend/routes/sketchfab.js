@@ -1,13 +1,9 @@
 const express = require('express');
 const axios = require('axios');
 const router = express.Router();
+const { getNextApiKey, reportRateLimit, reportSuccess } = require('../utils/sketchfabKeyManager');
 
-const SKETCHFAB_API_TOKEN = process.env.SKETCHFAB_API_TOKEN;
 const SKETCHFAB_API_BASE = 'https://api.sketchfab.com/v3';
-
-if (!SKETCHFAB_API_TOKEN) {
-  console.error('⚠️ WARNING: SKETCHFAB_API_TOKEN not set in .env file!');
-}
 
 /**
  * GET /api/sketchfab/search
@@ -24,6 +20,8 @@ router.get('/search', async (req, res) => {
   try {
     console.log(`🔍 Searching Sketchfab for: "${q}"`);
 
+    const apiKey = getNextApiKey();
+    
     const response = await axios.get(`${SKETCHFAB_API_BASE}/search`, {
       params: {
         q,
@@ -33,9 +31,11 @@ router.get('/search', async (req, res) => {
         sort_by: '-likeCount',
       },
       headers: {
-        'Authorization': `Token ${SKETCHFAB_API_TOKEN}`,
+        'Authorization': `Token ${apiKey}`,
       },
     });
+
+    reportSuccess(apiKey);
 
     const models = response.data.results.map(model => ({
       uid: model.uid,
@@ -56,8 +56,14 @@ router.get('/search', async (req, res) => {
     });
 
   } catch (error) {
+    // Check if it's a rate limit error (429)
+    if (error.response?.status === 429) {
+      const apiKey = getNextApiKey(); // Get the key that was used
+      reportRateLimit(apiKey);
+    }
+    
     console.error('❌ Sketchfab search error:', error.response?.data || error.message);
-    res.status(500).json({
+    res.status(error.response?.status || 500).json({
       error: 'Failed to search Sketchfab',
       details: error.response?.data?.detail || error.message,
     });
@@ -74,11 +80,15 @@ router.get('/model/:uid', async (req, res) => {
   try {
     console.log(`📦 Fetching model info for UID: ${uid}`);
 
+    const apiKey = getNextApiKey();
+    
     const response = await axios.get(`${SKETCHFAB_API_BASE}/models/${uid}`, {
       headers: {
-        'Authorization': `Token ${SKETCHFAB_API_TOKEN}`,
+        'Authorization': `Token ${apiKey}`,
       },
     });
+
+    reportSuccess(apiKey);
 
     const model = response.data;
 
@@ -98,6 +108,12 @@ router.get('/model/:uid', async (req, res) => {
     });
 
   } catch (error) {
+    // Check if it's a rate limit error (429)
+    if (error.response?.status === 429) {
+      const apiKey = getNextApiKey();
+      reportRateLimit(apiKey);
+    }
+    
     console.error('❌ Sketchfab model fetch error:', error.response?.data || error.message);
     res.status(error.response?.status || 500).json({
       error: 'Failed to fetch model info',
@@ -116,10 +132,12 @@ router.get('/download/:uid', async (req, res) => {
   try {
     console.log(`⬇️ Fetching download link for UID: ${uid}`);
 
+    const apiKey = getNextApiKey();
+    
     // First check if model is downloadable
     const modelInfo = await axios.get(`${SKETCHFAB_API_BASE}/models/${uid}`, {
       headers: {
-        'Authorization': `Token ${SKETCHFAB_API_TOKEN}`,
+        'Authorization': `Token ${apiKey}`,
       },
     });
 
@@ -133,9 +151,11 @@ router.get('/download/:uid', async (req, res) => {
     // Get download archives
     const downloadResponse = await axios.get(`${SKETCHFAB_API_BASE}/models/${uid}/download`, {
       headers: {
-        'Authorization': `Token ${SKETCHFAB_API_TOKEN}`,
+        'Authorization': `Token ${apiKey}`,
       },
     });
+
+    reportSuccess(apiKey);
 
     // Find GLTF format
     const gltfUrl = downloadResponse.data.gltf?.url;
@@ -157,6 +177,12 @@ router.get('/download/:uid', async (req, res) => {
     });
 
   } catch (error) {
+    // Check if it's a rate limit error (429)
+    if (error.response?.status === 429) {
+      const apiKey = getNextApiKey();
+      reportRateLimit(apiKey);
+    }
+    
     console.error('❌ Sketchfab download error:', error.response?.data || error.message);
     res.status(error.response?.status || 500).json({
       error: 'Failed to get download URL',

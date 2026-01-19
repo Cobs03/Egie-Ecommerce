@@ -1,10 +1,21 @@
-import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import OtherCart from "../Cart/Cart Components/OtherCart";
+import Receipt from "./Checkout Components/Receipt";
 import "../Checkout/Checkout Components/Fireworks.scss";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import { Button } from "@/components/ui/button";
+import { FileText, Package, Eye } from "lucide-react";
 
 const ThankYou = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  
+  // Get order data from location state
+  const orderData = location.state || {};
+  const { orderId, orderNumber, transactionId } = orderData;
+  
   // Scroll animations
   const contentAnim = useScrollAnimation({ threshold: 0.1 });
   const productsAnim = useScrollAnimation({ threshold: 0.1 });
@@ -53,11 +64,50 @@ const ThankYou = () => {
             Your order is being processed. You will receive a confirmation email
             shortly.
           </p>
+          
+          {/* Order Number Display */}
+          {orderNumber && (
+            <div className="mb-6 p-4 bg-white rounded-lg shadow-md max-w-md mx-auto">
+              <p className="text-sm text-gray-600 mb-1">Order Number</p>
+              <p className="text-2xl font-bold text-green-600 font-['Bruno_Ace_SC']">
+                {orderNumber}
+              </p>
+              {transactionId && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Transaction ID: {transactionId}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-4">
+            {orderId && (
+              <>
+                <Button
+                  onClick={() => setIsReceiptOpen(true)}
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded text-base transition-all duration-200 font-['Bruno_Ace_SC'] active:scale-95 flex items-center gap-2"
+                >
+                  <FileText className="w-5 h-5" />
+                  VIEW RECEIPT
+                </Button>
+                <Button
+                  onClick={() => navigate("/purchases")}
+                  variant="outline"
+                  className="px-6 py-3 border-2 border-green-600 text-green-600 hover:bg-green-50 rounded text-base transition-all duration-200 font-['Bruno_Ace_SC'] active:scale-95 flex items-center gap-2"
+                >
+                  <Package className="w-5 h-5" />
+                  VIEW ORDER DETAILS
+                </Button>
+              </>
+            )}
+          </div>
+          
           <Link
             to="/"
-            className="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 text-lg transition-all duration-200 font-['Bruno_Ace_SC'] active:scale-95"
+            className="inline-block px-6 py-3 bg-gray-600 text-white rounded hover:bg-gray-700 text-base transition-all duration-200 font-['Bruno_Ace_SC'] active:scale-95"
           >
-            RETURN TO SHOP MORE
+            CONTINUE SHOPPING
           </Link>
         </div>
 
@@ -73,6 +123,16 @@ const ThankYou = () => {
           <OtherCart />
         </div>
       </div>
+
+      {/* Receipt Modal */}
+      {orderId && (
+        <Receipt
+          orderId={orderId}
+          orderNumber={orderNumber}
+          isOpen={isReceiptOpen}
+          onClose={() => setIsReceiptOpen(false)}
+        />
+      )}
 
       {/* Override the body background color from the fireworks.scss */}
       <style jsx="true">{`

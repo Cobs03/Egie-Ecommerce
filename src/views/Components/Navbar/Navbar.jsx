@@ -11,6 +11,8 @@ import { supabase } from "../../../lib/supabase";
 import { useCart } from "../../../context/CartContext";
 import NotificationService from "../../../services/NotificationService";
 import { useWebsiteSettings } from "../../../hooks/useWebsiteSettings";
+import SearchSuggestions from "../../../components/SearchSuggestions";
+import { useProducts } from "../../../hooks/useProducts";
 
 import { FaCodeCompare } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
@@ -48,6 +50,9 @@ const Navbar = ({ isAuth }) => {
   // Profile state for avatar
   const [userAvatar, setUserAvatar] = useState(null);
   const [userFullName, setUserFullName] = useState("");
+
+  // Load all products for search suggestions
+  const { products: allProducts } = useProducts({ inStock: true });
 
   // Scroll hide/show state
   const [showNavbar, setShowNavbar] = useState(true);
@@ -201,10 +206,9 @@ const Navbar = ({ isAuth }) => {
   }, [user]);
 
   const handleSearch = () => {
-    if (searchQuery.trim()) {
-      // Replace this with your actual search logic
-      alert(`Searching for: ${searchQuery}`);
-    }
+    // This is now handled by SearchSuggestions component
+    // which will navigate to /products?search=query
+    console.log('Search handled by SearchSuggestions component');
   };
 
   // Function to navigate and close dropdown
@@ -312,8 +316,8 @@ const Navbar = ({ isAuth }) => {
               <div className="flex-1 flex justify-center md:flex-1 max-md:justify-start">
                 <Link to="/">
                   <img
-                    src={settings?.logoUrl || "/Logo/Nameless Logo.png"}
-                    alt={settings?.brandName || "EGIE logo"}
+                    src={settings?.logoUrl}
+                    alt={settings?.brandName}
                     className="h-12 md:h-16"
                   />
                 </Link>
@@ -852,7 +856,7 @@ const Navbar = ({ isAuth }) => {
             </div>
           )}
 
-          {/* Search bar - Code unchanged */}
+          {/* Professional Search bar with autocomplete */}
           {showSearchBar !== undefined && (
             <div
               className={`fixed left-0 right-0 top-[130px] z-50 flex justify-center bg-transparent p-1 transition-all duration-300 ease-in-out
@@ -863,34 +867,13 @@ const Navbar = ({ isAuth }) => {
                 }`}
               style={{ pointerEvents: showSearchBar ? "auto" : "none" }}
             >
-              <div
-                className="flex items-center bg-white rounded-full px-2 sm:px-3 md:px-4 py-2 w-[90%] sm:w-[80%] md:w-[70%] lg:w-[60%] xl:w-1/2 shadow-lg border-5 border-black"
-                style={{ pointerEvents: "auto" }}
-              >
-                <input
-                  type="text"
-                  className="flex-1 bg-transparent text-black border-none outline-none focus:outline-0 focus:border-0 w-full pl-8 sm:pl-10 rounded-full text-sm sm:text-base"
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              <div className="w-[90%] sm:w-[80%] md:w-[70%] lg:w-[60%] xl:w-1/2">
+                <SearchSuggestions 
+                  products={allProducts || []}
+                  isVisible={showSearchBar}
+                  onClose={() => setShowSearchBar(false)}
+                  placeholder="Search for products, brands, or categories..."
                 />
-                <svg
-                  className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mr-1 sm:mr-2 absolute ml-2"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                <button
-                  onClick={handleSearch}
-                  className="ml-1 sm:ml-2 px-2 sm:px-3 md:px-4 py-1 sm:py-2 bg-green-400 text-black rounded-full font-semibold hover:bg-green-500 transition text-xs sm:text-sm md:text-base"
-                >
-                  Search
-                </button>
               </div>
             </div>
           )}

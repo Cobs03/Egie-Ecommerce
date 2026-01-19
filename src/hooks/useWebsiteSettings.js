@@ -26,7 +26,7 @@ export const useWebsiteSettings = () => {
       // If we got data, use it
       if (data) {
         setSettings({
-          brandName: data.brand_name || 'EGIE E-Commerce',
+          brandName: data.brand_name || 'Novatech',
           logoUrl: data.logo_url || '',
           authBackgroundUrl: data.auth_background_url || '',
           primaryColor: data.primary_color || '#22c55e',
