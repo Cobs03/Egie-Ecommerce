@@ -190,12 +190,12 @@ const ProductGrid = ({ selectedCategory, filters }) => {
     <>
       <div className="flex flex-col w-full">
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           {paginatedItems.map((product, index) => (
             <div
               key={index}
               onClick={() => setSelectedProduct(product)}
-              className={`bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-all duration-500 cursor-pointer overflow-hidden group active:scale-95 ${ 
+              className={`w-full bg-white border border-gray-200 rounded-lg hover:shadow-lg transition-all duration-500 cursor-pointer overflow-hidden group active:scale-95 ${ 
                 cardsVisible 
                   ? 'opacity-100 translate-y-0' 
                   : 'opacity-0 translate-y-4'
@@ -208,7 +208,7 @@ const ProductGrid = ({ selectedCategory, filters }) => {
                 <img
                   src={product.imageUrl}
                   alt={product.title}
-                  className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-200"
+                  className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-200 max-w-full"
                   draggable="false"
                 />
                 {/* Add to Cart Icon Button - Shows on hover */}
@@ -226,7 +226,7 @@ const ProductGrid = ({ selectedCategory, filters }) => {
                 </button>
               </div>
               <div className="p-3">
-                <p className="text-sm font-medium text-gray-800 select-none line-clamp-2 mb-2">
+                <p className="text-sm font-medium text-gray-800 select-none line-clamp-2 mb-2 break-words">
                   {product.title}
                 </p>
                 {/* Real ratings from database */}
@@ -242,16 +242,16 @@ const ProductGrid = ({ selectedCategory, filters }) => {
                   </span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
-                  <p className="text-lg font-bold text-green-600 select-none">
+                  <p className="text-lg font-bold text-green-600 select-none break-words">
                     ₱{product.price.toLocaleString()}
                   </p>
-                  <p className="text-sm text-gray-400 line-through select-none">
+                  <p className="text-sm text-gray-400 line-through select-none break-words">
                     ₱{product.oldPrice.toLocaleString()}
                   </p>
                 </div>
                 {/* Stock Status Display */}
                 <p
-                  className={`text-xs font-semibold select-none ${getStockStatusColor(
+                  className={`text-xs font-semibold select-none break-words ${getStockStatusColor(
                     product.stockStatus
                   )}`}
                 >

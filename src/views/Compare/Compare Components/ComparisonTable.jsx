@@ -246,13 +246,51 @@ const ComparisonTable = ({ products, onRemoveProduct, onAddProduct }) => {
                 .replace(/^./, str => str.toUpperCase())
                 .trim();
               
-              const valueStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
-              
-              specs.push({
-                label: formattedField,
-                value: valueStr,
-                isMultiLine: field === 'specifications' // Special handling for specifications field
-              });
+              // Handle different value types
+              if (typeof value === 'object' && value !== null) {
+                // If it's an object, extract each property as a separate specification row
+                Object.entries(value)
+                  .filter(([k, v]) => v && v !== '')
+                  .forEach(([key, val]) => {
+                    const subLabel = key
+                      .replace(/([A-Z])/g, ' $1')
+                      .replace(/^./, str => str.toUpperCase())
+                      .trim();
+                    
+                    specs.push({
+                      label: subLabel,
+                      value: String(val),
+                      originalField: field,
+                      isMultiLine: false
+                    });
+                  });
+              } else if (typeof value === 'string' && field === 'specifications') {
+                // Parse "Label: Value" format from specifications text
+                const lines = value.split('\n').filter(line => line.trim());
+                lines.forEach(line => {
+                  const colonIndex = line.indexOf(':');
+                  if (colonIndex > 0 && colonIndex < line.length - 1) {
+                    const label = line.substring(0, colonIndex).trim();
+                    const val = line.substring(colonIndex + 1).trim();
+                    if (label && val) {
+                      specs.push({
+                        label: label,
+                        value: val,
+                        originalField: field,
+                        isMultiLine: false
+                      });
+                    }
+                  }
+                });
+              } else {
+                // Regular string or other value
+                specs.push({
+                  label: formattedField,
+                  value: String(value),
+                  originalField: field,
+                  isMultiLine: false
+                });
+              }
             });
         }
       });
@@ -261,38 +299,19 @@ const ComparisonTable = ({ products, onRemoveProduct, onAddProduct }) => {
     return specs;
   };
 
+  // Get all unique specification labels from all products
+  const getAllUniqueSpecLabels = () => {
+    const labelSet = new Set();
+    products.forEach(product => {
+      const specs = extractSpecifications(product);
+      specs.forEach(spec => labelSet.add(spec.label));
+    });
+    return Array.from(labelSet);
+  };
+
   // Helper function to render a single specification value
   const renderSpecificationValue = (specItem) => {
-    if (specItem.isMultiLine) {
-      // Handle multi-line specifications (like in product details)
-      const lines = specItem.value.split('\n');
-      return (
-        <span className="whitespace-pre-wrap inline">
-          {lines.map((line, lineIndex) => {
-            const colonIndex = line.indexOf(':');
-            if (colonIndex > 0 && colonIndex < line.length - 1) {
-              const label = line.substring(0, colonIndex);
-              const value = line.substring(colonIndex + 1);
-              return (
-                <span key={lineIndex}>
-                  {lineIndex > 0 && <br />}
-                  <span className="font-semibold">{label}:</span>
-                  <span>{value}</span>
-                </span>
-              );
-            }
-            return line ? (
-              <span key={lineIndex}>
-                {lineIndex > 0 && <br />}
-                {line}
-              </span>
-            ) : null;
-          })}
-        </span>
-      );
-    }
-    
-    // Regular single-line value
+    // All values are now simple strings, no multi-line handling needed
     return specItem.value;
   };
   
@@ -378,249 +397,403 @@ const ComparisonTable = ({ products, onRemoveProduct, onAddProduct }) => {
   };
 
   return (
-    <div className="bg-gray-100 p-4 md:p-6">
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6 rounded-2xl shadow-2xl mb-8">
       
-      {/* Product Cards Row - Flex on desktop, Grid on mobile */}
-      <div className="hidden md:flex justify-between items-center mb-8">
-        {/* Desktop view - horizontal layout */}
-        {products.map((product, index) => (
-          <React.Fragment key={product.id}>
-            {/* Product Card */}
-            <div className={`rounded-lg shadow p-4 flex-1 flex flex-col items-center border-2 ${getProductColorClass(index)}`}>
-              <h3 className="text-sm font-medium mb-3 text-center">
-                {product.productName || product.name}
-              </h3>
-              <div className="w-24 h-24 mb-2 flex items-center justify-center">
-                <img
-                  src={product.imageUrl || product.image}
-                  alt={product.productName || product.name}
-                  className="max-h-full max-w-full object-contain"
-                />
-              </div>
-              <button
-                onClick={() => onRemoveProduct(product.id)}
-                className="text-xs text-red-500 hover:text-red-700 mt-2"
-              >
-                Remove
-              </button>
-            </div>
+      {/* Product Headers - Desktop Only */}
+      <div className="hidden md:block overflow-x-auto">
+        <div className="min-w-full">
+          {/* Product Images and Names Row */}
+          <div className="flex mb-6 gap-4">
+            {/* Empty cell for spec labels */}
+            <div className="w-48 flex-shrink-0"></div>
             
-            {/* Separator Circle - only between products */}
-            {index < products.length - 1 && (
-              <div className="flex-shrink-0 mx-2">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white">
-                  <span className="text-lg">+</span>
-                </div>
-              </div>
-            )}
-          </React.Fragment>
-        ))}
-        
-        {/* Add Product Button - only show if fewer than 3 products */}
-        {products.length < 3 && (
-          <>
-            {/* Separator Circle before add button */}
-            <div className="flex-shrink-0 mx-2">
-              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white">
-                <span className="text-lg">+</span>
-              </div>
-            </div>
-            
-            {/* Add Product Card */}
-            <div className="bg-white rounded-lg shadow p-4 flex-1 flex flex-col items-center justify-center min-h-[180px]">
-              <button
-                onClick={onAddProduct}
-                className="flex flex-col items-center text-gray-500 hover:text-green-600 transition-colors"
-              >
-                <div className="w-12 h-12 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center mb-2">
-                  <FaPlus className="text-2xl" />
-                </div>
-                <span className="text-sm font-medium">Add Product</span>
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-      
-      {/* Mobile view - Products in grid */}
-      <div className="grid grid-cols-1 gap-4 mb-6 md:hidden">
-        {products.map((product, index) => (
-          <div 
-            key={product.id}
-            className={`rounded-lg shadow p-4 flex items-center border-2 ${getProductColorClass(index)}`}
-          >
-            <div className="w-16 h-16 mr-4 flex-shrink-0 flex items-center justify-center">
-              <img
-                src={product.imageUrl || product.image}
-                alt={product.productName || product.name}
-                className="max-h-full max-w-full object-contain"
-              />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-medium">
-                {product.productName || product.name}
-              </h3>
-              <button
-                onClick={() => onRemoveProduct(product.id)}
-                className="text-xs text-red-500 hover:text-red-700 mt-1"
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-        ))}
-        
-        {/* Add Product Button for mobile */}
-        {products.length < 3 && (
-          <button
-            onClick={onAddProduct}
-            className="bg-white rounded-lg shadow p-4 flex items-center border border-dashed border-gray-300 hover:border-green-500 transition-colors"
-          >
-            <div className="w-12 h-12 mr-4 flex-shrink-0 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center">
-              <FaPlus className="text-xl text-gray-500" />
-            </div>
-            <span className="text-sm font-medium text-gray-500">Add another product</span>
-          </button>
-        )}
-      </div>
-
-      {/* Specifications - Desktop View */}
-      <div className="hidden md:block">
-        <div className="flex justify-between gap-4">
-          {products.map((product, productIndex) => (
-            <div key={`specs-${product.id}`} className="flex-1">
-              {/* Combined Specifications Box */}
-              <div className={`rounded-xl shadow-md p-5 border-t-4 ${getProductColorClass(productIndex)}`}>
-                {/* Brand & Price Section */}
-                <div className="mb-5 pb-5 border-b-2 border-gray-300">
-                  <div className="mb-4 bg-white/50 p-3 rounded-lg">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-medium">Brand</div>
-                    <div className="text-lg font-semibold text-gray-800">{product.brand || "N/A"}</div>
-                  </div>
-                  <div className="bg-white/50 p-3 rounded-lg">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-medium">Price</div>
-                    <div className="text-2xl font-bold text-green-600">₱{Number(product.price).toLocaleString()}</div>
-                  </div>
-                </div>
-
-                {/* Specifications Section */}
-                <div className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-4 flex items-center">
-                  <span className="border-b-2 border-green-500 pb-1">Specifications</span>
-                </div>
-                <div className="space-y-3">
-                  {extractSpecifications(product).map((specItem, specIndex) => (
-                    <div 
-                      key={`${product.id}-${specIndex}`} 
-                      className="text-sm bg-white/30 p-3 rounded-lg hover:bg-white/50 transition-colors"
-                    >
-                      <div className="font-semibold text-gray-700 mb-1">{specItem.label}</div>
-                      <div className="text-gray-600 pl-2 border-l-2 border-gray-300">{renderSpecificationValue(specItem)}</div>
-                    </div>
-                  ))}
-                  {extractSpecifications(product).length === 0 && (
-                    <div className="text-sm text-gray-400 italic text-center py-8 bg-white/30 rounded-lg">
-                      No specifications available
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-          
-          {/* Add Product Placeholder */}
-          {products.length < 3 && (
-            <div className="flex-1">
-              <div className="bg-white rounded-xl shadow-md p-5 mb-4 border-2 border-dashed border-gray-300 opacity-50 h-32 flex items-center justify-center">
-                <div className="text-gray-400 text-center">
-                  <FaPlus className="mx-auto mb-2 text-2xl" />
-                  <div className="text-sm">Add Product</div>
-                </div>
-              </div>
-              <div className="bg-white rounded-xl shadow-md p-5 border-2 border-dashed border-gray-300 opacity-50 min-h-[200px]"></div>
-            </div>
-          )}
-        </div>
-      </div>
-      
-      {/* Mobile Specifications - Horizontal Scroll View */}
-      <div className="md:hidden">
-        <div className="overflow-x-auto -mx-4 px-4 pb-4">
-          <div className="flex gap-4 min-w-max">
-            {products.map((product, productIndex) => (
+            {/* Product columns */}
+            {products.map((product, index) => (
               <div 
-                key={`mobile-product-${product.id}`}
-                className="w-[85vw] flex-shrink-0"
+                key={product.id}
+                className={`flex-1 min-w-[200px] max-w-[300px] rounded-xl shadow-lg p-4 border-t-4 relative ${getProductColorClass(index)}`}
               >
-                {/* Product Title Bar */}
-                <div className={`rounded-xl p-3 text-center font-semibold shadow-md border-t-4 mb-4 ${getProductColorClass(productIndex)}`}>
-                  {product.productName || product.name}
+                {/* Remove button */}
+                <button
+                  onClick={() => onRemoveProduct(product.id)}
+                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md transition-all hover:scale-110 z-10"
+                  title="Remove product"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                
+                {/* Product Image */}
+                <div className="w-32 h-32 mx-auto mb-3 flex items-center justify-center bg-white rounded-lg p-2">
+                  <img
+                    src={product.imageUrl || product.image}
+                    alt={product.productName || product.name}
+                    className="max-h-full max-w-full object-contain"
+                  />
                 </div>
-
-                {/* Combined Specifications Box */}
-                <div className={`rounded-xl shadow-md p-5 border-t-4 ${getProductColorClass(productIndex)}`}>
-                  {/* Brand & Price Section */}
-                  <div className="mb-5 pb-5 border-b-2 border-gray-300">
-                    <div className="mb-4 bg-white/50 p-3 rounded-lg">
-                      <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-medium">Brand</div>
-                      <div className="text-lg font-semibold text-gray-800">{product.brand || "N/A"}</div>
-                    </div>
-                    <div className="bg-white/50 p-3 rounded-lg">
-                      <div className="text-xs text-gray-500 uppercase tracking-wide mb-1 font-medium">Price</div>
-                      <div className="text-2xl font-bold text-green-600">₱{Number(product.price).toLocaleString()}</div>
-                    </div>
-                  </div>
-
-                  {/* Specifications Section */}
-                  <div className="text-sm font-bold text-gray-800 uppercase tracking-wide mb-4 flex items-center">
-                    <span className="border-b-2 border-green-500 pb-1">Specifications</span>
-                  </div>
-                  <div className="space-y-3">
-                    {extractSpecifications(product).map((specItem, specIndex) => (
-                      <div 
-                        key={`mobile-spec-${product.id}-${specIndex}`} 
-                        className="text-sm bg-white/30 p-3 rounded-lg hover:bg-white/50 transition-colors"
-                      >
-                        <div className="font-semibold text-gray-700 mb-1">{specItem.label}</div>
-                        <div className="text-gray-600 pl-2 border-l-2 border-gray-300">{renderSpecificationValue(specItem)}</div>
-                      </div>
-                    ))}
-                    {extractSpecifications(product).length === 0 && (
-                      <div className="text-sm text-gray-400 italic text-center py-8 bg-white/30 rounded-lg">
-                        No specifications available
-                      </div>
-                    )}
-                  </div>
+                
+                {/* Product Name */}
+                <h3 className="text-sm font-bold text-center text-gray-800 mb-1 line-clamp-2 min-h-[40px]">
+                  {product.productName || product.name}
+                </h3>
+                
+                {/* Product Brand */}
+                <div className="text-xs text-center text-gray-600 font-medium">
+                  {product.brand || "N/A"}
                 </div>
               </div>
             ))}
+            
+            {/* Add Product Button */}
+            {products.length < 3 && (
+              <div className="flex-1 min-w-[200px] max-w-[300px] rounded-xl shadow-lg p-4 bg-white border-2 border-dashed border-gray-300 flex items-center justify-center min-h-[220px]">
+                <button
+                  onClick={onAddProduct}
+                  className="flex flex-col items-center text-gray-400 hover:text-green-600 transition-colors group"
+                >
+                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 group-hover:border-green-500 flex items-center justify-center mb-3 transition-all group-hover:scale-110">
+                    <FaPlus className="text-3xl" />
+                  </div>
+                  <span className="text-sm font-semibold">Add Product</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Comparison Table */}
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            {/* Price Row - Highlighted */}
+            <div className="flex border-b-2 border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
+              <div className="w-48 flex-shrink-0 p-4 font-bold text-gray-800 bg-green-100 flex items-center border-r-2 border-green-200">
+                <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                PRICE
+              </div>
+              {products.map((product, index) => (
+                <div 
+                  key={`price-${product.id}`}
+                  className="flex-1 min-w-[200px] max-w-[300px] p-4 flex items-center justify-center"
+                >
+                  <div className="text-2xl font-bold text-green-600">
+                    ₱{Number(product.price).toLocaleString()}
+                  </div>
+                </div>
+              ))}
+              {products.length < 3 && (
+                <div className="flex-1 min-w-[200px] max-w-[300px] p-4 bg-gray-50"></div>
+              )}
+            </div>
+
+            {/* Specifications Rows */}
+            {getAllUniqueSpecLabels().map((label, specIndex) => {
+              // Get values for all products for this spec label
+              const values = products.map(product => {
+                const specs = extractSpecifications(product);
+                const matchingSpec = specs.find(s => s.label === label);
+                return matchingSpec ? matchingSpec.value : 'N/A';
+              });
+              
+              // Check if all values are the same (no difference)
+              const allSame = values.every(v => v === values[0]);
+              const rowBg = specIndex % 2 === 0 ? 'bg-gray-50' : 'bg-white';
+              
+              return (
+                <div 
+                  key={`spec-row-${specIndex}-${label}`}
+                  className={`flex border-b border-gray-200 hover:bg-blue-50 transition-colors ${rowBg}`}
+                >
+                  {/* Specification Label */}
+                  <div className="w-48 flex-shrink-0 p-4 font-semibold text-gray-700 bg-gray-100 flex items-center border-r border-gray-200">
+                    <div className="flex items-center gap-2">
+                      {!allSame && (
+                        <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" title="Different values"></div>
+                      )}
+                      <span className="text-sm">{label}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Values for each product */}
+                  {products.map((product, productIndex) => {
+                    const specs = extractSpecifications(product);
+                    const matchingSpec = specs.find(s => s.label === label);
+                    const value = matchingSpec ? matchingSpec.value : 'N/A';
+                    const isNA = value === 'N/A';
+                    
+                    return (
+                      <div 
+                        key={`value-${product.id}-${specIndex}-${label}`}
+                        className={`flex-1 min-w-[200px] max-w-[300px] p-4 text-sm text-gray-700 ${
+                          !allSame && !isNA ? 'font-medium' : ''
+                        } ${isNA ? 'text-gray-400 italic' : ''}`}
+                      >
+                        <div className="break-words">
+                          {matchingSpec ? renderSpecificationValue(matchingSpec) : value}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  {/* Empty cell for add button column */}
+                  {products.length < 3 && (
+                    <div className="flex-1 min-w-[200px] max-w-[300px] p-4 bg-gray-50"></div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Availability Row - Highlighted */}
+            <div className="flex bg-gradient-to-r from-gray-50 to-slate-50">
+              <div className="w-48 flex-shrink-0 p-4 font-bold text-gray-800 bg-gray-100 flex items-center border-r border-gray-200">
+                <svg className="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                AVAILABILITY
+              </div>
+              {products.map((product) => {
+                const inStock = product.inStock !== undefined ? product.inStock : true;
+                return (
+                  <div 
+                    key={`stock-${product.id}`}
+                    className="flex-1 min-w-[200px] max-w-[300px] p-4 flex items-center justify-center"
+                  >
+                    <span className={`px-4 py-2 rounded-full font-semibold text-sm ${
+                      inStock 
+                        ? 'bg-green-100 text-green-700 border border-green-300' 
+                        : 'bg-red-100 text-red-700 border border-red-300'
+                    }`}>
+                      {inStock ? '✓ In Stock' : '✗ Out of Stock'}
+                    </span>
+                  </div>
+                );
+              })}
+              {products.length < 3 && (
+                <div className="flex-1 min-w-[200px] max-w-[300px] p-4 bg-gray-50"></div>
+              )}
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="mt-4 flex items-center gap-4 text-xs text-gray-600 bg-white p-3 rounded-lg shadow">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+              <span>Indicates different specifications</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+              <span>Hover rows to highlight</span>
+            </div>
           </div>
         </div>
-        
-        {/* Scroll indicator hint */}
-        {products.length > 1 && (
-          <div className="text-center mt-4 text-xs text-gray-500 flex items-center justify-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
-            </svg>
-            <span>Swipe left/right to view more</span>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
+      </div>
+      
+      {/* Mobile view - Swipeable Cards */}
+      <div className="md:hidden">
+        {/* Mobile Products Carousel */}
+        <div className="mb-4">
+          <div className="overflow-x-auto -mx-4 px-4 pb-4 scrollbar-hide">
+            <div className="flex gap-4">
+              {products.map((product, index) => (
+                <div 
+                  key={product.id}
+                  className={`flex-shrink-0 w-[80vw] rounded-xl shadow-lg p-4 border-t-4 relative ${getProductColorClass(index)}`}
+                >
+                  {/* Remove button */}
+                  <button
+                    onClick={() => onRemoveProduct(product.id)}
+                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md transition-all"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                  
+                  {/* Product Image */}
+                  <div className="w-24 h-24 mx-auto mb-3 flex items-center justify-center bg-white rounded-lg p-2">
+                    <img
+                      src={product.imageUrl || product.image}
+                      alt={product.productName || product.name}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                  
+                  {/* Product Name */}
+                  <h3 className="text-sm font-bold text-center text-gray-800 mb-2">
+                    {product.productName || product.name}
+                  </h3>
+                  
+                  {/* Brand & Price */}
+                  <div className="bg-white/50 rounded-lg p-3 mb-3">
+                    <div className="text-xs text-gray-600 mb-1">{product.brand || "N/A"}</div>
+                    <div className="text-xl font-bold text-green-600">₱{Number(product.price).toLocaleString()}</div>
+                  </div>
+                </div>
+              ))}
+              
+              {/* Add Product Card */}
+              {products.length < 3 && (
+                <div className="flex-shrink-0 w-[80vw] rounded-xl shadow-lg p-4 bg-white border-2 border-dashed border-gray-300 flex items-center justify-center min-h-[200px]">
+                  <button
+                    onClick={onAddProduct}
+                    className="flex flex-col items-center text-gray-400 hover:text-green-600 transition-colors"
+                  >
+                    <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center mb-3">
+                      <FaPlus className="text-3xl" />
+                    </div>
+                    <span className="text-sm font-semibold">Add Product</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        )}
-        
-        {/* Mobile Add Product Button */}
-        {products.length < 3 && (
-          <div className="text-center mt-6">
-            <button
-              onClick={onAddProduct}
-              className="bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-6 rounded-xl inline-flex items-center shadow-md transition-colors"
-            >
-              <FaPlus className="mr-2" />
-              Add Product to Compare
-            </button>
+          
+          {/* Scroll Indicator */}
+          {products.length > 1 && (
+            <div className="text-center text-xs text-gray-500 flex items-center justify-center gap-2 mt-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+              </svg>
+              <span>Swipe to view products</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Comparison Table - Scrollable */}
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-gray-200">
+                  <th className="sticky left-0 z-10 bg-green-100 p-3 text-left text-xs font-bold text-gray-800 min-w-[120px] border-r border-green-200">
+                    SPECIFICATION
+                  </th>
+                  {products.map((product, index) => (
+                    <th 
+                      key={`header-${product.id}`}
+                      className={`p-3 text-center text-xs font-bold min-w-[150px] ${getProductColorClass(index).split(' ')[0]}`}
+                    >
+                      <div className="truncate">{(product.productName || product.name).substring(0, 20)}</div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {/* Price Row */}
+                <tr className="bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-200">
+                  <td className="sticky left-0 z-10 bg-green-100 p-3 font-semibold text-xs text-gray-800 border-r border-green-200">
+                    💰 PRICE
+                  </td>
+                  {products.map((product) => (
+                    <td 
+                      key={`mobile-price-${product.id}`}
+                      className="p-3 text-center"
+                    >
+                      <div className="text-lg font-bold text-green-600">
+                        ₱{Number(product.price).toLocaleString()}
+                      </div>
+                    </td>
+                  ))}
+                </tr>
+
+                {/* Specification Rows */}
+                {getAllUniqueSpecLabels().map((label, specIndex) => {
+                  const values = products.map(product => {
+                    const specs = extractSpecifications(product);
+                    const matchingSpec = specs.find(s => s.label === label);
+                    return matchingSpec ? matchingSpec.value : 'N/A';
+                  });
+                  
+                  const allSame = values.every(v => v === values[0]);
+                  const rowBg = specIndex % 2 === 0 ? 'bg-gray-50' : 'bg-white';
+                  
+                  return (
+                    <tr 
+                      key={`mobile-row-${specIndex}-${label}`}
+                      className={`border-b border-gray-200 ${rowBg}`}
+                    >
+                      <td className={`sticky left-0 z-10 ${rowBg} p-3 font-semibold text-xs text-gray-700 border-r border-gray-200`}>
+                        <div className="flex items-center gap-1">
+                          {!allSame && (
+                            <div className="w-1.5 h-1.5 bg-orange-500 rounded-full flex-shrink-0"></div>
+                          )}
+                          <span className="line-clamp-2">{label}</span>
+                        </div>
+                      </td>
+                      {products.map((product) => {
+                        const specs = extractSpecifications(product);
+                        const matchingSpec = specs.find(s => s.label === label);
+                        const value = matchingSpec ? matchingSpec.value : 'N/A';
+                        const isNA = value === 'N/A';
+                        
+                        return (
+                          <td 
+                            key={`mobile-value-${product.id}-${specIndex}-${label}`}
+                            className={`p-3 text-xs ${
+                              !allSame && !isNA ? 'font-medium text-gray-800' : 'text-gray-600'
+                            } ${isNA ? 'text-gray-400 italic' : ''}`}
+                          >
+                            <div className="line-clamp-3 break-words">
+                              {matchingSpec ? renderSpecificationValue(matchingSpec) : value}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+
+                {/* Availability Row */}
+                <tr className="bg-gradient-to-r from-gray-50 to-slate-50">
+                  <td className="sticky left-0 z-10 bg-gray-100 p-3 font-semibold text-xs text-gray-800 border-r border-gray-200">
+                    ✓ AVAILABILITY
+                  </td>
+                  {products.map((product) => {
+                    const inStock = product.inStock !== undefined ? product.inStock : true;
+                    return (
+                      <td 
+                        key={`mobile-stock-${product.id}`}
+                        className="p-3 text-center"
+                      >
+                        <span className={`px-2 py-1 rounded-full font-semibold text-xs ${
+                          inStock 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {inStock ? '✓ In Stock' : '✗ Out'}
+                        </span>
+                      </td>
+                    );
+                  })}
+                </tr>
+              </tbody>
+            </table>
           </div>
-        )}
+          
+          {/* Scroll hint */}
+          <div className="p-3 bg-gray-50 border-t border-gray-200 text-center">
+            <div className="text-xs text-gray-500 flex items-center justify-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+              </svg>
+              <span>Scroll table horizontally to compare</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Legend */}
+        <div className="mt-4 p-3 bg-white rounded-lg shadow text-xs text-gray-600">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+            <span>Different specifications highlighted</span>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -17,5 +17,10 @@ export default defineConfig({
         manualChunks: undefined
       }
     }
+  },
+  server: {
+    headers: {
+      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://mhhnfftaoihhltbknenq.supabase.co https://api.groq.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.supabase.co https://i.ibb.co blob:; font-src 'self' data:; connect-src 'self' http://localhost:5000 https://mhhnfftaoihhltbknenq.supabase.co https://api.groq.com https://api.sketchfab.com https://sketchfab-prod-media.s3.amazonaws.com wss://mhhnfftaoihhltbknenq.supabase.co; frame-ancestors 'none';"
+    }
   }
 })

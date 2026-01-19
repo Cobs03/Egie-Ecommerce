@@ -4,6 +4,7 @@ import BuildComponents from "./SystemBuild Components/BuildComponents";
 import Selected from "./SystemBuild Components/Selected";
 import SystemBuilder3D from "./SystemBuild Components/3dSystemBuild/SystemBuilder3D";
 import ComponentSelector from "./SystemBuild Components/ComponentSelector";
+import PCBuildQuestionnaire from "../Question/Question";
 import { FaInfoCircle, FaShoppingCart, FaTrash, FaFileExcel, FaSave } from "react-icons/fa";
 import * as XLSX from 'xlsx'; // npm install xlsx
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,10 @@ const SystemBuild = () => {
   const [isMobileSelectedDrawerOpen, setIsMobileSelectedDrawerOpen] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState({});
   
+  // Questionnaire state
+  const [isQuestionnaireCompleted, setIsQuestionnaireCompleted] = useState(false);
+  const [questionnaireData, setQuestionnaireData] = useState(null);
+  
   // Save build modal state
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [buildName, setBuildName] = useState('');
@@ -50,6 +55,73 @@ const SystemBuild = () => {
   // Scroll animations
   const headerAnim = useScrollAnimation({ threshold: 0.1 });
   const contentAnim = useScrollAnimation({ threshold: 0.1 });
+
+  // Required components for a complete build
+  const REQUIRED_COMPONENTS = ['Case', 'Motherboard', 'Processor', 'RAM', 'PSU', 'SSD'];
+  
+  // Check if build has all required components
+  const isCompleteBuild = useMemo(() => {
+    return REQUIRED_COMPONENTS.every(component => selectedProducts[component]);
+  }, [selectedProducts]);
+
+  // Check if user has completed questionnaire in session
+  useEffect(() => {
+    const questionnaireCompleted = sessionStorage.getItem('questionnaireCompleted');
+    const savedQuestionnaireData = sessionStorage.getItem('questionnaireData');
+    
+    if (questionnaireCompleted === 'true') {
+      setIsQuestionnaireCompleted(true);
+      if (savedQuestionnaireData) {
+        setQuestionnaireData(JSON.parse(savedQuestionnaireData));
+      }
+    }
+  }, []);
+
+  // Handle questionnaire submission
+  const handleQuestionnaireSubmit = (data) => {
+    console.log('📝 Questionnaire submitted:', data);
+    setQuestionnaireData(data);
+    setIsQuestionnaireCompleted(true);
+    
+    // Save to session storage so user doesn't have to fill it again in this session
+    sessionStorage.setItem('questionnaireCompleted', 'true');
+    sessionStorage.setItem('questionnaireData', JSON.stringify(data));
+    
+    toast.success('Questionnaire completed!', {
+      description: 'You can now start building your PC'
+    });
+  };
+
+  // Calculate total price (must be before effects that use it)
+  const totalPrice = useMemo(() => {
+    return Object.values(selectedProducts).reduce((total, product) => {
+      return total + (product?.price || 0);
+    }, 0);
+  }, [selectedProducts]);
+
+  // Save questionnaire progress when user leaves page
+  useEffect(() => {
+    const saveProgress = async () => {
+      if (!user || !isQuestionnaireCompleted || !questionnaireData) {
+        return;
+      }
+
+      try {
+        // Save questionnaire data to draft along with build components
+        await BuildService.saveDraft(selectedProducts, totalPrice, {
+          questionnaireCompleted: true,
+          questionnaireData: questionnaireData
+        });
+        console.log('📝 Questionnaire data saved with build draft');
+      } catch (error) {
+        console.error('Failed to save questionnaire data:', error);
+      }
+    };
+
+    // Debounce save
+    const timeoutId = setTimeout(saveProgress, 2000);
+    return () => clearTimeout(timeoutId);
+  }, [questionnaireData, isQuestionnaireCompleted, selectedProducts, totalPrice, user]);
 
   // Load products from database on mount
   useEffect(() => {
@@ -80,6 +152,16 @@ const SystemBuild = () => {
         const draft = await BuildService.getDraft();
         if (draft && Object.keys(draft.components).length > 0) {
           setSelectedProducts(draft.components);
+          console.log('📦 Draft restored from database');
+          
+          // Restore questionnaire data if it exists in draft
+          if (draft.metadata?.questionnaireCompleted && draft.metadata?.questionnaireData) {
+            setIsQuestionnaireCompleted(true);
+            setQuestionnaireData(draft.metadata.questionnaireData);
+            sessionStorage.setItem('questionnaireCompleted', 'true');
+            sessionStorage.setItem('questionnaireData', JSON.stringify(draft.metadata.questionnaireData));
+            console.log('📝 Questionnaire data restored from draft');
+          }
         }
       } catch (error) {
       }
@@ -90,13 +172,6 @@ const SystemBuild = () => {
     }
   }, [user, location.state]);
 
-  // Calculate total price (must be before auto-save effect)
-  const totalPrice = useMemo(() => {
-    return Object.values(selectedProducts).reduce((total, product) => {
-      return total + (product?.price || 0);
-    }, 0);
-  }, [selectedProducts]);
-
   // Auto-save draft to database (debounced)
   useEffect(() => {
     if (!user || Object.keys(selectedProducts).length === 0) {
@@ -105,13 +180,19 @@ const SystemBuild = () => {
 
     const timeoutId = setTimeout(async () => {
       try {
-        await BuildService.saveDraft(selectedProducts, totalPrice);
+        // Include questionnaire data in draft save
+        const metadata = {};
+        if (isQuestionnaireCompleted && questionnaireData) {
+          metadata.questionnaireCompleted = true;
+          metadata.questionnaireData = questionnaireData;
+        }
+        await BuildService.saveDraft(selectedProducts, totalPrice, metadata);
       } catch (error) {
       }
     }, 2000); // Wait 2 seconds after last change before saving
 
     return () => clearTimeout(timeoutId);
-  }, [selectedProducts, totalPrice, user]);
+  }, [selectedProducts, totalPrice, user, isQuestionnaireCompleted, questionnaireData]);
 
   // Load build from navigation state if coming from MyBuilds
   useEffect(() => {
@@ -291,6 +372,22 @@ const SystemBuild = () => {
           } catch (error) {
             // Non-critical, don't show error to user
           }
+        }
+        
+        // Check if build is complete (has all required components)
+        if (isCompleteBuild) {
+          // Clear questionnaire data and mark session as complete build
+          sessionStorage.removeItem('questionnaireCompleted');
+          sessionStorage.removeItem('questionnaireData');
+          setIsQuestionnaireCompleted(false);
+          setQuestionnaireData(null);
+          console.log('✅ Complete build added to cart - questionnaire data cleared');
+          
+          toast.success('Complete build added!', {
+            description: 'Your full PC build is ready for checkout'
+          });
+        } else {
+          console.log('⚠️ Incomplete build - questionnaire data preserved');
         }
         
         // Delete draft since user is adding to cart
@@ -476,6 +573,15 @@ const SystemBuild = () => {
 
   return (
     <div className="flex flex-col bg-[#F3F7F6] min-h-screen">
+      {/* Questionnaire Modal - Blocks access until completed */}
+      {!isQuestionnaireCompleted && (
+        <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl">
+            <PCBuildQuestionnaire onSubmit={handleQuestionnaireSubmit} />
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div
         ref={headerAnim.ref}
@@ -487,12 +593,36 @@ const SystemBuild = () => {
       >
         {/* Top Row: Title and Total Price */}
         <div className="flex items-center justify-between gap-3 w-full">
-          <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-800 font-['Bruno_Ace_SC'] flex-shrink-0">
-            System Builder
-          </h1>
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-800 font-['Bruno_Ace_SC']">
+              System Builder
+            </h1>
+            
+            {/* Questionnaire Info Button */}
+            {isQuestionnaireCompleted && questionnaireData && (
+              <button
+                onClick={() => setIsQuestionnaireCompleted(false)}
+                className="text-xs sm:text-sm px-2 sm:px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all duration-200 active:scale-95 hover:scale-105 flex items-center gap-1"
+                title="View/Edit Questionnaire"
+              >
+                <FaInfoCircle className="text-xs sm:text-sm" />
+                <span className="hidden sm:inline">Questionnaire</span>
+              </button>
+            )}
+          </div>
           
           {/* Total Price Display */}
           <div className="text-right flex-shrink-0">
+            {!isCompleteBuild && selectedCount > 0 && (
+              <p className="text-xs text-orange-600 font-semibold mb-1">
+                ⚠️ Incomplete Build
+              </p>
+            )}
+            {isCompleteBuild && (
+              <p className="text-xs text-green-600 font-semibold mb-1">
+                ✓ Complete Build
+              </p>
+            )}
             <p className="text-xs text-gray-500">
               Total ({selectedCount} items)
             </p>
@@ -711,8 +841,7 @@ const SystemBuild = () => {
       {/* Floating 3D Preview - LEFT SIDE */}
       {show3DPreview && viewMode === "table" && (
         <div
-          className="fixed bottom-3 sm:bottom-6 left-3 sm:left-6 w-[calc(100vw-1.5rem)] sm:w-80 md:w-96 h-48 sm:h-56 md:h-64 bg-gray-900 rounded-lg shadow-2xl border-2 border-lime-500 overflow-hidden"
-          style={{ zIndex: 1000 }}
+          className="fixed bottom-3 sm:bottom-6 left-3 sm:left-6 w-[calc(100vw-1.5rem)] sm:w-80 md:w-96 h-48 sm:h-56 md:h-64 bg-gray-900 rounded-lg shadow-2xl border-2 border-lime-500 overflow-hidden z-30"
         >
           <div className="bg-gray-800 px-3 sm:px-4 py-1.5 sm:py-2 flex justify-between items-center cursor-move">
             <span className="text-white text-xs sm:text-sm font-semibold">
@@ -757,11 +886,11 @@ const SystemBuild = () => {
       {isMobileComponentDrawerOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-[9998] transition-opacity duration-300"
+            className="fixed inset-0 bg-black bg-opacity-50 z-[18] transition-opacity duration-300"
             onClick={() => setIsMobileComponentDrawerOpen(false)}
           />
           <div
-            className={`fixed top-0 left-0 h-full w-full sm:w-[400px] bg-white shadow-2xl z-[9999] transform transition-transform duration-300 ease-in-out flex flex-col ${
+            className={`fixed top-0 left-0 h-full w-full sm:w-[400px] bg-white shadow-2xl z-[19] transform transition-transform duration-300 ease-in-out flex flex-col ${
               isMobileComponentDrawerOpen
                 ? "translate-x-0"
                 : "-translate-x-full"
@@ -799,11 +928,11 @@ const SystemBuild = () => {
       {isMobileSelectedDrawerOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-[9998] transition-opacity duration-300"
+            className="fixed inset-0 bg-black bg-opacity-50 z-[18] transition-opacity duration-300"
             onClick={() => setIsMobileSelectedDrawerOpen(false)}
           />
           <div
-            className={`fixed top-0 right-0 h-full w-full sm:w-[500px] bg-white shadow-2xl z-[9999] transform transition-transform duration-300 ease-in-out flex flex-col ${
+            className={`fixed top-0 right-0 h-full w-full sm:w-[500px] bg-white shadow-2xl z-[19] transform transition-transform duration-300 ease-in-out flex flex-col ${
               isMobileSelectedDrawerOpen ? "translate-x-0" : "translate-x-full"
             }`}
           >
@@ -858,14 +987,14 @@ const SystemBuild = () => {
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-[9998] transition-opacity duration-300"
+            className="fixed inset-0 bg-black bg-opacity-50 z-[18] transition-opacity duration-300"
             onClick={handleCloseDrawer}
             style={{ opacity: isDrawerOpen ? 1 : 0 }}
           />
 
           {/* Drawer */}
           <div
-            className={`fixed top-0 right-0 h-full w-full sm:w-[500px] md:w-[600px] lg:w-[700px] bg-white shadow-2xl z-[9999] transform transition-transform duration-300 ease-in-out flex flex-col ${
+            className={`fixed top-0 right-0 h-full w-full sm:w-[500px] md:w-[600px] lg:w-[700px] bg-white shadow-2xl z-[19] transform transition-transform duration-300 ease-in-out flex flex-col ${
               isDrawerOpen ? "translate-x-0" : "translate-x-full"
             }`}
           >

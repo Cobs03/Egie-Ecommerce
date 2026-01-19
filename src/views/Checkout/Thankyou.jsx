@@ -47,7 +47,7 @@ const ThankYou = () => {
             />
           </div>
           <h1 className="text-2xl md:text-3xl font-semibold text-center mb-6 font-['Bruno_Ace_SC']">
-            Thank you for Shopping at Egie Online GameShop
+            Thank you for Shopping at NovaTech
           </h1>
           <p className="text-gray-600 text-center mb-6 max-w-lg mx-auto">
             Your order is being processed. You will receive a confirmation email

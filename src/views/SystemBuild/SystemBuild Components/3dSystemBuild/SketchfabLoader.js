@@ -282,12 +282,36 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
         q: searchTerm,
         type: 'models',
         downloadable: 'true',
-        count: '30', // Increased to get more results (some may fail to download)
-        sort_by: '-relevance' // Changed from -likeCount to -relevance for better matches
+        count: '30',
+        sort_by: '-relevance'
       });
 
-      console.log('🔍 Searching Sketchfab API for "' + searchTerm + '"...');
-      const response = await fetch(
+      console.log('🔍 Searching Sketchfab for "' + searchTerm + '"...');
+      
+      // Try backend proxy first
+      let response;
+      let data;
+      try {
+        response = await fetch(
+          'http://localhost:5000/api/sketchfab/search?' + params
+        );
+        
+        if (response.ok) {
+          data = await response.json();
+          if (data.success) {
+            console.log('✅ Found ' + (data.models?.length || 0) + ' models via proxy');
+            const downloadableModels = (data.models || []).filter(function(model) {
+              return model.isDownloadable;
+            });
+            return downloadableModels;
+          }
+        }
+      } catch (proxyError) {
+        console.log('⚠️ Proxy unavailable, using direct API...');
+      }
+      
+      // Fallback to direct API
+      response = await fetch(
         'https://api.sketchfab.com/v3/search?' + params,
         {
           headers: {
@@ -299,19 +323,14 @@ export const searchSketchfabModels = async (searchTerm, options = {}) => {
       if (!response.ok) {
         if (response.status === 429) {
           console.warn('⚠️ Rate limited, waiting 5 seconds...');
-          // Wait longer before retry
           await new Promise(resolve => setTimeout(resolve, 5000));
           throw new Error('Rate limited, please try again');
         }
         throw new Error('Sketchfab API error: ' + response.status);
       }
 
-      const data = await response.json();
+      data = await response.json();
       console.log('✅ Found ' + (data.results?.length || 0) + ' models for "' + searchTerm + '"');
-    
-    const downloadableModels = data.results?.filter(function(model) {
-      return model.isDownloadable;
-    }) || [];
     
     // Score and sort models by name similarity to search term
     const searchTermLower = searchTerm.toLowerCase();
@@ -397,7 +416,29 @@ export const getSketchfabDownloadUrl = async (modelUid) => {
     return cached.data;
   }
 
-  // Use the request queue to avoid rate limiting
+  console.log('📥 Getting download URL for model: ' + modelUid);
+
+  // Try backend proxy first
+  try {
+    const response = await fetch(
+      'http://localhost:5000/api/sketchfab/download/' + modelUid
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+      
+      if (data.success && data.downloadUrl) {
+        console.log('✅ Got download URL via proxy for: ' + data.modelName);
+        const result = { url: data.downloadUrl, format: 'gltf' };
+        downloadUrlCache.set(modelUid, { data: result, timestamp: Date.now() });
+        return result;
+      }
+    }
+  } catch (proxyError) {
+    console.log('⚠️ Proxy unavailable, using direct API...');
+  }
+
+  // Fallback: Use the request queue to avoid rate limiting
   return queueRequest(async () => {
     try {
       console.log('📥 Fetching download URL for', modelUid);

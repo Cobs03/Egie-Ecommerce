@@ -407,9 +407,10 @@ class BuildService {
    * Save or update draft build (auto-save)
    * @param {Object} components - Selected components object
    * @param {number} totalPrice - Total price of build
+   * @param {Object} metadata - Optional metadata (e.g., questionnaire data)
    * @returns {Promise<Object>} Saved draft build object
    */
-  async saveDraft(components, totalPrice) {
+  async saveDraft(components, totalPrice, metadata = {}) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -434,6 +435,7 @@ class BuildService {
           .update({
             components: components,
             total_price: totalPrice,
+            metadata: metadata,
             updated_at: new Date().toISOString()
           })
           .eq('id', existingDraft.id)
@@ -452,6 +454,7 @@ class BuildService {
               build_name: 'Draft Build',
               components: components,
               total_price: totalPrice,
+              metadata: metadata,
               is_draft: true,
               is_public: false
             }

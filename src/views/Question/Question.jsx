@@ -18,6 +18,7 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
     additionalNeeds: [],
     otherNeeds: "",
   });
+  const [errors, setErrors] = useState({});
 
   const totalSteps = 9;
 
@@ -49,16 +50,72 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
     });
   };
 
+  // Validation function for each step
+  const validateStep = (step) => {
+    const newErrors = {};
+
+    switch (step) {
+      case 1:
+        if (formData.pcPurpose.length === 0) {
+          newErrors.step1 = "Please select at least one purpose for your PC";
+        }
+        break;
+      case 2:
+        if (!formData.budgetRange) {
+          newErrors.step2 = "Please select a budget range";
+        }
+        break;
+      case 3:
+        // Optional step, no validation needed
+        break;
+      case 4:
+        if (!formData.monitorResolution) {
+          newErrors.step4 = "Please select a monitor resolution/target performance";
+        }
+        break;
+      case 5:
+        // Optional step for gaming preferences
+        break;
+      case 6:
+        if (!formData.storagePreference) {
+          newErrors.step6 = "Please select a storage preference";
+        }
+        break;
+      case 7:
+        if (!formData.upgradeability) {
+          newErrors.step7 = "Please select an upgradeability preference";
+        }
+        break;
+      case 8:
+        if (!formData.aesthetics) {
+          newErrors.step8 = "Please select an aesthetics preference";
+        }
+        break;
+      case 9:
+        // Optional step, no validation needed
+        break;
+      default:
+        break;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   // Navigation functions
   const nextStep = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
+    if (validateStep(currentStep)) {
+      if (currentStep < totalSteps) {
+        setCurrentStep(currentStep + 1);
+        setErrors({}); // Clear errors when moving to next step
+      }
     }
   };
 
   const prevStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+      setErrors({}); // Clear errors when going back
     }
   };
 
@@ -104,11 +161,21 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
       <form onSubmit={handleSubmit} className="flex flex-col flex-1">
         {/* Question content - Scrollable, fixed height */}
         <div className="flex-1 overflow-y-auto px-6 py-2">
+          {/* Error message display */}
+          {Object.keys(errors).length > 0 && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm font-semibold flex items-center">
+                <span className="mr-2">⚠️</span>
+                {errors[`step${currentStep}`]}
+              </p>
+            </div>
+          )}
+
           {/* Step 1: Purpose of the PC */}
           {currentStep === 1 && (
             <div className="space-y-3 animate-fadeIn">
               <h2 className="text-xl font-semibold mb-2">
-                1. Purpose of the PC
+                1. Purpose of the PC <span className="text-red-500">*</span>
               </h2>
               <p className="text-gray-600 mb-3">Select all that apply</p>
 
@@ -237,7 +304,9 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
           {/* Step 2: Budget Range */}
           {currentStep === 2 && (
             <div className="space-y-3 animate-fadeIn">
-              <h2 className="text-xl font-semibold mb-2">2. Budget Range</h2>
+              <h2 className="text-xl font-semibold mb-2">
+                2. Budget Range <span className="text-red-500">*</span>
+              </h2>
 
               <div className="space-y-2">
                 <div className="flex items-center">
@@ -437,7 +506,7 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
 
           {/* Step 4: Monitor Resolution */}
           {currentStep === 4 && (
-            <div className="space-y-3 animate-fadeIn">
+            <div className="space-y-3 animate-fadeIn"> <span className="text-red-500">*</span>
               <h2 className="text-xl font-semibold mb-2">
                 4. Monitor Resolution / Target Performance
               </h2>
@@ -564,7 +633,7 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
           {currentStep === 6 && (
             <div className="space-y-3 animate-fadeIn">
               <h2 className="text-xl font-semibold mb-2">
-                6. Storage Preference
+                6. Storage Preference <span className="text-red-500">*</span>
               </h2>
 
               <div className="space-y-2">
@@ -620,7 +689,7 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
           {currentStep === 7 && (
             <div className="space-y-3 animate-fadeIn">
               <h2 className="text-xl font-semibold mb-2">
-                7. Upgradeability Preference
+                7. Upgradeability Preference <span className="text-red-500">*</span>
               </h2>
 
               <div className="space-y-2">
@@ -672,7 +741,9 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
           {/* Step 8: Aesthetics */}
           {currentStep === 8 && (
             <div className="space-y-3 animate-fadeIn">
-              <h2 className="text-xl font-semibold mb-2">8. Aesthetics</h2>
+              <h2 className="text-xl font-semibold mb-2">
+                8. Aesthetics <span className="text-red-500">*</span>
+              </h2>
 
               <div className="space-y-2">
                 <div className="flex items-center">
