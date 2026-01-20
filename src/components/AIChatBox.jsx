@@ -3207,8 +3207,9 @@ Your response:`;
           ? `at least ₱${minBudget.toLocaleString()}`
           : 'your budget';
     
-    // Check if we're in PC building context
-    const isPCBuildContext = context.buildingPC || /build.*pc|gaming\s*pc|custom\s*pc/i.test(userInput);
+    // Check if we're in PC building context by analyzing recent messages
+    const recentMessages = currentMessages.slice(-3).map(m => m.text.toLowerCase()).join(' ');
+    const isPCBuildContext = /build.*pc|gaming\s*pc|custom\s*pc|pc\s*build|assemble.*pc/i.test(recentMessages + ' ' + userInput);
     
     let responseText = '';
     if (isPCBuildContext && maxBudget) {
@@ -4190,9 +4191,20 @@ Rules:
     
     while (retryAttempts <= maxRetries) {
       try {
+        // Get recently viewed products from localStorage
+        const recentlyViewed = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+        
+        // Get current user ID
+        const { data: { user } } = await supabase.auth.getUser();
+        const userId = user?.id || null;
+        
         const response = await AIService.chat(
           updatedMessages,
-          userPreferences // Pass questionnaire data if available
+          userPreferences, // Pass questionnaire data if available
+          {
+            userId: userId,
+            recentlyViewedProducts: recentlyViewed
+          }
         );
 
         // Extract products mentioned in AI response

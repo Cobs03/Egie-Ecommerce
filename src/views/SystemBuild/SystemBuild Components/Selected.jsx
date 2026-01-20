@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ProductModal from "../../Products/ProductGrid/ProductModal/ProductModal";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import { getCompatibilityLevel } from "../utils/compatibilityCheck";
 
 import {
   Select,
@@ -62,6 +63,44 @@ const Selected = ({
       >
         Select Products
       </h2>
+
+      {/* Motherboard-First Warning */}
+      {selectedType && selectedType !== 'Motherboard' && !selectedProducts['Motherboard'] && (
+        <div className="mb-3 p-3 bg-orange-50 border-2 border-orange-300 rounded-lg animate-pulse flex-shrink-0">
+          <p className="text-sm font-semibold text-orange-800 flex items-center gap-2">
+            <span className="text-lg">⚠️</span>
+            <span>Select Motherboard First!</span>
+          </p>
+          <p className="text-xs text-orange-700 mt-1">
+            The motherboard determines CPU socket, RAM type, and case size. Start there for best compatibility.
+          </p>
+        </div>
+      )}
+
+      {/* Compatibility Legend */}
+      {selectedType && Object.keys(selectedProducts).length > 0 && (
+        <div className="mb-3 p-2 bg-gray-50 border border-gray-200 rounded-lg flex-shrink-0">
+          <p className="text-xs font-semibold text-gray-700 mb-1">Compatibility Guide:</p>
+          <div className="grid grid-cols-2 gap-1 text-xs">
+            <div className="flex items-center gap-1">
+              <span className="w-3 h-3 bg-green-100 border border-green-300 rounded"></span>
+              <span className="text-gray-600">Perfect Match</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-3 h-3 bg-blue-100 border border-blue-300 rounded"></span>
+              <span className="text-gray-600">Compatible</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded"></span>
+              <span className="text-gray-600">Check Specs</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-3 h-3 bg-red-100 border border-red-300 rounded"></span>
+              <span className="text-gray-600">Not Compatible</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Selected Products Summary - NEW SECTION */}
       {Object.keys(selectedProducts).length > 0 && (
@@ -174,12 +213,30 @@ const Selected = ({
             {filteredProducts.map((product, index) => {
               const isSelected = selectedProducts[selectedType]?.id === product.id;
               
+              // Calculate compatibility level if other components are selected
+              const hasOtherComponents = Object.keys(selectedProducts).length > 0;
+              const compatibility = hasOtherComponents 
+                ? getCompatibilityLevel(selectedType, product, selectedProducts)
+                : null;
+              
+              // Define compatibility badge styles
+              const compatibilityBadges = {
+                perfect: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300', label: '✓ Perfect Match', icon: '✓' },
+                good: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300', label: '○ Compatible', icon: '○' },
+                warning: { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-300', label: '⚠ Check Specs', icon: '⚠' },
+                incompatible: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300', label: '✕ Not Compatible', icon: '✕' }
+              };
+              
+              const badge = compatibility ? compatibilityBadges[compatibility.level] : null;
+              
               return (
                 <div 
                   key={index} 
                   className={`p-3 rounded border transition-all ${
                     isSelected 
                       ? 'bg-lime-50 border-lime-400' 
+                      : badge
+                      ? `${badge.bg} ${badge.border} border-2`
                       : 'bg-gray-50 border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -199,12 +256,31 @@ const Selected = ({
 
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
+                      {/* Compatibility Badge */}
+                      {badge && !isSelected && (
+                        <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold mb-1 ${badge.bg} ${badge.text}`}>
+                          <span>{badge.icon}</span>
+                          <span>{compatibility.message}</span>
+                        </div>
+                      )}
+                      
                       <p className="font-semibold text-sm text-gray-800 truncate">
                         {product.name}
                       </p>
                       <p className="text-xs text-gray-500 truncate">
                         {product.brand} • {product.subcategory}
                       </p>
+                      
+                      {/* Compatibility Issues Warning */}
+                      {compatibility && compatibility.issues.length > 0 && (
+                        <div className="mt-1 text-xs text-red-600 bg-red-50 p-1.5 rounded">
+                          <p className="font-semibold">⚠ Issues:</p>
+                          {compatibility.issues.slice(0, 2).map((issue, idx) => (
+                            <p key={idx} className="truncate">• {issue.message}</p>
+                          ))}
+                        </div>
+                      )}
+                      
                       <p className="text-sm font-bold text-gray-700 mt-1">
                         ₱{product.price?.toLocaleString() || '0'}
                       </p>

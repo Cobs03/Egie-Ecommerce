@@ -601,7 +601,16 @@ const SystemBuild = () => {
       {!isQuestionnaireCompleted && (
         <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="w-full max-w-4xl">
-            <PCBuildQuestionnaire onSubmit={handleQuestionnaireSubmit} />
+            <PCBuildQuestionnaire 
+              onSubmit={handleQuestionnaireSubmit}
+              initialData={questionnaireData}
+              onClose={() => {
+                // Allow closing if they have previous data
+                if (questionnaireData) {
+                  setIsQuestionnaireCompleted(true);
+                }
+              }}
+            />
           </div>
         </div>
       )}

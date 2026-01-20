@@ -31,7 +31,33 @@ export const checkCompatibility = (selectedProducts) => {
     }
   }
 
-  // 3. GPU + Case Size Check
+  // 3. Motherboard + Case Form Factor Check
+  if (motherboard && pcCase) {
+    const mbFormFactor = (motherboard.formFactor || motherboard.form_factor || '').toLowerCase();
+    const caseFormFactor = (pcCase.formFactor || pcCase.form_factor || '').toLowerCase();
+    
+    // Case compatibility matrix
+    const compatibilityMatrix = {
+      'mini-itx': ['mini-itx', 'micro-atx', 'atx', 'mid-tower', 'full-tower'],
+      'micro-atx': ['micro-atx', 'atx', 'mid-tower', 'full-tower'],
+      'atx': ['atx', 'mid-tower', 'full-tower'],
+      'e-atx': ['full-tower', 'e-atx']
+    };
+    
+    if (mbFormFactor && caseFormFactor) {
+      const compatibleCases = compatibilityMatrix[mbFormFactor] || [];
+      const isCompatible = compatibleCases.some(c => caseFormFactor.includes(c));
+      
+      if (!isCompatible) {
+        issues.push({
+          type: 'error',
+          message: `Motherboard form factor (${mbFormFactor.toUpperCase()}) may not fit in ${caseFormFactor.toUpperCase()} case`
+        });
+      }
+    }
+  }
+
+  // 4. GPU + Case Size Check
   if (gpu && pcCase) {
     if (gpu.length && pcCase.maxGpuLength && gpu.length > pcCase.maxGpuLength) {
       issues.push({
@@ -41,7 +67,7 @@ export const checkCompatibility = (selectedProducts) => {
     }
   }
 
-  // 4. PSU Wattage Check
+  // 5. PSU Wattage Check
   if (psu) {
     const estimatedWattage = calculateEstimatedWattage(selectedProducts);
     const psuWattage = psu.wattage || 0;
@@ -59,7 +85,7 @@ export const checkCompatibility = (selectedProducts) => {
     }
   }
 
-  // 5. CPU Cooler + Case Height Check
+  // 6. CPU Cooler + Case Height Check
   if (cpuCooler && pcCase) {
     if (cpuCooler.height && pcCase.maxCoolerHeight && cpuCooler.height > pcCase.maxCoolerHeight) {
       issues.push({
@@ -104,4 +130,47 @@ export const calculateEstimatedWattage = (selectedProducts) => {
   
   // Add 20% headroom
   return Math.ceil(totalWattage * 1.2);
+};
+
+/**
+ * Get compatibility level for a specific product when added to existing build
+ * Returns: { level: 'perfect' | 'good' | 'warning' | 'incompatible', issues: [] }
+ */
+export const getCompatibilityLevel = (componentType, product, selectedProducts) => {
+  const testBuild = { ...selectedProducts, [componentType]: product };
+  const issues = checkCompatibility(testBuild);
+  
+  // Filter issues relevant to this product
+  const relevantIssues = issues.filter(issue => {
+    const msg = issue.message.toLowerCase();
+    const productName = product.name.toLowerCase();
+    const typeName = componentType.toLowerCase();
+    return msg.includes(typeName) || msg.includes(productName);
+  });
+  
+  // Determine compatibility level
+  if (relevantIssues.length === 0) {
+    return { level: 'perfect', issues: [], message: 'Fully compatible' };
+  }
+  
+  const hasError = relevantIssues.some(i => i.type === 'error');
+  const hasWarning = relevantIssues.some(i => i.type === 'warning');
+  
+  if (hasError) {
+    return { 
+      level: 'incompatible', 
+      issues: relevantIssues,
+      message: 'Not compatible'
+    };
+  }
+  
+  if (hasWarning) {
+    return { 
+      level: 'warning', 
+      issues: relevantIssues,
+      message: 'Potential issues'
+    };
+  }
+  
+  return { level: 'good', issues: [], message: 'Compatible' };
 };

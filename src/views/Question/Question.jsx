@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { FaArrowRight, FaArrowLeft, FaCheck } from "react-icons/fa";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
-const PCBuildQuestionnaire = ({ onSubmit }) => {
+const PCBuildQuestionnaire = ({ onSubmit, initialData = null, onClose = null }) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(initialData || {
     pcPurpose: [],
     otherPurpose: "",
     budgetRange: "",
@@ -21,6 +21,7 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
   const [errors, setErrors] = useState({});
 
   const totalSteps = 9;
+  const isEditMode = !!initialData; // Check if we're editing existing data
 
   // Scroll animation
   const containerAnim = useScrollAnimation({ threshold: 0.1 });
@@ -138,12 +139,24 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
     >
       {/* Header - Fixed height */}
       <div className="p-6 pb-2 flex-shrink-0">
-        <h1 className="text-2xl md:text-3xl font-bold text-center mb-2">
-          Custom PC Build Questionnaire
-        </h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold">
+            {isEditMode ? 'Edit Questionnaire' : 'Custom PC Build Questionnaire'}
+          </h1>
+          {isEditMode && onClose && (
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-red-500 transition-colors text-2xl font-bold px-3 py-1 hover:bg-gray-100 rounded"
+              title="Exit without changes"
+            >
+              ✕
+            </button>
+          )}
+        </div>
         <p className="text-center text-gray-600 mb-4">
-          Help us understand your needs so we can recommend the perfect PC build
-          for you.
+          {isEditMode 
+            ? 'Update your preferences or exit to keep your current answers' 
+            : 'Help us understand your needs so we can recommend the perfect PC build for you.'}
         </p>
 
         {/* Progress bar */}
@@ -931,18 +944,31 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
 
         {/* Navigation Buttons - Fixed at bottom */}
         <div className="p-6 pt-4 flex-shrink-0 border-t flex items-center justify-between">
-          <button
-            type="button"
-            onClick={prevStep}
-            disabled={currentStep === 1}
-            className={`px-4 py-2 rounded-lg flex items-center transition-all duration-200 ${
-              currentStep === 1
-                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-gray-200 hover:bg-gray-300 text-gray-700 active:scale-95 hover:scale-105"
-            }`}
-          >
-            <FaArrowLeft className="mr-2" /> Previous
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={prevStep}
+              disabled={currentStep === 1}
+              className={`px-4 py-2 rounded-lg flex items-center transition-all duration-200 ${
+                currentStep === 1
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-gray-200 hover:bg-gray-300 text-gray-700 active:scale-95 hover:scale-105"
+              }`}
+            >
+              <FaArrowLeft className="mr-2" /> Previous
+            </button>
+            
+            {isEditMode && onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-all duration-200 active:scale-95 hover:scale-105"
+                title="Keep current answers and exit"
+              >
+                Exit & Keep Answers
+              </button>
+            )}
+          </div>
 
           {currentStep < totalSteps ? (
             <button
@@ -957,7 +983,7 @@ const PCBuildQuestionnaire = ({ onSubmit }) => {
               type="submit"
               className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center transition-all duration-200 active:scale-95 hover:scale-105"
             >
-              Submit <FaCheck className="ml-2" />
+              {isEditMode ? 'Update' : 'Submit'} <FaCheck className="ml-2" />
             </button>
           )}
         </div>

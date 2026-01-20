@@ -239,7 +239,6 @@ const ProductGrid = ({ selectedCategory, filters }) => {
         {filteredProducts.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {paginatedItems.map((product, index) => (
->>>>>>> de358ffd40a18bc08c4c44155ea3bca59853793a
             <div
               key={index}
               onClick={() => setSelectedProduct(product)}

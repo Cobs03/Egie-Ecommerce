@@ -5,11 +5,120 @@ import PrivacyUtils from '../utils/PrivacyUtils';
 /**
  * AIService - AI Shopping Assistant Service
  *
- * Features:
- * - Chat with AI assistant
- * - Get product recommendations based on preferences
- * - Fetch product data from Supabase
- * - Generate personalized PC build suggestions
+ * 🧠 INTELLIGENT FEATURES (Enhanced with Database Intelligence):
+ * 
+ * 1. **Purchase History Analysis** 📊
+ *    - Analyzes user's past purchases
+ *    - Recommends compatible upgrades
+ *    - Avoids suggesting already-owned items
+ *    - Matches historical budget patterns
+ * 
+ * 2. **Product Review Integration** ⭐
+ *    - Scores products based on customer ratings
+ *    - Prioritizes highly-rated items (4+ stars)
+ *    - Considers review count for reliability
+ *    - Boosts recommendations for proven products
+ * 
+ * 3. **Real-time Stock Intelligence** 📦
+ *    - Filters out-of-stock items automatically
+ *    - Prioritizes in-stock products
+ *    - Warns about limited stock (< 5 units)
+ *    - Adjusts scoring based on availability
+ * 
+ * 4. **Trending Products Detection** 🔥
+ *    - Identifies best sellers (last 30 days)
+ *    - Recommends popular items first
+ *    - Category-specific trending analysis
+ *    - Sales count tracking
+ * 
+ * 5. **Active Promotions** 🎁
+ *    - Auto-suggests applicable vouchers
+ *    - Highlights products on sale
+ *    - Shows discount percentages
+ *    - Maximizes customer savings
+ * 
+ * 6. **PC Build Compatibility** 🖥️
+ *    - Tracks user's existing components
+ *    - Ensures component compatibility
+ *    - Prevents redundant purchases
+ *    - Smart upgrade suggestions
+ * 
+ * 7. **Browsing Context Awareness** 👁️
+ *    - Remembers recently viewed products
+ *    - Infers user interests and budget
+ *    - Provides contextual recommendations
+ *    - Improves response relevance
+ * 
+ * 8. **Smart Scoring Algorithm** 🎯
+ *    - Base score: 100 points
+ *    - Rating bonus: +10 per star (max 50)
+ *    - Review count bonus: +0.5 per review (max 25)
+ *    - In-stock bonus: +20 points
+ *    - Out-of-stock penalty: -50 points
+ *
+ * 🛡️ FALLBACK & ERROR HANDLING STRATEGY:
+ * 
+ * **Graceful Degradation Philosophy:**
+ * - AI assistant ALWAYS works, even if database features fail
+ * - Each intelligence feature has independent fallbacks
+ * - Partial data loading: If one feature fails, others still work
+ * - Safe defaults: Empty arrays instead of crashes
+ * 
+ * **3-Tier Fallback System:**
+ * 
+ * Tier 1: Individual Feature Fallbacks
+ * - getUserPurchaseHistory() → returns []
+ * - getPopularProducts() → returns []
+ * - getActivePromotions() → returns []
+ * - getProductWithReviews() → returns { avgRating: 0, reviewCount: 0 }
+ * - getUserPCComponents() → returns []
+ * 
+ * Tier 2: Partial Data Loading
+ * - If purchase history fails, AI still gets popular products
+ * - If reviews fail, AI still gets promotions
+ * - Each data source loaded independently with .catch()
+ * - Success/failure logged per feature
+ * 
+ * Tier 3: Complete Fallback
+ * - If ALL user data fails → userData = null
+ * - AI continues with just product catalog
+ * - Basic recommendations still work
+ * - No user personalization, but assistant functional
+ * 
+ * **Error Recovery Examples:**
+ * 
+ * Scenario 1: Database connection lost
+ * ├─ Review enrichment fails
+ * ├─ Fallback: Products scored without reviews (base score only)
+ * └─ Result: AI still recommends products
+ * 
+ * Scenario 2: User table unavailable
+ * ├─ Purchase history fails (returns [])
+ * ├─ User components fails (returns [])
+ * ├─ Popular products still works (different table)
+ * └─ Result: AI gives trending recommendations
+ * 
+ * Scenario 3: Complete user data failure
+ * ├─ All user intelligence features fail
+ * ├─ userData remains null
+ * ├─ System prompt built without user context
+ * └─ Result: AI works like before enhancement (generic mode)
+ *
+ * **Monitoring & Logging:**
+ * - ✅ Success: Feature loaded successfully
+ * - ⊘ Skipped: Feature returned empty (normal)
+ * - ⚠️ Warning: Feature failed with error
+ * - 📊 Summary: Overall intelligence status logged
+ *
+ * Core Functions:
+ * - chat() - Intelligent conversation with full context
+ * - fetchProducts() - Get active products from database
+ * - getUserPurchaseHistory() - Analyze user buying patterns
+ * - getPopularProducts() - Find trending items
+ * - getActivePromotions() - List current deals
+ * - getUserPCComponents() - Track owned components
+ * - buildIntelligentSystemPrompt() - Create context-aware prompts
+ * - searchProductsByIntent() - Intent-based product matching
  */
 
 class AIService {
@@ -85,6 +194,227 @@ class AIService {
 
       return data || [];
     } catch (error) {
+      return [];
+    }
+  }
+
+  /**
+   * Get user's purchase history
+   * @param {string} userId - User ID
+   * @param {number} limit - Number of orders to fetch
+   * @returns {Promise<Array>} Array of orders with products
+   */
+  async getUserPurchaseHistory(userId, limit = 10) {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          created_at,
+          total_amount,
+          status,
+          order_items (
+            id,
+            quantity,
+            price,
+            product_id,
+            products (
+              id,
+              name,
+              price,
+              categories (
+                name,
+                slug
+              )
+            )
+          )
+        `)
+        .eq('user_id', userId)
+        .in('status', ['completed', 'delivered'])
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Error fetching purchase history:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error in getUserPurchaseHistory:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get popular/trending products
+   * @param {string} category - Category slug (optional)
+   * @param {number} limit - Number of products to return
+   * @returns {Promise<Array>} Array of popular products with sales count
+   */
+  async getPopularProducts(category = null, limit = 10) {
+    try {
+      // Get orders from last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const { data: orderItems, error } = await supabase
+        .from('order_items')
+        .select(`
+          product_id,
+          quantity,
+          products (
+            id,
+            name,
+            price,
+            stock_quantity,
+            categories (
+              name,
+              slug
+            )
+          ),
+          orders!inner (
+            created_at,
+            status
+          )
+        `)
+        .gte('orders.created_at', thirtyDaysAgo.toISOString())
+        .in('orders.status', ['completed', 'delivered']);
+
+      if (error) {
+        console.error('Error fetching popular products:', error);
+        return [];
+      }
+
+      // Aggregate sales by product
+      const salesByProduct = {};
+      orderItems?.forEach(item => {
+        if (!item.products) return;
+        
+        const pid = item.product_id;
+        if (!salesByProduct[pid]) {
+          salesByProduct[pid] = {
+            product: item.products,
+            totalSold: 0
+          };
+        }
+        salesByProduct[pid].totalSold += item.quantity;
+      });
+
+      // Filter by category if specified
+      let popularList = Object.values(salesByProduct);
+      if (category) {
+        popularList = popularList.filter(item => 
+          item.product.categories?.slug === category
+        );
+      }
+
+      // Sort by total sold and return top items
+      return popularList
+        .sort((a, b) => b.totalSold - a.totalSold)
+        .slice(0, limit)
+        .map(item => ({
+          ...item.product,
+          salesCount: item.totalSold
+        }));
+    } catch (error) {
+      console.error('Error in getPopularProducts:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get active promotions and vouchers
+   * @returns {Promise<Array>} Array of active vouchers
+   */
+  async getActivePromotions() {
+    try {
+      const { data, error } = await supabase
+        .from('vouchers')
+        .select('*')
+        .eq('is_active', true)
+        .gte('valid_to', new Date().toISOString())
+        .order('discount_value', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching promotions:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error in getActivePromotions:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get product with review data
+   * @param {string} productId - Product ID
+   * @returns {Promise<Object>} Product with review summary
+   */
+  async getProductWithReviews(productId) {
+    try {
+      const { data: reviews, error } = await supabase
+        .from('product_reviews')
+        .select('rating')
+        .eq('product_id', productId);
+
+      if (error || !reviews || reviews.length === 0) {
+        return { avgRating: 0, reviewCount: 0 };
+      }
+
+      const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+      return {
+        avgRating: parseFloat(avgRating.toFixed(2)),
+        reviewCount: reviews.length
+      };
+    } catch (error) {
+      return { avgRating: 0, reviewCount: 0 };
+    }
+  }
+
+  /**
+   * Get user's existing PC components from purchase history
+   * @param {string} userId - User ID
+   * @returns {Promise<Array>} Array of purchased components
+   */
+  async getUserPCComponents(userId) {
+    try {
+      const pcCategories = ['processor', 'motherboard', 'graphics-card', 'ram', 'ssd', 'hdd', 'power-supply', 'case'];
+      
+      const { data, error } = await supabase
+        .from('order_items')
+        .select(`
+          products (
+            id,
+            name,
+            price,
+            categories (
+              name,
+              slug
+            )
+          ),
+          orders!inner (
+            user_id,
+            created_at,
+            status
+          )
+        `)
+        .eq('orders.user_id', userId)
+        .in('orders.status', ['completed', 'delivered']);
+
+      if (error || !data) return [];
+
+      // Filter for PC components only
+      return data
+        .filter(item => {
+          const categorySlug = item.products?.categories?.slug;
+          return categorySlug && pcCategories.includes(categorySlug);
+        })
+        .map(item => item.products);
+    } catch (error) {
+      console.error('Error in getUserPCComponents:', error);
       return [];
     }
   }
@@ -675,9 +1005,9 @@ Consider:
    * Fallback search using traditional text matching (backup when AI fails)
    * @param {Array} products - All products
    * @param {Object} intent - Intent object
-   * @returns {Array} Filtered products
+   * @returns {Promise<Array>} Filtered products
    */
-  fallbackSearch(products, intent) {
+  async fallbackSearch(products, intent) {
     let filtered = products;
 
     // Filter by category if specified
@@ -841,6 +1171,36 @@ Consider:
       ['affordable', 'budget', 'cheap', 'cheapest'].includes(kw.toLowerCase())
     );
 
+    // Enrich products with review data for better scoring (with fallback)
+    try {
+      const enrichedProducts = await Promise.all(filtered.map(async (product) => {
+        const reviewData = await this.getProductWithReviews(product.id).catch(() => ({ avgRating: 0, reviewCount: 0 }));
+        return {
+          ...product,
+          avgRating: reviewData.avgRating || 0,
+          reviewCount: reviewData.reviewCount || 0,
+          // Calculate AI score: base 100 + rating bonus + review count bonus - out of stock penalty
+          aiScore: 100 + 
+                   ((reviewData.avgRating || 0) * 10) + 
+                   (Math.min(reviewData.reviewCount || 0, 50) * 0.5) + 
+                   (product.stock_quantity > 0 ? 20 : -50)
+        };
+      }));
+      
+      filtered = enrichedProducts;
+      console.log('⭐ Products enriched with review data');
+    } catch (enrichError) {
+      console.warn('⚠️ Review enrichment failed, using products without reviews:', enrichError.message);
+      // Continue with non-enriched products (graceful degradation)
+      // Add default scores for sorting
+      filtered = filtered.map(p => ({
+        ...p,
+        avgRating: 0,
+        reviewCount: 0,
+        aiScore: 100 + (p.stock_quantity > 0 ? 20 : -50)
+      }));
+    }
+
     // Sort results intelligently
     filtered.sort((a, b) => {
       // In-stock first
@@ -851,6 +1211,11 @@ Consider:
       // Otherwise, sort by relevance (could be descending for "best" or "premium")
       if (hasAffordableIntent) {
         return a.price - b.price; // Cheapest first
+      }
+      
+      // If products have aiScore (with reviews), use it
+      if (a.aiScore !== undefined && b.aiScore !== undefined) {
+        return b.aiScore - a.aiScore; // Higher score first
       }
       
       // Default: sort by price ascending (most people prefer to see cheaper options first)
@@ -887,14 +1252,15 @@ Consider:
   }
 
   /**
-   * Build intelligent system prompt with intent awareness
-   * @param {Array} products - Relevant products based on intent
-   * @param {Object} userPreferences - User's questionnaire answers
-   * @param {Object} intent - Detected user intent
+   * Build intelligent system prompt with intent-aware product filtering
+   * @param {Array} products - Array of relevant products
+   * @param {Object} userPreferences - User's questionnaire answers (optional)
    * @param {Array} storeInfo - Store policies and FAQs (optional)
+   * @param {Object} userData - User-specific data from database (optional)
+   * @param {Object} intent - Detected user intent (optional)
    * @returns {string} System prompt
    */
-  buildIntelligentSystemPrompt(products, userPreferences = null, intent = null, storeInfo = []) {
+  buildIntelligentSystemPrompt(products, userPreferences = null, storeInfo = [], userData = null, intent = null) {
     // Special handling for PC build requests
     const isPCBuildRequest = intent && (
       intent.intentType === 'build_help' || 
@@ -1284,6 +1650,120 @@ CUSTOMER SERVICE SCENARIOS:
 ${userPreferences.otherPurpose ? `\nNote: ${userPreferences.otherPurpose}` : ''}`;
     }
 
+    // Add user-specific intelligence from database (with safety checks)
+    if (userData && typeof userData === 'object') {
+      // Purchase History
+      if (Array.isArray(userData.purchaseHistory) && userData.purchaseHistory.length > 0) {
+        systemPrompt += `\n\n🛍️ CUSTOMER PURCHASE HISTORY:
+${userData.purchaseHistory.slice(0, 5).map(order => {
+  const items = order.order_items?.map(item => item.products?.name).filter(Boolean).join(', ');
+  const totalPrice = order.total_amount;
+  const date = new Date(order.created_at).toLocaleDateString();
+  return `- ${date}: ${items} (Total: ₱${totalPrice?.toLocaleString()})`;
+}).join('\n')}
+
+USE THIS TO:
+✓ Avoid recommending already purchased items
+✓ Suggest compatible upgrades
+✓ Match their historical budget range
+✓ Recommend complementary products`;
+      }
+
+      // User's PC Components
+      if (Array.isArray(userData.userComponents) && userData.userComponents.length > 0) {
+        systemPrompt += `\n\n🖥️ CUSTOMER'S EXISTING PC COMPONENTS:
+${userData.userComponents.map(comp => 
+  `- ${comp.categories?.name}: ${comp.name}`
+).join('\n')}
+
+CRITICAL COMPATIBILITY RULES:
+✓ RAM: Must match motherboard DDR type
+✓ GPU: Check processor won't bottleneck
+✓ PSU: Calculate wattage for all components
+✓ Storage: Suggest upgrades, not duplicates
+✓ Cooling: Match CPU TDP requirements`;
+      }
+
+      // Recently Viewed Products
+      if (Array.isArray(userData.recentlyViewed) && userData.recentlyViewed.length > 0) {
+        systemPrompt += `\n\n👀 RECENTLY VIEWED PRODUCTS:
+${userData.recentlyViewed.map(p => 
+  `- ${p.name} (₱${p.price?.toLocaleString()})`
+).join('\n')}
+
+This shows their current interests and budget preferences!`;
+      }
+
+      // Popular Products
+      if (Array.isArray(userData.popularProducts) && userData.popularProducts.length > 0) {
+        systemPrompt += `\n\n🔥 BEST SELLERS (Last 30 Days):
+${userData.popularProducts.map((p, i) => 
+  `${i + 1}. ${p.name} - ₱${p.price?.toLocaleString()} (${p.salesCount} sold)`
+).join('\n')}
+
+Recommend these first if they match user needs!`;
+      }
+
+      // Active Promotions
+      if (Array.isArray(userData.activePromotions) && userData.activePromotions.length > 0) {
+        systemPrompt += `\n\n🎁 ACTIVE PROMOTIONS & VOUCHERS:
+${userData.activePromotions.map(v => {
+  const discount = v.discount_type === 'percentage' 
+    ? `${v.discount_value}% OFF` 
+    : `₱${v.discount_value} OFF`;
+  const minPurchase = v.min_purchase ? ` (Min: ₱${v.min_purchase})` : '';
+  const category = v.product_category ? ` [${v.product_category} only]` : ' [All products]';
+  return `- Code "${v.code}": ${discount}${minPurchase}${category}`;
+}).join('\n')}
+
+ALWAYS mention relevant vouchers to save customers money!`;
+      }
+
+      // Product Quality Indicators (Top-rated products)
+      if (products && products.length > 0) {
+        const topRated = products
+          .filter(p => p.avgRating >= 4.0 && p.reviewCount >= 5)
+          .sort((a, b) => b.avgRating - a.avgRating)
+          .slice(0, 5);
+        
+        if (topRated.length > 0) {
+          systemPrompt += `\n\n⭐ HIGHLY-RATED PRODUCTS:
+${topRated.map(p => 
+            `- ${p.name}: ${p.avgRating}/5 stars (${p.reviewCount} reviews)`
+          ).join('\n')}
+
+Prioritize these when recommending!`;
+        }
+      }
+
+      // Low Stock Alerts
+      if (products && products.length > 0) {
+        const lowStock = products.filter(p => p.stock_quantity > 0 && p.stock_quantity < 5);
+        if (lowStock.length > 0) {
+          systemPrompt += `\n\n⚠️ LIMITED STOCK ALERTS:
+${lowStock.map(p => 
+            `- ${p.name}: Only ${p.stock_quantity} left!`
+          ).join('\n')}
+
+Mention urgency when recommending these items!`;
+        }
+      }
+
+      // Products on Sale
+      if (products && products.length > 0) {
+        const onSale = products.filter(p => p.discount_percentage > 0);
+        if (onSale.length > 0) {
+          systemPrompt += `\n\n💸 CURRENT DEALS:
+${onSale.slice(0, 8).map(p => {
+            const original = p.original_price || (p.price / (1 - p.discount_percentage / 100));
+            return `- ${p.name}: ${p.discount_percentage}% OFF (₱${p.price?.toLocaleString()} from ₱${original.toLocaleString()})`;
+          }).join('\n')}
+
+Highlight these to budget-conscious customers!`;
+        }
+      }
+    }
+
     systemPrompt += `\n\n⚡ RESPONSE FORMAT RULES:
 1. Brief acknowledgment (1 line max)
 2. When recommending products, use this format:
@@ -1419,6 +1899,74 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
       // Step 1: Detect intent using AI (understand what user wants)
       const intent = await this.detectIntent(userMessageText);
       
+      // Step 1.5: Fetch user-specific intelligence data with individual fallbacks
+      let userData = null;
+      if (userId) {
+        // Initialize with safe defaults
+        userData = {
+          purchaseHistory: [],
+          userComponents: [],
+          recentlyViewed: options.recentlyViewedProducts || [],
+          popularProducts: [],
+          activePromotions: []
+        };
+
+        // Fetch each data source independently with fallbacks
+        // This ensures partial data loading - if one fails, others still work
+        try {
+          userData.purchaseHistory = await this.getUserPurchaseHistory(userId, 5).catch(err => {
+            console.warn('⚠️ Purchase history unavailable:', err.message);
+            return [];
+          });
+        } catch (err) {
+          console.warn('⚠️ Failed to load purchase history, using empty array');
+        }
+
+        try {
+          userData.userComponents = await this.getUserPCComponents(userId).catch(err => {
+            console.warn('⚠️ User components unavailable:', err.message);
+            return [];
+          });
+        } catch (err) {
+          console.warn('⚠️ Failed to load user components, using empty array');
+        }
+
+        try {
+          userData.popularProducts = await this.getPopularProducts(intent.category, 5).catch(err => {
+            console.warn('⚠️ Popular products unavailable:', err.message);
+            return [];
+          });
+        } catch (err) {
+          console.warn('⚠️ Failed to load popular products, using empty array');
+        }
+
+        try {
+          userData.activePromotions = await this.getActivePromotions().catch(err => {
+            console.warn('⚠️ Promotions unavailable:', err.message);
+            return [];
+          });
+        } catch (err) {
+          console.warn('⚠️ Failed to load promotions, using empty array');
+        }
+
+        const loadedFeatures = [
+          userData.purchaseHistory.length > 0 ? '✅ Purchase History' : '⊘ Purchase History',
+          userData.userComponents.length > 0 ? '✅ PC Components' : '⊘ PC Components',
+          userData.recentlyViewed.length > 0 ? '✅ Recently Viewed' : '⊘ Recently Viewed',
+          userData.popularProducts.length > 0 ? '✅ Popular Products' : '⊘ Popular Products',
+          userData.activePromotions.length > 0 ? '✅ Promotions' : '⊘ Promotions'
+        ];
+
+        console.log('📊 User intelligence status:', loadedFeatures.join(', '));
+        console.log('📈 Data counts:', {
+          orders: userData.purchaseHistory.length,
+          components: userData.userComponents.length,
+          viewed: userData.recentlyViewed.length,
+          trending: userData.popularProducts.length,
+          promos: userData.activePromotions.length
+        });
+      }
+
       // Step 2: Fetch relevant products based on intent
       let relevantProducts = [];
       let allProducts = [];
@@ -1469,12 +2017,13 @@ Remember: You're a world-class e-commerce AI trained on shopping psychology, nat
         relevantProducts = allProducts.slice(0, 10); // Show sample
       }
 
-      // Step 3: Build enhanced system prompt with intent awareness AND store info
+      // Step 3: Build enhanced system prompt with intent awareness AND store info AND user data
       const systemPrompt = this.buildIntelligentSystemPrompt(
         relevantProducts.length > 0 ? relevantProducts : allProducts, 
         userPreferences,
-        intent,
-        storeInfo // 🆕 Pass store information to system prompt
+        storeInfo, // 🆕 Store information
+        userData, // 🆕 User-specific intelligence
+        intent // 🆕 Detected intent
       );
 
       // Step 4: Prepare conversation with context

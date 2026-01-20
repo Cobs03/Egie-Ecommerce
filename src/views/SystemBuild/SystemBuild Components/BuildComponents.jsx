@@ -6,15 +6,16 @@ import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import ProductModal from "../../Products/ProductGrid/ProductModal/ProductModal";
 
 // Define component types matching database categories
+// ⚠️ ORDER MATTERS: Motherboard first as it determines compatibility for CPU, RAM, etc.
 const COMPONENT_TYPES = [
-  "Case",
-  "Motherboard", 
-  "Processor",
+  "Motherboard", // START HERE - Foundation for CPU socket, RAM type, form factor
+  "Processor",   // Must match motherboard socket
+  "RAM",         // Must match motherboard DDR type
+  "Case",        // Must fit motherboard form factor
   "GPU",
-  "RAM",
+  "PSU",
   "SSD",
   "HDD",
-  "PSU",
   "Cooling",
   "Monitor",
   "Keyboard",
